@@ -16,14 +16,85 @@ class NumpysaneError(Exception):
     def __str__(self):       return self.err
 
 def glue(*args, **kwargs):
-    """Concatenates a given list of arrays along the dimension given by the 'axis'
-keyword argument. If no such keyword argument is given, a new dimension is added
-at the front, and we concatenate along that new dimension. This case is
-equivalent to the cat() function.
+    """Concatenates a given list of arrays along the given 'axis' keyword argument.
 
-It is STRONGLY recommended to use only negative axis indices in order to count
-dimensions relative to the most-significant broadcasting axis, which in numpy is
-the last one (axis = -1). You WILL write bugs if you don't do this."""
+Synopsis:
+
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(6).reshape(2,3)
+>>> b = a + 100
+
+>>> a
+array([[0, 1, 2],
+       [3, 4, 5]])
+
+>>> b
+array([[100, 101, 102],
+       [103, 104, 105]])
+
+>>> nps.glue(a,b, axis=-1)
+array([[  0,   1,   2, 100, 101, 102],
+       [  3,   4,   5, 103, 104, 105]])
+
+>>> nps.glue(a,b, axis=-2)
+array([[  0,   1,   2],
+       [  3,   4,   5],
+       [100, 101, 102],
+       [103, 104, 105]])
+
+>>> nps.glue(a,b, axis=-3)
+array([[[  0,   1,   2],
+        [  3,   4,   5]],
+
+       [[100, 101, 102],
+        [103, 104, 105]]])
+
+
+If no such keyword argument is given, a new dimension is added at the front, and
+we concatenate along that new dimension. This case is equivalent to the cat()
+function.
+
+In order to count dimensions from the inner-most outwards, this function accepts
+only negative axis arguments. This is because numpy broadcasts from the last
+dimension, and the last dimension is the inner-most in the (usual) internal
+storage scheme. Allowing glue() to look at dimensions at the start would allow
+it to unalign the broadcasting dimensions, which is never what you want.
+
+To glue along the last dimension, pass axis=-1; to glue along the second-to-last
+dimension, pass axis=-2, and so on.
+
+Unlike in PDL, this function refuses to create duplicated data to make the
+shapes fit. For instance:
+
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(6).reshape(2,3)
+>>> b = a + 100
+>>> c = a[0:1,:]
+>>> c
+array([[0, 1, 2]])
+
+>>> nps.glue(c,b,axis=-1)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "numpysane.py", line 140, in glue
+    return np.concatenate( args, axis=axis )
+ValueError: all the input array dimensions except for the concatenation axis must match exactly
+>>> nps.glue(c,b,axis=-2)
+array([[  0,   1,   2],
+       [100, 101, 102],
+       [103, 104, 105]])
+
+
+
+This function refuses to create new data
+
+This function adds as many length-1 dimensions at the front as required
+
+    """
 
     axis = kwargs.get('axis')
     if axis is not None and axis >= 0:
@@ -53,22 +124,26 @@ the last one (axis = -1). You WILL write bugs if you don't do this."""
 
 
 def cat(*args):
-    """Concatenates a given list of arrays along a new first dimension. The
-dimensions are aligned along the last one, so broadcasting will continue to work
-as expected"""
+    """Concatenates a given list of arrays along a new first (outer) dimension.
+
+The dimensions are aligned along the last one, so broadcasting will continue to
+work as expected.
+
+    """
     return glue(*args) # axis is unspecified
 
 
 
 def broadcast_define(*prototype):
-    """Vectorizes an arbitrary function 'func', expecting input as in the prototype
+    """Vectorizes an arbitrary function, expecting input as in the prototype
 
     an integer (assumed >0) means "exactly this many". Otherwise, it's a name
     of a variable whose value must be consistent.
 
     So this means inputs are ( 3-vector, n,3-matrix, n-vector, m-vector)
     prototype = ( (3,), ('n',3), ('n',), ('m',))
-"""
+
+    """
 
     def inner_decorator_for_some_reason(func):
         # a "reversed" range iterator. Does this:
@@ -153,15 +228,18 @@ def broadcast_define(*prototype):
             # output, and gather the results
 
             def accum_dim( i_dims_extra, idx_slices, idx_extra ):
-                """Recursive function to iterate through all the broadcasting slices. Each
-recursive call loops through a single dimension. I can do some of this with
+                """Recursive function to iterate through all the broadcasting slices.
+
+Each recursive call loops through a single dimension. I can do some of this with
 itertools.product(), and maybe using that would be a better choice.
 
 i_dims_extra is an integer indexing the current extra dimension we're looking at.
 
 idx_slices is an array of indices for each argument that is filled in by this
 function. This may vary for each argument because of varying prototypes and
-varying broadcasting shapes."""
+varying broadcasting shapes.
+
+                """
 
                 if i_dims_extra < len(dims_extra):
                     # more dimensions remaining. recurse
