@@ -1,14 +1,10 @@
 #!/usr/bin/python
 
-
 import numpy as np
 
-debugprint = None
-
-
 # object needed for fancy slices. m[:] is exactly the same as
-# m[colon], but 'colon' can be manipulated in ways that ':' can't
-colon = slice(None, None, None)
+# m[_colon], but '_colon' can be manipulated in ways that ':' can't
+_colon = slice(None, None, None)
 
 
 class NumpysaneError(Exception):
@@ -18,81 +14,109 @@ class NumpysaneError(Exception):
 def glue(*args, **kwargs):
     """Concatenates a given list of arrays along the given 'axis' keyword argument.
 
-Synopsis:
+    Synopsis:
 
->>> import numpy as np
->>> import numpysane as nps
+        >>> import numpy as np
+        >>> import numpysane as nps
 
->>> a = np.arange(6).reshape(2,3)
->>> b = a + 100
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
 
->>> a
-array([[0, 1, 2],
-       [3, 4, 5]])
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
 
->>> b
-array([[100, 101, 102],
-       [103, 104, 105]])
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
 
->>> nps.glue(a,b, axis=-1)
-array([[  0,   1,   2, 100, 101, 102],
-       [  3,   4,   5, 103, 104, 105]])
+        >>> nps.glue(a,b, axis=-1)
+        array([[  0,   1,   2, 100, 101, 102],
+               [  3,   4,   5, 103, 104, 105]])
 
->>> nps.glue(a,b, axis=-2)
-array([[  0,   1,   2],
-       [  3,   4,   5],
-       [100, 101, 102],
-       [103, 104, 105]])
+        >>> nps.glue(a,b, axis=-2)
+        array([[  0,   1,   2],
+               [  3,   4,   5],
+               [100, 101, 102],
+               [103, 104, 105]])
 
->>> nps.glue(a,b, axis=-3)
-array([[[  0,   1,   2],
-        [  3,   4,   5]],
+        >>> nps.glue(a,b, axis=-3)
+        array([[[  0,   1,   2],
+                [  3,   4,   5]],
 
-       [[100, 101, 102],
-        [103, 104, 105]]])
-
-
-If no such keyword argument is given, a new dimension is added at the front, and
-we concatenate along that new dimension. This case is equivalent to the cat()
-function.
-
-In order to count dimensions from the inner-most outwards, this function accepts
-only negative axis arguments. This is because numpy broadcasts from the last
-dimension, and the last dimension is the inner-most in the (usual) internal
-storage scheme. Allowing glue() to look at dimensions at the start would allow
-it to unalign the broadcasting dimensions, which is never what you want.
-
-To glue along the last dimension, pass axis=-1; to glue along the second-to-last
-dimension, pass axis=-2, and so on.
-
-Unlike in PDL, this function refuses to create duplicated data to make the
-shapes fit. For instance:
-
->>> import numpy as np
->>> import numpysane as nps
-
->>> a = np.arange(6).reshape(2,3)
->>> b = a + 100
->>> c = a[0:1,:]
->>> c
-array([[0, 1, 2]])
-
->>> nps.glue(c,b,axis=-1)
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "numpysane.py", line 140, in glue
-    return np.concatenate( args, axis=axis )
-ValueError: all the input array dimensions except for the concatenation axis must match exactly
->>> nps.glue(c,b,axis=-2)
-array([[  0,   1,   2],
-       [100, 101, 102],
-       [103, 104, 105]])
+               [[100, 101, 102],
+                [103, 104, 105]]])
 
 
+    If no such keyword argument is given, a new dimension is added at the front, and
+    we concatenate along that new dimension. This case is equivalent to the cat()
+    function.
 
-This function refuses to create new data
+    In order to count dimensions from the inner-most outwards, this function accepts
+    only negative axis arguments. This is because numpy broadcasts from the last
+    dimension, and the last dimension is the inner-most in the (usual) internal
+    storage scheme. Allowing glue() to look at dimensions at the start would allow
+    it to unalign the broadcasting dimensions, which is never what you want.
 
-This function adds as many length-1 dimensions at the front as required
+    To glue along the last dimension, pass axis=-1; to glue along the second-to-last
+    dimension, pass axis=-2, and so on.
+
+    Unlike in PDL, this function refuses to create duplicated data to make the
+    shapes fit. In my experience, this isn't what you want, and can create bugs. For
+    instance:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a[0:1,:]
+
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[0, 1, 2]])
+
+        >>> nps.glue(a,b,axis=-1)
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+          File "numpysane.py", line 140, in glue
+            return np.concatenate( args, axis=axis )
+        ValueError: all the input array dimensions except for the concatenation axis must match exactly
+
+
+    Finally, this function adds as many length-1 dimensions at the front as
+    required. Note that this does not create new data, just new degenerate
+    dimensions. Example:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
+
+        >>> res = nps.glue(a,b, axis=-5)
+        >>> res
+        array([[[[[  0,   1,   2],
+                  [  3,   4,   5]]]],
+
+
+
+               [[[[100, 101, 102],
+                  [103, 104, 105]]]]])
+
+        >>> res.shape
+        (2, 1, 1, 2, 3)
 
     """
 
@@ -102,8 +126,6 @@ This function adds as many length-1 dimensions at the front as required
 
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
-    if debugprint:
-        print args
 
     # If no axis is given, add a new axis at the front, and glue along it
     max_ndim = max( x.ndim for x in args )
@@ -126,8 +148,54 @@ This function adds as many length-1 dimensions at the front as required
 def cat(*args):
     """Concatenates a given list of arrays along a new first (outer) dimension.
 
-The dimensions are aligned along the last one, so broadcasting will continue to
-work as expected.
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
+        >>> c = a - 100
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
+
+        >>> c
+        array([[-100,  -99,  -98],
+               [ -97,  -96,  -95]])
+
+        >>> res = nps.cat(a,b,c)
+        >>> res
+        array([[[   0,    1,    2],
+                [   3,    4,    5]],
+
+               [[ 100,  101,  102],
+                [ 103,  104,  105]],
+
+               [[-100,  -99,  -98],
+                [ -97,  -96,  -95]]])
+
+        >>> res.shape
+        (3, 2, 3)
+
+        >>> [x for x in res]
+        [array([[0, 1, 2],
+               [3, 4, 5]]),
+         array([[100, 101, 102],
+               [103, 104, 105]]),
+         array([[-100,  -99,  -98],
+               [ -97,  -96,  -95]])]
+
+    This function creates a new outer dimension (at the start) that is one-larger
+    than the highest-dimension array in the input, and glues the input arrays along
+    that dimension. The dimensions are aligned along the last one, so broadcasting
+    will continue to work as expected. Note that this is the opposite operation from
+    iterating a numpy array; see the example above.
 
     """
     return glue(*args) # axis is unspecified
@@ -135,23 +203,87 @@ work as expected.
 
 
 def broadcast_define(*prototype):
-    """Vectorizes an arbitrary function, expecting input as in the prototype
+    """Vectorizes an arbitrary function, expecting input as in the given prototype.
 
-    an integer (assumed >0) means "exactly this many". Otherwise, it's a name
-    of a variable whose value must be consistent.
+    Synopsis:
 
-    So this means inputs are ( 3-vector, n,3-matrix, n-vector, m-vector)
-    prototype = ( (3,), ('n',3), ('n',), ('m',))
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> @nps.broadcast_define( ('n',), ('n',) )
+        ... def inner_product(a, b):
+        ...     return a.dot(b)
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
+
+        >>> inner_product(a,b)
+        array([ 305, 1250])
+
+
+    The prototype defines the dimensionality of the inputs. In the basic inner
+    product example above, the input is two 1D n-dimensional vectors. In
+    particular, the 'n' is the same for the two inputs. This function is
+    intended to be used as a decorator, applied to a function defining the
+    operation to be vectorized. Each element of the prototype list refers to
+    each input, in order. In turn, each prototype element is a list that
+    describes the shape of that input. Each of these shape descriptors can be
+    any of
+
+    - a positive integer, indicating an input dimension of exactly that length
+    - a string, indicating an arbitrary, but internally consistent dimension
+
+    The normal numpy broadcasting rules (as described elsewhere) apply. In
+    summary:
+
+    - Dimensions are aligned at the end of the shape list, and must match the
+      prototype
+
+    - Extra dimensions left over at the front must be consistent for all the
+      input arguments, meaning:
+
+      - All dimensions !=1 must be identical
+      - Dimensions that are =1 are implicitly extended to the lengths implied by
+        other arguments
+
+      - The output has a shape where
+
+        - The trailing dimensions are whatever the function being broadcasted
+          outputs
+        - The leading dimensions come from the extra dimensions in the inputs
+
+
+    A more involved example. Let's say we have an function that takes a set of
+    points in R^2 and a single center point in R^2, and finds a best-fit
+    least-squares line that passes through the center. Let it return the rms
+    residual of the fit.
+
+ So this means inputs are ( 3-vector,
+    n,3-matrix, n-vector, m-vector) prototype = ( (3,), ('n',3), ('n',), ('m',))
+
+    This is analogous to thread_define() in PDL.
 
     """
 
+    def fit(xy, c):
+        x,y = xy.transpose()
+        n = x.size
+        M = nps.cat(np.ones(5), x).transpose()
+        numpy.linalg.pinv
+
     def inner_decorator_for_some_reason(func):
-        # a "reversed" range iterator. Does this:
-        #   In [3]: range_rev(10)
-        #   Out[3]: [-1, -2, -3, -4, -5, -6, -7, -8, -9, -10]
-        #
         def range_rev(n):
-            """Useful to index variable-sized lists while aligning their ends."""
+            """Returns a range from -1 to -n.
+
+            Useful to index variable-sized lists while aligning their ends."""
             return [-i-1 for i in range(n)]
 
         def parse_dims( name_arg,
@@ -274,7 +406,7 @@ varying broadcasting shapes.
 
             accum_dim.output = None
 
-            idx_slices = [[0]*(x.ndim-len(p)) + [colon]*len(p) for p,x in zip(prototype,args)]
+            idx_slices = [[0]*(x.ndim-len(p)) + [_colon]*len(p) for p,x in zip(prototype,args)]
             accum_dim( 0, idx_slices, [0] * len(dims_extra) )
             return accum_dim.output
 
