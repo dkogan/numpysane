@@ -11,7 +11,7 @@ debugprint = None
 colon = slice(None, None, None)
 
 
-class NumpySaneError(Exception):
+class NumpysaneError(Exception):
     def __init__(self, err): self.err = err
     def __str__(self):       return self.err
 
@@ -27,7 +27,7 @@ the last one (axis = -1). You WILL write bugs if you don't do this."""
 
     axis = kwargs.get('axis')
     if axis is not None and axis >= 0:
-        raise NumpySaneError("axis >= 0 makes broadcasting dimensions inconsistent, and is thus not allowed")
+        raise NumpysaneError("axis >= 0 makes broadcasting dimensions inconsistent, and is thus not allowed")
 
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
@@ -86,7 +86,7 @@ def broadcast_define(*prototype):
             # dimensions have length 1, it is likely a mistake on the part of the
             # user
             if len(shape_prototype) > len(shape_arg):
-                raise NumpySaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
+                raise NumpysaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
 
             # Loop through the dimensions. Set the dimensionality of any new named
             # argument to whatever the current argument has. Any already-known
@@ -103,7 +103,7 @@ def broadcast_define(*prototype):
                                    else shape_prototype[i_dim]
 
                 if dim_prototype != shape_arg[i_dim]:
-                    raise NumpySaneError("Argument {} dimension '{}': expected {} but got {}".
+                    raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
                         format(name_arg,
                                shape_prototype[i_dim],
                                dim_prototype,
@@ -124,7 +124,7 @@ def broadcast_define(*prototype):
                     if dims_extra[i_dim] == 1:
                         dims_extra[i_dim] = dim_arg
                     elif dims_extra[i_dim] != dim_arg:
-                        raise NumpySaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
+                        raise NumpysaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
                             format(name_arg,
                                    shape_prototype,
                                    i_dim,
@@ -137,7 +137,7 @@ def broadcast_define(*prototype):
         def broadcast_loop(*args, **kwargs):
 
             if len(prototype) != len(args):
-                raise NumpySaneError("Mismatched number of input arguments. Wanted {} but got {}". \
+                raise NumpysaneError("Mismatched number of input arguments. Wanted {} but got {}". \
                                       format(len(prototype), len(args)))
 
             dims_extra = [] # extra dimensions to broadcast through
