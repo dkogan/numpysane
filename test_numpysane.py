@@ -32,7 +32,7 @@ That function barfs when fed (), and this one does not.
 
     def assertError(self, f, *args, **kwargs):
         """Convenience wrapper for my use of assertRaises()"""
-        return self.assertRaises(nps.NumpysaneError, f, *args, **kwargs)
+        return self.assertRaises((nps.NumpysaneError, ValueError), f, *args, **kwargs)
 
     def assertValueShape(self, value, s, f, *args, **kwargs):
         """Makes sure a given call produces a given value and shape.
@@ -170,9 +170,40 @@ think I'm asking. The value check can be skipped by passing None.
         self.assertValueShape( None, (4,3),     nps.glue, arr(2,3), arr(2,3), axis=-2 )
         self.assertValueShape( None, (2,2,3),   nps.glue, arr(2,3), arr(2,3), axis=-3 )
         self.assertValueShape( None, (2,1,2,3), nps.glue, arr(2,3), arr(2,3), axis=-4 )
+        self.assertValueShape( None, (2,2,3),   nps.glue, arr(2,3), arr(2,3) )
+        self.assertValueShape( None, (2,2,3),   nps.cat,  arr(2,3), arr(2,3) )
 
-        # self.assertListEqual( (2,6), nps.glue( arr(1,3), arr(2,3), axis=-1).shape )
-        # self.assertListEqual( (4,3), nps.glue( arr(2,3), arr(2,3), axis=-2).shape )
+        # extra length-1 dims added as needed, data not duplicated as needed
+        self.assertError(                       nps.glue, arr(3),   arr(2,3), axis=-1 )
+        self.assertValueShape( None, (3,3),     nps.glue, arr(3),   arr(2,3), axis=-2 )
+        self.assertError(                       nps.glue, arr(3),   arr(2,3), axis=-3 )
+        self.assertError(                       nps.glue, arr(3),   arr(2,3), axis=-4 )
+        self.assertError(                       nps.glue, arr(3),   arr(2,3) )
+        self.assertError(                       nps.cat,  arr(3),   arr(2,3) )
+
+        self.assertError(                       nps.glue, arr(2,3), arr(3),   axis=-1 )
+        self.assertValueShape( None, (3,3),     nps.glue, arr(2,3), arr(3),   axis=-2 )
+        self.assertError(                       nps.glue, arr(2,3), arr(3),   axis=-3 )
+        self.assertError(                       nps.glue, arr(2,3), arr(3),   axis=-4 )
+        self.assertError(                       nps.cat,  arr(2,3), arr(3) )
+
+        self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-1 )
+        self.assertValueShape( None, (3,3),     nps.glue, arr(1,3), arr(2,3), axis=-2 )
+        self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-3 )
+        self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-4 )
+        self.assertError(                       nps.cat,  arr(1,3), arr(2,3) )
+
+        self.assertError(                       nps.glue, arr(2,3), arr(1,3), axis=-1 )
+        self.assertValueShape( None, (3,3),     nps.glue, arr(2,3), arr(1,3), axis=-2 )
+        self.assertError(                       nps.glue, arr(2,3), arr(1,3), axis=-3 )
+        self.assertError(                       nps.glue, arr(2,3), arr(1,3), axis=-4 )
+        self.assertError(                       nps.cat,  arr(2,3), arr(1,3) )
+
+        self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-1 )
+        self.assertValueShape( None, (3,3),     nps.glue, arr(1,3), arr(2,3), axis=-2 )
+        self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-3 )
+        self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-4 )
+        self.assertError(                       nps.cat,  arr(1,3), arr(2,3) )
 
 
 if __name__ == '__main__':
