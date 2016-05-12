@@ -1,0 +1,7 @@
+*.pyc
+*~
+debian/*.log
+dist/
+MANIFEST
+.pybuild
+README
