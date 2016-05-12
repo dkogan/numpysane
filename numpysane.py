@@ -261,24 +261,60 @@ def broadcast_define(*prototype):
         - The leading dimensions come from the extra dimensions in the inputs
 
 
-    A more involved example. Let's say we have an function that takes a set of
-    points in R^2 and a single center point in R^2, and finds a best-fit
-    least-squares line that passes through the center. Let it return the rms
-    residual of the fit.
+    Let's look at a more involved example. Let's say we have an function that
+    takes a set of points in R^2 and a single center point in R^2, and finds a
+    best-fit least-squares line that passes through the given center point. Let
+    it return a 3D vector containing the slope, y-intercept and the RMS residual
+    of the fit. This broadcasting-enabled function can be defined like this:
 
- So this means inputs are ( 3-vector,
-    n,3-matrix, n-vector, m-vector) prototype = ( (3,), ('n',3), ('n',), ('m',))
+        import numpy as np
+        import numpysane as nps
 
-    This is analogous to thread_define() in PDL.
+        @nps.broadcast_define( ('n',2), (2,) )
+        def fit(xy, c):
+            # line-through-origin-model: y = m*x
+            # E = sum( (m*x - y)**2 )
+            # dE/dm = 2*sum( (m*x-y)*x ) = 0
+            # ----> m = sum(x*y)/sum(x*x)
+            x,y = (xy - c).transpose()
+            m = np.sum(x*y) / np.sum(x*x)
+            err = m*x - y
+            err **= 2
+            rms = np.sqrt(err.mean())
+            # I return m,b because I need to translate the line back
+            b = c[1] - m*c[0]
+
+            return np.array((m,b,rms))
+
+    And I can use broadcasting to compute a number of these fits at once. Let's
+    say I want to compute 4 different fits of 5 points each. I can do this:
+
+        n = 5
+        m = 4
+        c = np.array((20,300))
+        xy = np.arange(m*n*2, dtype=np.float64).reshape(m,n,2) + c
+        xy += np.random.rand(*xy.shape)*5
+
+        res = fit( xy, c )
+        mb  = res[..., 0:2]
+        rms = res[..., 2]
+        print "RMS residuals: {}".format(rms)
+
+    Here I had 4 different sets of points, but a single center point c. If I
+    wanted 4 different center points, I could pass c as an array of shape (4,2).
+    I can use broadcasting to plot all the results (the points and the fitted
+    lines):
+
+        import gnuplotlib as gp
+
+        gp.plot( xy[..., 0], xy[..., 1], _with='linespoints',
+                 equation=['{}*x + {}'.format(mb_single[0],
+                                              mb_single[1]) for mb_single in mb],
+                 unset='grid', square=1)
+
+    This function is analogous to thread_define() in PDL.
 
     """
-
-    def fit(xy, c):
-        x,y = xy.transpose()
-        n = x.size
-        M = nps.cat(np.ones(5), x).transpose()
-        numpy.linalg.pinv
-
     def inner_decorator_for_some_reason(func):
         def range_rev(n):
             """Returns a range from -1 to -n.
