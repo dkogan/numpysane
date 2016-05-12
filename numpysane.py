@@ -451,36 +451,3 @@ def broadcast_define(*prototype):
 
         return broadcast_loop
     return inner_decorator_for_some_reason
-
-
-
-
-
-if __name__ == '__main__':
-    # test concatenation routines
-
-    # test broadcast_define
-
-    def mkarr(*shape):
-        """Return an arange() array of the given shape."""
-        product = reduce( lambda x,y: x*y, shape)
-        return np.arange(product).reshape(*shape)
-
-
-    @broadcast_define( ('n',), ('n') )
-    def f1(a, b):
-        """Basic inner product."""
-        return a.dot(b)
-
-    print f1(mkarr(3), mkarr(3))
-
-
-
-    #@broadcast_define( (3,), ('n',3), ('n',), ('m',) )
-    n=4
-    m=5
-
-    a = mkarr(1,5,    3)
-    b = mkarr(2,5,  n,3)
-    c = mkarr(        n)
-    d = mkarr(  5,    m)
