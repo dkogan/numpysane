@@ -16,7 +16,7 @@ class TestNumpysane(unittest.TestCase):
     def assertListEqual(self, s1, s2):
         """This is unittest.TestCase.assertListEqual(), but not retarded.
 
-That function barfs when fed (), and this one does not.
+        That function barfs when fed (), and this one does not.
 
         """
         self.assertEqual(len(s1), len(s2), msg="Lists {} and {} do not match".format(s1,s2))
@@ -37,8 +37,8 @@ That function barfs when fed (), and this one does not.
     def assertValueShape(self, value, s, f, *args, **kwargs):
         """Makes sure a given call produces a given value and shape.
 
-It is redundant to specify both, but it makes it clear I'm asking for what I
-think I'm asking. The value check can be skipped by passing None.
+        It is redundant to specify both, but it makes it clear I'm asking for
+        what I think I'm asking. The value check can be skipped by passing None.
 
         """
         res = f(*args, **kwargs)
