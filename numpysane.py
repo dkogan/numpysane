@@ -398,14 +398,16 @@ def broadcast_define(*prototype):
             def accum_dim( i_dims_extra, idx_slices, idx_extra ):
                 """Recursive function to iterate through all the broadcasting slices.
 
-Each recursive call loops through a single dimension. I can do some of this with
-itertools.product(), and maybe using that would be a better choice.
+                Each recursive call loops through a single dimension. I can do
+                some of this with itertools.product(), and maybe using that
+                would be a better choice.
 
-i_dims_extra is an integer indexing the current extra dimension we're looking at.
+                i_dims_extra is an integer indexing the current extra dimension
+                we're looking at.
 
-idx_slices is an array of indices for each argument that is filled in by this
-function. This may vary for each argument because of varying prototypes and
-varying broadcasting shapes.
+                idx_slices is an array of indices for each argument that is
+                filled in by this function. This may vary for each argument
+                because of varying prototypes and varying broadcasting shapes.
 
                 """
 
