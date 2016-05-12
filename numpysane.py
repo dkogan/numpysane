@@ -397,7 +397,7 @@ varying broadcasting shapes.
                 # This is the last dimension. Evaluate this slice.
                 #
                 sliced_args = [ x[idx] for idx,x in zip(idx_slices, args) ]
-                result = func( *sliced_args )
+                result = func( *sliced_args, **kwargs )
                 if accum_dim.output is None:
                     accum_dim.output = np.zeros( dims_extra + list(result.shape),
                                                  dtype = result.dtype)
