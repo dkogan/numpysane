@@ -48,7 +48,7 @@ class TestNumpysane(unittest.TestCase):
 
     def test_broadcasting(self):
         """Checking broadcasting rules."""
-        @nps.broadcast_define( ('n',), ('n') )
+        @nps.broadcast_define( ('n',), ('n',) )
         def f1(a, b):
             """Basic inner product."""
             return a.dot(b)
