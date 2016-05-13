@@ -12,7 +12,7 @@ class NumpysaneError(Exception):
     def __str__(self):       return self.err
 
 def glue(*args, **kwargs):
-    """Concatenates a given list of arrays along the given 'axis' keyword argument.
+    r'''Concatenates a given list of arrays along the given 'axis' keyword argument.
 
     Synopsis:
 
@@ -118,7 +118,7 @@ def glue(*args, **kwargs):
         >>> res.shape
         (2, 1, 1, 2, 3)
 
-    """
+    '''
 
     axis = kwargs.get('axis')
     if axis is not None and axis >= 0:
@@ -146,7 +146,7 @@ def glue(*args, **kwargs):
 
 
 def cat(*args):
-    """Concatenates a given list of arrays along a new first (outer) dimension.
+    r'''Concatenates a given list of arrays along a new first (outer) dimension.
 
     Synopsis:
 
@@ -197,13 +197,13 @@ def cat(*args):
     will continue to work as expected. Note that this is the opposite operation from
     iterating a numpy array; see the example above.
 
-    """
+    '''
     return glue(*args) # axis is unspecified
 
 
 
 def broadcast_define(*prototype):
-    """Vectorizes an arbitrary function, expecting input as in the given prototype.
+    r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
 
     Synopsis:
 
@@ -314,12 +314,12 @@ def broadcast_define(*prototype):
 
     This function is analogous to thread_define() in PDL.
 
-    """
+    '''
     def inner_decorator_for_some_reason(func):
         def range_rev(n):
-            """Returns a range from -1 to -n.
+            r'''Returns a range from -1 to -n.
 
-            Useful to index variable-sized lists while aligning their ends."""
+            Useful to index variable-sized lists while aligning their ends.'''
             return [-i-1 for i in range(n)]
 
         def parse_dims( name_arg,
@@ -396,7 +396,7 @@ def broadcast_define(*prototype):
             # output, and gather the results
 
             def accum_dim( i_dims_extra, idx_slices, idx_extra ):
-                """Recursive function to iterate through all the broadcasting slices.
+                r'''Recursive function to iterate through all the broadcasting slices.
 
                 Each recursive call loops through a single dimension. I can do
                 some of this with itertools.product(), and maybe using that
@@ -409,7 +409,7 @@ def broadcast_define(*prototype):
                 filled in by this function. This may vary for each argument
                 because of varying prototypes and varying broadcasting shapes.
 
-                """
+                '''
 
                 if i_dims_extra < len(dims_extra):
                     # more dimensions remaining. recurse

@@ -7,18 +7,18 @@ import numpysane as nps
 
 
 def arr(*shape):
-    """Return an arange() array of the given shape."""
+    r'''Return an arange() array of the given shape.'''
     product = reduce( lambda x,y: x*y, shape)
     return np.arange(product).reshape(*shape)
 
 class TestNumpysane(unittest.TestCase):
 
     def assertListEqual(self, s1, s2):
-        """This is unittest.TestCase.assertListEqual(), but not retarded.
+        r'''This is unittest.TestCase.assertListEqual(), but not retarded.
 
         That function barfs when fed (), and this one does not.
 
-        """
+        '''
         self.assertEqual(len(s1), len(s2), msg="Lists {} and {} do not match".format(s1,s2))
         for v1,v2 in zip(s1,s2):
             self.assertEqual(v1,v2, msg="Lists {} and {} do not match".format(s1,s2))
@@ -31,26 +31,26 @@ class TestNumpysane(unittest.TestCase):
         self.assertLess( rms, 1e-6, msg='matrix discrepancy:\n{} vs\n{}. Diff:\n{}'.format(first,second,diff) )
 
     def assertError(self, f, *args, **kwargs):
-        """Convenience wrapper for my use of assertRaises()"""
+        r'''Convenience wrapper for my use of assertRaises()'''
         return self.assertRaises((nps.NumpysaneError, ValueError), f, *args, **kwargs)
 
     def assertValueShape(self, value, s, f, *args, **kwargs):
-        """Makes sure a given call produces a given value and shape.
+        r'''Makes sure a given call produces a given value and shape.
 
         It is redundant to specify both, but it makes it clear I'm asking for
         what I think I'm asking. The value check can be skipped by passing None.
 
-        """
+        '''
         res = f(*args, **kwargs)
         self.assertListEqual(res.shape, s)
         if value is not None:
             self.assertNumpyAlmostEqual(res, value)
 
     def test_broadcasting(self):
-        """Checking broadcasting rules."""
+        r'''Checking broadcasting rules.'''
         @nps.broadcast_define( ('n',), ('n',) )
         def f1(a, b):
-            """Basic inner product."""
+            r'''Basic inner product.'''
             return a.dot(b)
 
         self.assertValueShape( np.array(5),                (),     f1, arr(3),     arr(3))
@@ -159,7 +159,7 @@ class TestNumpysane(unittest.TestCase):
 
 
     def test_concatenation(self):
-        """Checking the various concatenation functions."""
+        r'''Checking the various concatenation functions.'''
 
         # axes must be negative
         self.assertError( nps.glue, arr(2,3), arr(2,3), axis=0 )
