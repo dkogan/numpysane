@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 import numpysane as nps
-
+from functools import reduce
 
 def arr(*shape):
     r'''Return an arange() array of the given shape.'''
