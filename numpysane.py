@@ -148,10 +148,10 @@ In short:
 More involved example: A function with input prototype ( (3,), ('n',3), ('n',),
 ('m',) ) given inputs of shape
 
-- (1,5,    3)
-- (2,1,  8,3)
-- (        8)
-- (  5,    9)
+    (1,5,    3)
+    (2,1,  8,3)
+    (        8)
+    (  5,    9)
 
 will return an output array of shape (2,5, ...), where ... is the shape of each
 output slice. Note again that the prototype dictates the TRAILING shape of the
