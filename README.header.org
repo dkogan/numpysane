@@ -1,0 +1,3 @@
+* NAME
+numpysane: more-reasonable core functionality for numpy
+

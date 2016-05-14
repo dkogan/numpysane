@@ -1,0 +1,22 @@
+* COMPATIBILITY
+
+Python2 and python3 should are both supported. Please report a bug if either one
+doesn't work.
+
+* REPOSITORY
+
+https://github.com/dkogan/numpysane
+
+* AUTHOR
+
+Dima Kogan <dima@secretsauce.net>
+
+* LICENSE AND COPYRIGHT
+
+Copyright 2016 Dima Kogan.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License (version 3 or higher) as
+published by the Free Software Foundation
+
+See https://www.gnu.org/licenses/lgpl.html
