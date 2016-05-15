@@ -734,9 +734,38 @@ def atleast_dims(x, *dims):
     If the given axes already exist in the given array, the given array itself
     is returned. Otherwise length-1 dimensions are added to the front until all
     the requested dimensions exist. Only <0 out-bounds axes are allowed to keep
-    the last dimension anchored
+    the last dimension anchored.
+
+    If new dimensions need to be added at the front, any axes>=0 that the user
+    had become offset by some amount. If it is desired to compensate for this
+    offset, then instead of passing the axes as separate arguments, pass in a
+    list of the axes. This list will be modified to offset the axes>=0
+    appropriately. Ideally, you only pass in axes<0, and this does not apply at
+    all. Example: Let's say you have an array x of shape (2,3,4). If you call
+    atleast_dims(x, 0, -5), then the new array has shape (1,1,2,3,4) to get an
+    axis=-5, but the axis 0 we were referring to had length 2, but now it's a
+    different axis of length 1. Instead you can:
+
+        >>> x.shape
+        (2, 3, 4)
+
+        >>> dims=[0,-5]
+
+        >>> nps.atleast_dims(x, dims).shape
+        (1, 1, 2, 3, 4)
+
+        >>> dims
+        [2, -5]
+
+    Note that the dims array was changed, so that the original axis=0 becomes
+    known as axis=2. Again, if you pass in only axis<0, then you don't need to
+    care about this
 
     '''
+
+    if len(dims) == 1 and type(dims[0]) is list:
+        dims = dims[0]
+
     if max(dims) >= x.ndim:
         raise NumpysaneError("Axis {} out of bounds because x.ndim={}.\n"
                              "To keep the last dimension anchored, "
@@ -745,25 +774,35 @@ def atleast_dims(x, *dims):
     need_ndim = -min(d if d<0 else -1 for d in dims)
     if x.ndim >= need_ndim:
         return x
-    return x[ (np.newaxis,)*(need_ndim-x.ndim) + (_colon,)*x.ndim ]
+    num_new_axes = need_ndim-x.ndim
+
+    # apply an offset to any axes that need it
+    if type(dims) is list:
+        dims[:] = [ d+num_new_axes if d >= 0 else d for d in dims ]
+
+    return x[ (np.newaxis,)*(num_new_axes) + (_colon,)*x.ndim ]
 
 def mv(x, axis_from, axis_to):
     r'''Moves a given axis to a new position. Same as numpy.moveaxis().
 
-    New length-1 dimensions are added at the front, as required.
+    New length-1 dimensions are added at the front, as required, and any axes>=0
+    that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
-    x = atleast_dims(x, axis_from, axis_to)
-    return np.moveaxis( x, axis_from, axis_to )
+    axes = [axis_from, axis_to]
+    x = atleast_dims(x, axes)
+    return np.moveaxis( x, *axes )
 
 def xchg(x, axis_a, axis_b):
     r'''Exchanges the positions of the two given axes. Same as numpy.swapaxes()
 
-    New length-1 dimensions are added at the front, as required.
+    New length-1 dimensions are added at the front, as required, and any axes>=0
+    that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
-    x = atleast_dims(x, axis_a, axis_b)
-    return np.swapaxes( x, axis_a, axis_b )
+    axes = [axis_a, axis_b]
+    x = atleast_dims(x, axes)
+    return np.swapaxes( x, *axes )
 
 def transpose(x):
     r'''Reverses the order of the last two dimensions.
@@ -773,7 +812,8 @@ def transpose(x):
     array as an n-2 dimensional object containing 2D matrices. As usual, the
     last two dimensions contain the matrix.
 
-    New length-1 dimensions are added at the front, as required.
+    New length-1 dimensions are added at the front, as required, and any axes>=0
+    that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
     return xchg( atleast_dims(x, -2), -1, -2)
@@ -798,10 +838,14 @@ def reorder(x, *dims):
     r'''Reorders the dimensions of an array.
 
     This is very similar to numpy.transpose(), but handles out-of-bounds
-    dimensions much better
+    dimensions much better.
+
+    New length-1 dimensions are added at the front, as required, and any axes>=0
+    that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
-    x = atleast_dims(x, *dims)
+    dims = list(dims)
+    x = atleast_dims(x, dims)
     return np.transpose(x, dims)
 
 def broadcast_define(*prototype):

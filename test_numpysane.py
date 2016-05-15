@@ -238,10 +238,12 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (3,4,2),     nps.mv,           arr(2,3,4), -3, -1 )
         self.assertValueShape( None, (3,2,4),     nps.mv,           arr(2,3,4), -3,  1 )
         self.assertValueShape( None, (2,1,1,3,4), nps.mv,           arr(2,3,4), -3, -5 )
+        self.assertValueShape( None, (2,1,1,3,4), nps.mv,           arr(2,3,4),  0, -5 )
 
         self.assertValueShape( None, (4,3,2),     nps.xchg,         arr(2,3,4), -3, -1 )
         self.assertValueShape( None, (3,2,4),     nps.xchg,         arr(2,3,4), -3,  1 )
         self.assertValueShape( None, (2,1,1,3,4), nps.xchg,         arr(2,3,4), -3, -5 )
+        self.assertValueShape( None, (2,1,1,3,4), nps.xchg,         arr(2,3,4),  0, -5 )
 
         self.assertValueShape( None, (2,4,3),     nps.transpose,    arr(2,3,4) )
         self.assertValueShape( None, (4,3),       nps.transpose,    arr(3,4) )
@@ -254,8 +256,13 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (2,1,3,4),   nps.dummy,        arr(2,3,4), -3 )
         self.assertValueShape( None, (1,2,3,4),   nps.dummy,        arr(2,3,4), -4 )
         self.assertValueShape( None, (1,1,2,3,4), nps.dummy,        arr(2,3,4), -5 )
-        self.assertValueShape( None, (2,3,1,4)  , nps.dummy,        arr(2,3,4),  2 )
+        self.assertValueShape( None, (2,3,1,4),   nps.dummy,        arr(2,3,4),  2 )
         self.assertError     (                    nps.dummy,        arr(2,3,4),  3 )
+
+        self.assertValueShape( None, (2,4,3),     nps.reorder,      arr(2,3,4),  0, -1, 1 )
+        self.assertValueShape( None, (3,4,2),     nps.reorder,      arr(2,3,4),  -2, -1, 0 )
+        self.assertValueShape( None, (1,3,1,4,2), nps.reorder,      arr(2,3,4),  -4, -2, -5, -1, 0 )
+        self.assertError     (                    nps.reorder,      arr(2,3,4),  -4, -2, -5, -1, 0, 5 )
 
 
 if __name__ == '__main__':
