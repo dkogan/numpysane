@@ -188,19 +188,27 @@ In addition to this basic broadcasting support, I'm planning the following:
 *** Problem
 There are some core numpy functions whose behavior is very confusing (at least
 to me) and full of special cases, that make it even more difficult to know
-what's going on. A prime example (but not the only one) is the array
-concatenation routines. Numpy has a number of functions to do this, each being
-strange and confusing. In the below examples, I use a function "arr" that
-returns a numpy array of with given dimensions:
+what's going on. In the following examples, I use a function "arr" that returns
+a numpy array of with given dimensions:
 
-    >>> def arr(*shape): return np.zeros(shape)
+    >>> def arr(*shape):
+    ...     product = reduce( lambda x,y: x*y, shape)
+    ...     return np.arange(product).reshape(*shape)
+
+    >>> arr(1,2,3)
+    array([[[0, 1, 2],
+            [3, 4, 5]]])
 
     >>> arr(1,2,3).shape
     (1, 2, 3)
 
-Existing concatenation functions:
+The following sections are an incomplete list of the strange functionality.
 
-**** hstack()
+**** Concatenation
+A prime example of the weirdness is the array concatenation routines. Numpy has
+a number of functions to do this, each being strange and confusing.
+
+***** hstack()
 hstack() performs a "horizontal" concatenation. When numpy prints an array, this
 is the last dimension (remember, the most significant dimensions in numpy are at
 the end). So one would expect that this function concatenates arrays along this
@@ -239,7 +247,7 @@ dimension is used. This is 100% wrong in a system where the most significant
 dimension is the last one, unless you assume that everyone has only 2D arrays,
 where the last dimension and the second dimension are the same.
 
-**** vstack()
+***** vstack()
 Similarly, vstack() performs a "vertical" concatenation. When numpy prints an
 array, this is the second-to-last dimension (remember, the most significant
 dimensions in numpy are at the end). So one would expect that this function
@@ -276,7 +284,7 @@ Similarly to hstack(), vstack() concatenates along the first dimension, which is
 "vertical" only for 2D arrays, but for no others. And similarly to hstack(), the
 1D case is special-cased to work properly.
 
-**** dstack()
+***** dstack()
 I'll skip the detailed description, since this is similar to hstack() and
 vstack(). The intent was to concatenate across the third-to-last dimension, but
 the implementation takes dimension 2 instead. This is wrong, as before. And I
@@ -284,7 +292,7 @@ find it strange that these 3 functions even exist, since they are all
 special-cases: the concatenation should be an argument, and at most the edge
 special case (hstack()) should exist. This brings us to the next function:
 
-**** concatenate()
+***** concatenate()
 This is a more general function, and unlike hstack(), vstack() and dstack(), it
 takes as input a list of arrays AND the concatenation dimension. It accepts
 negative concatenation dimensions to allow us to count from the end, so things
@@ -327,7 +335,7 @@ A legitimate use case that violates these conditions: I have an object that
 contains N 3d vectors, and I want to add another 3d vector to it. This is
 essentially the first example above.
 
-**** stack()
+***** stack()
 The name makes it sound exactly like concatenate(), and it takes the same
 arguments, but it is very different. stack() requires that all inputs have
 EXACTLY the same shape. It then concatenates all the inputs along a new
@@ -335,30 +343,93 @@ dimension, and places that dimension in the location given by the 'axis' input.
 If this is the exact type of concatenation you want, this function works fine.
 But it's one of many things a user may want to do.
 
+**** inner() and dot()
+Another arbitrary example of a strange API is np.dot() and np.inner(). In a
+real-valued n-dimensional Euclidean space, a "dot product" is just another name
+for an "inner product". Numpy disagrees.
+
+It looks like np.dot() is matrix multiplication, with some wonky behaviors when
+given higher-dimension objects, and with some special-case behaviors for
+1-dimensional and 0-dimensional objects:
+
+    >>> np.dot( arr(4,5,2,3), arr(3,5)).shape
+    (4, 5, 2, 5) <--- expected result for a broadcasted matrix multiplication
+
+    >>> np.dot( arr(3,5), arr(4,5,2,3)).shape
+    [exception] <--- np.dot() is not commutative.
+                     Expected for matrix multiplication, but not a dot product
+
+    >>> np.dot( arr(4,5,2,3), arr(1,3,5)).shape
+    (4, 5, 2, 1, 5) <--- don't know where this came from at all
+
+    >>> np.dot( arr(4,5,2,3), arr(3)).shape
+    (4, 5, 2) <--- 1D special case. Makes sense
+
+    >>> np.dot( arr(4,5,2,3), 3).shape
+    (4, 5, 2, 3) <--- 0D special case. Makes sense
+
+It looks like np.inner() is some sort of quasi-broadcastable inner product, also
+with some funny dimensioning rules. In many cases it looks like np.dot(a,b) is
+the same as np.inner(a, transpose(b)) where transpose() swaps the last two
+dimensions:
+
+
+    >>> np.inner( arr(4,5,2,3), arr(5,3)).shape
+    (4, 5, 2, 5) <--- All the length-3 inner products collected into a shape
+                      with not-quite-broadcasting rules
+
+    >>> np.inner( arr(5,3), arr(4,5,2,3)).shape
+    (5, 4, 5, 2) <--- np.inner() is not commutative. Unexpected
+                      for an inner product
+
+    >>> np.inner( arr(4,5,2,3), arr(1,5,3)).shape
+    (4, 5, 2, 1, 5) <--- No idea
+
+    >>> np.inner( arr(4,5,2,3), arr(3)).shape
+    (4, 5, 2) <--- 1D special case. Makes sense
+
+    >>> np.inner( arr(4,5,2,3), 3).shape
+    (4, 5, 2, 3) <--- 0D special case. Makes sense
+
+**** atleast_xd()
+Numpy has 3 special-case functions atleast_1d(), atleast_2d() and atleast_3d().
+For 4d, you need to do something else. As expected, these do surprising things:
+
+    >>> np.atleast_3d( arr(3)).shape
+    (1, 3, 1)
+
+I don't know when this is what you want, so we move on.
+
+
 *** Solution
-This module introduces new functions to concatenate arrays in various ways that
-(I think) are more intuitive and more reasonable. They do not refer to anything
-being "horizontal" or "vertical", nor do they talk about "rows" or "columns".
-These concepts simply don't apply to a generic N-dimensional system.
-Furthermore, these functions come directly from PDL, and have the same names and
-semantics.
+This module introduces new functions that can be used for this core
+functionality instead of the builtin numpy functions. These new functions work
+in ways that (I think) are more intuitive and more reasonable. They do not refer
+to anything being "horizontal" or "vertical", nor do they talk about "rows" or
+"columns"; these concepts simply don't apply in a generic N-dimensional system.
+These functions are very explicit about the dimensionality of the
+inputs/outputs, and fit well into a broadcasting-aware system. Furthermore, the
+names and semantics of these functions come directly from PDL, which is more
+consistent in this area.
 
-These functions assume that broadcasting is an important concept in the system,
-so all dimensions are counted from the most significant dimension: the last
-dimension in numpy. This means that only negative dimension indices are
-accepted.
+Since these functions assume that broadcasting is an important concept in the
+system, all dimensions are counted from the most significant dimension: the last
+dimension in numpy. This means that where an axis index is specified, only
+negative dimension indices are accepted.
 
-Example for further justification: an array containing N 3D vectors would have
-shape (N,3). Another array containing a single 3D vector would have shape (3).
-Counting the dimensions from the end, each vector is indexed in dimension -1.
-However, counting from the front the vector is indexed in dimension 0 or 1,
-depending on which of the two arrays we're looking at. If we want to add the
-single vector to the array containing the N vectors, and we mistakenly try to
-concatenate along the first dimension, it would fail if N != 3. But if we're
-unlucky, and N=3, then we'd get a nonsensical output array of shape (3,4). Why
-would an array of N 3D vectors have shape (N,3) and not (3,N)? Because if we
-apply python iteration to it, we'd expect to get N iterates of arrays with shape
-(3,) each, and numpy iterates from the first dimension:
+Example for further justification:
+
+An array containing N 3D vectors would have shape (N,3). Another array
+containing a single 3D vector would have shape (3). Counting the dimensions from
+the end, each vector is indexed in dimension -1. However, counting from the
+front the vector is indexed in dimension 0 or 1, depending on which of the two
+arrays we're looking at. If we want to add the single vector to the array
+containing the N vectors, and we mistakenly try to concatenate along the first
+dimension, it would fail if N != 3. But if we're unlucky, and N=3, then we'd get
+a nonsensical output array of shape (3,4). Why would an array of N 3D vectors
+have shape (N,3) and not (3,N)? Because if we apply python iteration to it, we'd
+expect to get N iterates of arrays with shape (3,) each, and numpy iterates from
+the first dimension:
 
     >>> a = np.arange(2*3).reshape(2,3)
 
@@ -369,12 +440,63 @@ apply python iteration to it, we'd expect to get N iterates of arrays with shape
     >>> [x for x in a]
     [array([0, 1, 2]), array([3, 4, 5])]
 
-New concatenation, dimension-manipulation functions this module provides
-(documented fully in the next section):
+New functions this module provides (documented fully in the next section):
 
-- glue: concatenate a given list of arrays along the given axis
-- cat:  concatenate a given list of arrays along a new least-significant
-  (leading) axis
+**** glue
+Concatenates arrays along a given axis. Implicit length-1 dimensions are added
+at the start as needed. Non-implicit-length-1 dimensions other than the glueing
+axis must match exactly. PDL duplicates data where necessary, so it accepts
+broadcast-friendly mismatches in other dimensions. numpysane.glue() does not do
+this.
+
+Example:
+
+PDL::glue() is permissive, and duplicates data where necessary:
+
+    pdl> p sequence(3,2)
+    [
+     [0 1 2]
+     [3 4 5]
+    ]
+
+    pdl> p sequence(3)
+    [0 1 2]
+
+    pdl> p PDL::glue( 0, sequence(3,2), sequence(3) )
+    [
+     [0 1 2 0 1 2]
+     [3 4 5 0 1 2]
+    ]
+
+numpysane.glue() does not allow this:
+
+    >>> nps.glue( arr(2,3), arr(3), axis=-1)
+    [exception]
+
+**** cat
+Concatenate a given list of arrays along a new least-significant (leading) axis.
+Again, non-leading implicit dimensions must match, and no data duplication
+occurs.
+
+**** append
+Concatenates arrays along the most-significant dimension. nps.append(arrays) is
+identical to nps.glue(arrays, axis=-1).
+
+**** clump
+Reshapes the array by grouping together the n most significant dimensions, where n is given. So for instance, if
+
+**** mv
+**** xchg
+**** reorder
+
+**** transpose
+
+**** matmult
+**** inner
+**** outer
+
+split
+rotate
 
 '''
 
