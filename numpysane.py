@@ -379,6 +379,7 @@ New concatenation, dimension-manipulation functions this module provides
 '''
 
 import numpy as np
+from functools import reduce
 
 # object needed for fancy slices. m[:] is exactly the same as
 # m[_colon], but '_colon' can be manipulated in ways that ':' can't
@@ -583,6 +584,93 @@ def cat(*args):
     return glue(*args) # axis is unspecified
 
 
+def clump(x, **kwargs):
+    r'''Groups the given n most significant dimensions together.
+
+    Synopsis:
+
+        >>> nps.clump( arr(2,3,4), n=2).shape
+        (2, 12)
+    '''
+    n = kwargs.get('n')
+    if n is None:
+        raise NumpysaneError("clump() requires a dimension count in the 'n' kwarg")
+    if n < 0:
+        raise NumpysaneError("clump() requires n > 0")
+    if n <= 1:
+        return x
+
+    if x.ndim < n:
+        n = x.ndim
+
+    s = list(x.shape[:-n]) + [ reduce( lambda a,b: a*b, x.shape[-n:]) ]
+    return x.reshape(s)
+
+def atleast_dims(x, *dims):
+    r'''Returns an array with extra length-1 dimensions to contain all given axes.
+
+    If the given axes already exist in the given array, the given array itself
+    is returned. Otherwise length-1 dimensions are added to the front until all
+    the requested dimensions exist. Only <0 out-bounds axes are allowed to keep
+    the last dimension anchored
+
+    '''
+    if max(dims) >= x.ndim:
+        raise NumpysaneError("Axis {} out of bounds because x.ndim={}.\n"
+                             "To keep the last dimension anchored, "
+                             "only <0 out-of-bounds axes are allowed".format(max(dims), x.ndim))
+
+    need_ndim = -min(d if d<0 else -1 for d in dims)
+    if x.ndim >= need_ndim:
+        return x
+    return x[ (np.newaxis,)*(need_ndim-x.ndim) + (_colon,)*x.ndim ]
+
+def mv(x, axis_from, axis_to):
+    r'''Moves a given axis to a new position. Same as numpy.moveaxis().
+
+    New length-1 dimensions are added at the front, as required.
+
+    '''
+    x = atleast_dims(x, axis_from, axis_to)
+    return np.moveaxis( x, axis_from, axis_to )
+
+def xchg(x, axis_a, axis_b):
+    r'''Exchanges the positions of the two given axes. Same as numpy.swapaxes()
+
+    New length-1 dimensions are added at the front, as required.
+
+    '''
+    x = atleast_dims(x, axis_a, axis_b)
+    return np.swapaxes( x, axis_a, axis_b )
+
+def transpose(x):
+    r'''Reverses the order of the last two dimensions.
+
+    A "matrix" is generally seen as a 2D array that we can transpose by looking
+    at the 2 dimensions in the opposite order. Here we treat an n-dimensional
+    array as an n-2 dimensional object containing 2D matrices. As usual, the
+    last two dimensions contain the matrix.
+
+    New length-1 dimensions are added at the front, as required.
+
+    '''
+    return xchg( atleast_dims(x, -2), -1, -2)
+
+def dummy(x, axis=None):
+    r'''Adds a single length-1 dimension at the given position.
+
+    This is very similar to numpy.expand_dims(), but handles out-of-bounds
+    dimensions much better
+
+    '''
+    need_ndim = axis+1 if axis >= 0 else -axis
+    if x.ndim >= need_ndim:
+        # referring to an axis that already exists. expand_dims() thus works
+        return np.expand_dims(x, axis)
+
+    # referring to a non-existing axis. I simply add sufficient new axes, and
+    # I'm done
+    return atleast_dims(x, axis)
 
 def broadcast_define(*prototype):
     r'''Vectorizes an arbitrary function, expecting input as in the given prototype.

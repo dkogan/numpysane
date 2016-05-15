@@ -8,6 +8,8 @@ from functools import reduce
 
 def arr(*shape):
     r'''Return an arange() array of the given shape.'''
+    if len(shape) == 0:
+        return np.array(3)
     product = reduce( lambda x,y: x*y, shape)
     return np.arange(product).reshape(*shape)
 
@@ -156,8 +158,6 @@ class TestNumpysane(unittest.TestCase):
                           arr(      5*n),
                           arr(1,    m));
 
-
-
     def test_concatenation(self):
         r'''Checking the various concatenation functions.'''
 
@@ -204,6 +204,58 @@ class TestNumpysane(unittest.TestCase):
         self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-3 )
         self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-4 )
         self.assertError(                       nps.cat,  arr(1,3), arr(2,3) )
+
+    def test_dimension_manipulation(self):
+        r'''Checking the various functions that manipulate dimensions.'''
+
+        self.assertError     (                    nps.clump,        arr(2,3,4), n=-1 )
+        self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=0 )
+        self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=1 )
+        self.assertValueShape( None, (2,12),      nps.clump,        arr(2,3,4), n=2 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=3 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=4 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=5 )
+
+        self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -1, 1 )
+        self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -2, 1 )
+        self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -3, 1 )
+        self.assertValueShape( None, (1,2,3,4),   nps.atleast_dims, arr(2,3,4), -4, 1 )
+        self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -2, 0 )
+        self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -2, 1 )
+        self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -2, 2 )
+        self.assertError     (                    nps.atleast_dims, arr(2,3,4), -2, 3 )
+
+        self.assertValueShape( None, (3,),        nps.atleast_dims, arr(3), 0 )
+        self.assertError     (                    nps.atleast_dims, arr(3), 1 )
+        self.assertValueShape( None, (3,),        nps.atleast_dims, arr(3), -1 )
+        self.assertValueShape( None, (1,3,),      nps.atleast_dims, arr(3), -2 )
+
+        self.assertError     (                    nps.atleast_dims, arr(), 0 )
+        self.assertError     (                    nps.atleast_dims, arr(), 1 )
+        self.assertValueShape( None, (1,),        nps.atleast_dims, arr(), -1 )
+        self.assertValueShape( None, (1,1),       nps.atleast_dims, arr(), -2 )
+
+        self.assertValueShape( None, (3,4,2),     nps.mv,           arr(2,3,4), -3, -1 )
+        self.assertValueShape( None, (3,2,4),     nps.mv,           arr(2,3,4), -3,  1 )
+        self.assertValueShape( None, (2,1,1,3,4), nps.mv,           arr(2,3,4), -3, -5 )
+
+        self.assertValueShape( None, (4,3,2),     nps.xchg,         arr(2,3,4), -3, -1 )
+        self.assertValueShape( None, (3,2,4),     nps.xchg,         arr(2,3,4), -3,  1 )
+        self.assertValueShape( None, (2,1,1,3,4), nps.xchg,         arr(2,3,4), -3, -5 )
+
+        self.assertValueShape( None, (2,4,3),     nps.transpose,    arr(2,3,4) )
+        self.assertValueShape( None, (4,3),       nps.transpose,    arr(3,4) )
+        self.assertValueShape( None, (4,1),       nps.transpose,    arr(4) )
+
+        self.assertValueShape( None, (1,2,3,4),   nps.dummy,        arr(2,3,4),  0 )
+        self.assertValueShape( None, (2,1,3,4),   nps.dummy,        arr(2,3,4),  1 )
+        self.assertValueShape( None, (2,3,4,1),   nps.dummy,        arr(2,3,4), -1 )
+        self.assertValueShape( None, (2,3,1,4),   nps.dummy,        arr(2,3,4), -2 )
+        self.assertValueShape( None, (2,1,3,4),   nps.dummy,        arr(2,3,4), -3 )
+        self.assertValueShape( None, (1,2,3,4),   nps.dummy,        arr(2,3,4), -4 )
+        self.assertValueShape( None, (1,1,2,3,4), nps.dummy,        arr(2,3,4), -5 )
+        self.assertValueShape( None, (2,3,1,4)  , nps.dummy,        arr(2,3,4),  2 )
+        self.assertError     (                    nps.dummy,        arr(2,3,4),  3 )
 
 
 if __name__ == '__main__':
