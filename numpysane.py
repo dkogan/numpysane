@@ -512,6 +512,258 @@ class NumpysaneError(Exception):
     def __init__(self, err): self.err = err
     def __str__(self):       return self.err
 
+
+def broadcast_define(*prototype):
+    r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> @nps.broadcast_define( ('n',), ('n',) )
+        ... def inner_product(a, b):
+        ...     return a.dot(b)
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
+
+        >>> inner_product(a,b)
+        array([ 305, 1250])
+
+
+    The prototype defines the dimensionality of the inputs. In the basic inner
+    product example above, the input is two 1D n-dimensional vectors. In
+    particular, the 'n' is the same for the two inputs. This function is
+    intended to be used as a decorator, applied to a function defining the
+    operation to be vectorized. Each element of the prototype list refers to
+    each input, in order. In turn, each prototype element is a list that
+    describes the shape of that input. Each of these shape descriptors can be
+    any of
+
+    - a positive integer, indicating an input dimension of exactly that length
+    - a string, indicating an arbitrary, but internally consistent dimension
+
+    The normal numpy broadcasting rules (as described elsewhere) apply. In
+    summary:
+
+    - Dimensions are aligned at the end of the shape list, and must match the
+      prototype
+
+    - Extra dimensions left over at the front must be consistent for all the
+      input arguments, meaning:
+
+      - All dimensions !=1 must be identical
+      - Dimensions that are =1 are implicitly extended to the lengths implied by
+        other arguments
+
+      - The output has a shape where
+
+        - The trailing dimensions are whatever the function being broadcasted
+          outputs
+        - The leading dimensions come from the extra dimensions in the inputs
+
+
+    Let's look at a more involved example. Let's say we have an function that
+    takes a set of points in R^2 and a single center point in R^2, and finds a
+    best-fit least-squares line that passes through the given center point. Let
+    it return a 3D vector containing the slope, y-intercept and the RMS residual
+    of the fit. This broadcasting-enabled function can be defined like this:
+
+        import numpy as np
+        import numpysane as nps
+
+        @nps.broadcast_define( ('n',2), (2,) )
+        def fit(xy, c):
+            # line-through-origin-model: y = m*x
+            # E = sum( (m*x - y)**2 )
+            # dE/dm = 2*sum( (m*x-y)*x ) = 0
+            # ----> m = sum(x*y)/sum(x*x)
+            x,y = (xy - c).transpose()
+            m = np.sum(x*y) / np.sum(x*x)
+            err = m*x - y
+            err **= 2
+            rms = np.sqrt(err.mean())
+            # I return m,b because I need to translate the line back
+            b = c[1] - m*c[0]
+
+            return np.array((m,b,rms))
+
+    And I can use broadcasting to compute a number of these fits at once. Let's
+    say I want to compute 4 different fits of 5 points each. I can do this:
+
+        n = 5
+        m = 4
+        c = np.array((20,300))
+        xy = np.arange(m*n*2, dtype=np.float64).reshape(m,n,2) + c
+        xy += np.random.rand(*xy.shape)*5
+
+        res = fit( xy, c )
+        mb  = res[..., 0:2]
+        rms = res[..., 2]
+        print "RMS residuals: {}".format(rms)
+
+    Here I had 4 different sets of points, but a single center point c. If I
+    wanted 4 different center points, I could pass c as an array of shape (4,2).
+    I can use broadcasting to plot all the results (the points and the fitted
+    lines):
+
+        import gnuplotlib as gp
+
+        gp.plot( xy[..., 0], xy[..., 1], _with='linespoints',
+                 equation=['{}*x + {}'.format(mb_single[0],
+                                              mb_single[1]) for mb_single in mb],
+                 unset='grid', square=1)
+
+    This function is analogous to thread_define() in PDL.
+
+    '''
+    def inner_decorator_for_some_reason(func):
+        def range_rev(n):
+            r'''Returns a range from -1 to -n.
+
+            Useful to index variable-sized lists while aligning their ends.'''
+            return [-i-1 for i in range(n)]
+
+        def parse_dims( name_arg,
+                        shape_prototype, shape_arg, dims_extra, dims_named ):
+            # first, I make sure the input is at least as dimension-ful as the
+            # prototype. I make this a hard requirement. Even if the missing
+            # dimensions have length 1, it is likely a mistake on the part of the
+            # user
+            if len(shape_prototype) > len(shape_arg):
+                raise NumpysaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
+
+            # Loop through the dimensions. Set the dimensionality of any new named
+            # argument to whatever the current argument has. Any already-known
+            # argument must match
+            for i_dim in range_rev(len(shape_prototype)):
+                if type(shape_prototype[i_dim]) is not int and \
+                   shape_prototype[i_dim] not in dims_named:
+                    dims_named[shape_prototype[i_dim]] = shape_arg[i_dim]
+
+                # The prototype dimension (named or otherwise) now has a numeric
+                # value. Make sure it matches what I have
+                dim_prototype = dims_named[shape_prototype[i_dim]] \
+                                if type(shape_prototype[i_dim]) is not int \
+                                   else shape_prototype[i_dim]
+
+                if dim_prototype != shape_arg[i_dim]:
+                    raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
+                        format(name_arg,
+                               shape_prototype[i_dim],
+                               dim_prototype,
+                               shape_arg[i_dim]))
+
+            # I now know that this argument matches the prototype. I look at the
+            # extra dimensions to broadcast, and make sure they match with the
+            # dimensions I saw previously
+            ndims_extra_here = len(shape_arg) - len(shape_prototype)
+
+            # This argument has ndims_extra_here dimensions to broadcast. The
+            # current shape to broadcast must be at least as large, and must match
+            if ndims_extra_here > len(dims_extra):
+                dims_extra[:0] = [1] * (ndims_extra_here - len(dims_extra))
+            for i_dim in range_rev(ndims_extra_here):
+                dim_arg = shape_arg[i_dim - len(shape_prototype)]
+                if dim_arg != 1:
+                    if dims_extra[i_dim] == 1:
+                        dims_extra[i_dim] = dim_arg
+                    elif dims_extra[i_dim] != dim_arg:
+                        raise NumpysaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
+                            format(name_arg,
+                                   shape_prototype,
+                                   i_dim,
+                                   dims_extra[i_dim],
+                                   dim_arg))
+
+
+        # args broadcast, kwargs do not. All auxillary data should go into the
+        # kwargs
+        def broadcast_loop(*args, **kwargs):
+
+            if len(prototype) != len(args):
+                raise NumpysaneError("Mismatched number of input arguments. Wanted {} but got {}". \
+                                      format(len(prototype), len(args)))
+
+            dims_extra = [] # extra dimensions to broadcast through
+            dims_named = {} # named dimension lengths
+            for i_arg in range(len(args)):
+                parse_dims( i_arg,
+                            prototype[i_arg], args[i_arg].shape,
+                            dims_extra, dims_named )
+
+
+            # I checked all the dimensions and aligned everything. I have my
+            # to-broadcast dimension counts. Iterate through all the broadcasting
+            # output, and gather the results
+
+            def accum_dim( i_dims_extra, idx_slices, idx_extra ):
+                r'''Recursive function to iterate through all the broadcasting slices.
+
+                Each recursive call loops through a single dimension. I can do
+                some of this with itertools.product(), and maybe using that
+                would be a better choice.
+
+                i_dims_extra is an integer indexing the current extra dimension
+                we're looking at.
+
+                idx_slices is an array of indices for each argument that is
+                filled in by this function. This may vary for each argument
+                because of varying prototypes and varying broadcasting shapes.
+
+                '''
+
+                if i_dims_extra < len(dims_extra):
+                    # more dimensions remaining. recurse
+
+                    # idx_slices contains the indices for each argument.
+                    # Two notes:
+                    #
+                    # 1. Any indices indexing above the first dimension should be
+                    #    omitted
+                    # 2. Indices into a higher dimension of length 1 should be left at 0
+
+                    for dim in range(dims_extra[i_dims_extra]):
+                        for x,p,idx_slice in zip(args,prototype,idx_slices):
+                            x_dim = x.ndim - (len(p) + len(dims_extra) - i_dims_extra)
+                            if x_dim >= 0 and x.shape[x_dim] > 1:
+                                idx_slice[x_dim] = dim
+
+                        idx_extra[i_dims_extra] = dim
+                        accum_dim(i_dims_extra+1, idx_slices, idx_extra)
+                    return
+
+
+                # This is the last dimension. Evaluate this slice.
+                #
+                sliced_args = [ x[idx] for idx,x in zip(idx_slices, args) ]
+                result = func( *sliced_args, **kwargs )
+                if accum_dim.output is None:
+                    accum_dim.output = np.zeros( dims_extra + list(result.shape),
+                                                 dtype = result.dtype)
+                accum_dim.output[idx_extra + [Ellipsis]] = result
+
+
+            accum_dim.output = None
+
+            idx_slices = [[0]*(x.ndim-len(p)) + [_colon]*len(p) for p,x in zip(prototype,args)]
+            accum_dim( 0, idx_slices, [0] * len(dims_extra) )
+            return accum_dim.output
+
+
+        return broadcast_loop
+    return inner_decorator_for_some_reason
+
+
 def glue(*args, **kwargs):
     r'''Concatenates a given list of arrays along the given 'axis' keyword argument.
 
@@ -847,253 +1099,3 @@ def reorder(x, *dims):
     dims = list(dims)
     x = atleast_dims(x, dims)
     return np.transpose(x, dims)
-
-def broadcast_define(*prototype):
-    r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
-
-    Synopsis:
-
-        >>> import numpy as np
-        >>> import numpysane as nps
-
-        >>> @nps.broadcast_define( ('n',), ('n',) )
-        ... def inner_product(a, b):
-        ...     return a.dot(b)
-
-        >>> a = np.arange(6).reshape(2,3)
-        >>> b = a + 100
-
-        >>> a
-        array([[0, 1, 2],
-               [3, 4, 5]])
-
-        >>> b
-        array([[100, 101, 102],
-               [103, 104, 105]])
-
-        >>> inner_product(a,b)
-        array([ 305, 1250])
-
-
-    The prototype defines the dimensionality of the inputs. In the basic inner
-    product example above, the input is two 1D n-dimensional vectors. In
-    particular, the 'n' is the same for the two inputs. This function is
-    intended to be used as a decorator, applied to a function defining the
-    operation to be vectorized. Each element of the prototype list refers to
-    each input, in order. In turn, each prototype element is a list that
-    describes the shape of that input. Each of these shape descriptors can be
-    any of
-
-    - a positive integer, indicating an input dimension of exactly that length
-    - a string, indicating an arbitrary, but internally consistent dimension
-
-    The normal numpy broadcasting rules (as described elsewhere) apply. In
-    summary:
-
-    - Dimensions are aligned at the end of the shape list, and must match the
-      prototype
-
-    - Extra dimensions left over at the front must be consistent for all the
-      input arguments, meaning:
-
-      - All dimensions !=1 must be identical
-      - Dimensions that are =1 are implicitly extended to the lengths implied by
-        other arguments
-
-      - The output has a shape where
-
-        - The trailing dimensions are whatever the function being broadcasted
-          outputs
-        - The leading dimensions come from the extra dimensions in the inputs
-
-
-    Let's look at a more involved example. Let's say we have an function that
-    takes a set of points in R^2 and a single center point in R^2, and finds a
-    best-fit least-squares line that passes through the given center point. Let
-    it return a 3D vector containing the slope, y-intercept and the RMS residual
-    of the fit. This broadcasting-enabled function can be defined like this:
-
-        import numpy as np
-        import numpysane as nps
-
-        @nps.broadcast_define( ('n',2), (2,) )
-        def fit(xy, c):
-            # line-through-origin-model: y = m*x
-            # E = sum( (m*x - y)**2 )
-            # dE/dm = 2*sum( (m*x-y)*x ) = 0
-            # ----> m = sum(x*y)/sum(x*x)
-            x,y = (xy - c).transpose()
-            m = np.sum(x*y) / np.sum(x*x)
-            err = m*x - y
-            err **= 2
-            rms = np.sqrt(err.mean())
-            # I return m,b because I need to translate the line back
-            b = c[1] - m*c[0]
-
-            return np.array((m,b,rms))
-
-    And I can use broadcasting to compute a number of these fits at once. Let's
-    say I want to compute 4 different fits of 5 points each. I can do this:
-
-        n = 5
-        m = 4
-        c = np.array((20,300))
-        xy = np.arange(m*n*2, dtype=np.float64).reshape(m,n,2) + c
-        xy += np.random.rand(*xy.shape)*5
-
-        res = fit( xy, c )
-        mb  = res[..., 0:2]
-        rms = res[..., 2]
-        print "RMS residuals: {}".format(rms)
-
-    Here I had 4 different sets of points, but a single center point c. If I
-    wanted 4 different center points, I could pass c as an array of shape (4,2).
-    I can use broadcasting to plot all the results (the points and the fitted
-    lines):
-
-        import gnuplotlib as gp
-
-        gp.plot( xy[..., 0], xy[..., 1], _with='linespoints',
-                 equation=['{}*x + {}'.format(mb_single[0],
-                                              mb_single[1]) for mb_single in mb],
-                 unset='grid', square=1)
-
-    This function is analogous to thread_define() in PDL.
-
-    '''
-    def inner_decorator_for_some_reason(func):
-        def range_rev(n):
-            r'''Returns a range from -1 to -n.
-
-            Useful to index variable-sized lists while aligning their ends.'''
-            return [-i-1 for i in range(n)]
-
-        def parse_dims( name_arg,
-                        shape_prototype, shape_arg, dims_extra, dims_named ):
-            # first, I make sure the input is at least as dimension-ful as the
-            # prototype. I make this a hard requirement. Even if the missing
-            # dimensions have length 1, it is likely a mistake on the part of the
-            # user
-            if len(shape_prototype) > len(shape_arg):
-                raise NumpysaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
-
-            # Loop through the dimensions. Set the dimensionality of any new named
-            # argument to whatever the current argument has. Any already-known
-            # argument must match
-            for i_dim in range_rev(len(shape_prototype)):
-                if type(shape_prototype[i_dim]) is not int and \
-                   shape_prototype[i_dim] not in dims_named:
-                    dims_named[shape_prototype[i_dim]] = shape_arg[i_dim]
-
-                # The prototype dimension (named or otherwise) now has a numeric
-                # value. Make sure it matches what I have
-                dim_prototype = dims_named[shape_prototype[i_dim]] \
-                                if type(shape_prototype[i_dim]) is not int \
-                                   else shape_prototype[i_dim]
-
-                if dim_prototype != shape_arg[i_dim]:
-                    raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
-                        format(name_arg,
-                               shape_prototype[i_dim],
-                               dim_prototype,
-                               shape_arg[i_dim]))
-
-            # I now know that this argument matches the prototype. I look at the
-            # extra dimensions to broadcast, and make sure they match with the
-            # dimensions I saw previously
-            ndims_extra_here = len(shape_arg) - len(shape_prototype)
-
-            # This argument has ndims_extra_here dimensions to broadcast. The
-            # current shape to broadcast must be at least as large, and must match
-            if ndims_extra_here > len(dims_extra):
-                dims_extra[:0] = [1] * (ndims_extra_here - len(dims_extra))
-            for i_dim in range_rev(ndims_extra_here):
-                dim_arg = shape_arg[i_dim - len(shape_prototype)]
-                if dim_arg != 1:
-                    if dims_extra[i_dim] == 1:
-                        dims_extra[i_dim] = dim_arg
-                    elif dims_extra[i_dim] != dim_arg:
-                        raise NumpysaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
-                            format(name_arg,
-                                   shape_prototype,
-                                   i_dim,
-                                   dims_extra[i_dim],
-                                   dim_arg))
-
-
-        # args broadcast, kwargs do not. All auxillary data should go into the
-        # kwargs
-        def broadcast_loop(*args, **kwargs):
-
-            if len(prototype) != len(args):
-                raise NumpysaneError("Mismatched number of input arguments. Wanted {} but got {}". \
-                                      format(len(prototype), len(args)))
-
-            dims_extra = [] # extra dimensions to broadcast through
-            dims_named = {} # named dimension lengths
-            for i_arg in range(len(args)):
-                parse_dims( i_arg,
-                            prototype[i_arg], args[i_arg].shape,
-                            dims_extra, dims_named )
-
-
-            # I checked all the dimensions and aligned everything. I have my
-            # to-broadcast dimension counts. Iterate through all the broadcasting
-            # output, and gather the results
-
-            def accum_dim( i_dims_extra, idx_slices, idx_extra ):
-                r'''Recursive function to iterate through all the broadcasting slices.
-
-                Each recursive call loops through a single dimension. I can do
-                some of this with itertools.product(), and maybe using that
-                would be a better choice.
-
-                i_dims_extra is an integer indexing the current extra dimension
-                we're looking at.
-
-                idx_slices is an array of indices for each argument that is
-                filled in by this function. This may vary for each argument
-                because of varying prototypes and varying broadcasting shapes.
-
-                '''
-
-                if i_dims_extra < len(dims_extra):
-                    # more dimensions remaining. recurse
-
-                    # idx_slices contains the indices for each argument.
-                    # Two notes:
-                    #
-                    # 1. Any indices indexing above the first dimension should be
-                    #    omitted
-                    # 2. Indices into a higher dimension of length 1 should be left at 0
-
-                    for dim in range(dims_extra[i_dims_extra]):
-                        for x,p,idx_slice in zip(args,prototype,idx_slices):
-                            x_dim = x.ndim - (len(p) + len(dims_extra) - i_dims_extra)
-                            if x_dim >= 0 and x.shape[x_dim] > 1:
-                                idx_slice[x_dim] = dim
-
-                        idx_extra[i_dims_extra] = dim
-                        accum_dim(i_dims_extra+1, idx_slices, idx_extra)
-                    return
-
-
-                # This is the last dimension. Evaluate this slice.
-                #
-                sliced_args = [ x[idx] for idx,x in zip(idx_slices, args) ]
-                result = func( *sliced_args, **kwargs )
-                if accum_dim.output is None:
-                    accum_dim.output = np.zeros( dims_extra + list(result.shape),
-                                                 dtype = result.dtype)
-                accum_dim.output[idx_extra + [Ellipsis]] = result
-
-
-            accum_dim.output = None
-
-            idx_slices = [[0]*(x.ndim-len(p)) + [_colon]*len(p) for p,x in zip(prototype,args)]
-            accum_dim( 0, idx_slices, [0] * len(dims_extra) )
-            return accum_dim.output
-
-
-        return broadcast_loop
-    return inner_decorator_for_some_reason
