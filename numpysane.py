@@ -445,59 +445,47 @@ New functions this module provides (documented fully in the next section):
 **** glue
 Concatenates arrays along a given axis. Implicit length-1 dimensions are added
 at the start as needed. Non-implicit-length-1 dimensions other than the glueing
-axis must match exactly. PDL duplicates data where necessary, so it accepts
-broadcast-friendly mismatches in other dimensions. numpysane.glue() does not do
-this.
-
-Example:
-
-PDL::glue() is permissive, and duplicates data where necessary:
-
-    pdl> p sequence(3,2)
-    [
-     [0 1 2]
-     [3 4 5]
-    ]
-
-    pdl> p sequence(3)
-    [0 1 2]
-
-    pdl> p PDL::glue( 0, sequence(3,2), sequence(3) )
-    [
-     [0 1 2 0 1 2]
-     [3 4 5 0 1 2]
-    ]
-
-numpysane.glue() does not allow this:
-
-    >>> nps.glue( arr(2,3), arr(3), axis=-1)
-    [exception]
+axis must match exactly.
 
 **** cat
 Concatenate a given list of arrays along a new least-significant (leading) axis.
 Again, non-leading implicit dimensions must match, and no data duplication
 occurs.
 
-**** append
-Concatenates arrays along the most-significant dimension. nps.append(arrays) is
-identical to nps.glue(arrays, axis=-1).
-
 **** clump
-Reshapes the array by grouping together the n most significant dimensions, where n is given. So for instance, if
+Reshapes the array by grouping together the n most significant dimensions, where
+n is given. So for instance, if x.shape is (2,3,4) then nps.clump(x,2).shape is
+(2,12)
+
+**** atleast_dims
+Adds length-1 dimensions at the front of an array so that all the given
+dimensions are in-bounds
 
 **** mv
+Moves a dimension from one position to another
+
 **** xchg
-**** reorder
+Exchanges the positions of two dimensions
 
 **** transpose
+Reverses the order of the two most significant dimensions in an array. The whole
+array is seen as being an array of 2D matrices, each matrix living in the 2 most
+significant dimensions. So this definition is very sensical.
+
+**** dummy
+Adds a single length-0 dimension in the given position
+
+**** reorder
+Completely reorders the dimensions in an array
+
+**** inner
+Broadcast-aware inner product.
+
+**** outer
+Broadcast-aware outer product.
 
 **** matmult
-**** inner
-**** outer
-
-split
-rotate
-
+Broadcast-aware matrix multiplication
 '''
 
 import numpy as np
@@ -819,8 +807,25 @@ def glue(*args, **kwargs):
     dimension, pass axis=-2, and so on.
 
     Unlike in PDL, this function refuses to create duplicated data to make the
-    shapes fit. In my experience, this isn't what you want, and can create bugs. For
-    instance:
+    shapes fit. In my experience, this isn't what you want, and can create bugs.
+    For instance, PDL does this:
+
+        pdl> p sequence(3,2)
+        [
+         [0 1 2]
+         [3 4 5]
+        ]
+
+        pdl> p sequence(3)
+        [0 1 2]
+
+        pdl> p PDL::glue( 0, sequence(3,2), sequence(3) )
+        [
+         [0 1 2 0 1 2]
+         [3 4 5 0 1 2]
+        ]
+
+    while numpysane.glue() does this:
 
         >>> import numpy as np
         >>> import numpysane as nps
