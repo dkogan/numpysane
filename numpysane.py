@@ -672,6 +672,16 @@ def dummy(x, axis=None):
     # I'm done
     return atleast_dims(x, axis)
 
+def reorder(x, *dims):
+    r'''Reorders the dimensions of an array.
+
+    This is very similar to numpy.transpose(), but handles out-of-bounds
+    dimensions much better
+
+    '''
+    x = atleast_dims(x, *dims)
+    return np.transpose(x, dims)
+
 def broadcast_define(*prototype):
     r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
 
