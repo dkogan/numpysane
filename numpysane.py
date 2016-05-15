@@ -1099,3 +1099,18 @@ def reorder(x, *dims):
     dims = list(dims)
     x = atleast_dims(x, dims)
     return np.transpose(x, dims)
+
+@broadcast_define( ('n',), ('n',) )
+def inner(a, b):
+    r'''Inner product of two 1-dimensional n-long vectors.'''
+    return np.inner(a,b)
+
+@broadcast_define( ('n',), ('n',) )
+def outer(a, b):
+    r'''Outer product of two 1-dimensional n-long vectors.'''
+    return np.outer(a,b)
+
+@broadcast_define( ('n', 'm'), ('m', 'l') )
+def matmult(a, b):
+    r'''Matrix multiplication'''
+    return np.dot(a,b)

@@ -264,6 +264,43 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (1,3,1,4,2), nps.reorder,      arr(2,3,4),  -4, -2, -5, -1, 0 )
         self.assertError     (                    nps.reorder,      arr(2,3,4),  -4, -2, -5, -1, 0, 5 )
 
+    def test_inner(self):
+        r'''Testing the broadcasted inner product'''
+
+        ref = np.array([[[  30,  255,  730],
+                         [ 180,  780, 1630]],
+
+                        [[ 180,  780, 1630],
+                         [1455, 2430, 3655]],
+
+                        [[ 330, 1305, 2530],
+                         [2730, 4080, 5680]],
+
+                        [[ 480, 1830, 3430],
+                         [4005, 5730, 7705.0]]])
+        self.assertValueShape( ref, (4,2,3), nps.inner, arr(2,3,5), arr(4,1,3,5) )
+
+    def test_outer(self):
+        r'''Testing the broadcasted outer product'''
+        self.assertValueShape( None, (4,2,3,5,5), nps.outer, arr(2,3,5), arr(4,1,3,5) )
+
+    def test_matmult(self):
+        r'''Testing the broadcasted matrix multiplication'''
+        self.assertValueShape( None, (4,2,3,5), nps.matmult, arr(2,3,7), arr(4,1,7,5) )
+
+        ref = np.array([[[[  42,   48,   54],
+                          [ 114,  136,  158]],
+
+                         [[ 114,  120,  126],
+                          [ 378,  400,  422]]],
+
+
+                        [[[ 186,  224,  262],
+                          [ 258,  312,  366]],
+
+                         [[ 642,  680,  718],
+                          [ 906,  960, 1014.0]]]])
+        self.assertValueShape( ref, (2,2,2,3), nps.matmult, arr(2,1,2,4), arr(2,4,3) )
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
