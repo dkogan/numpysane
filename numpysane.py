@@ -504,7 +504,7 @@ def glue(*args, **kwargs):
 
     axis = kwargs.get('axis')
     if axis is not None and axis >= 0:
-        raise NumpysaneError("axis >= 0 makes broadcasting dimensions inconsistent, and is thus not allowed")
+        raise NumpysaneError("axis >= 0 can make broadcasting dimensions inconsistent, and is thus not allowed")
 
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
