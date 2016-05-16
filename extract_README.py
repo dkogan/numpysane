@@ -17,6 +17,14 @@ import inspect
 import re
 import StringIO
 
+def dirnps():
+    r'''Same as dir(nps), but returns only functions, in the definition order'''
+    with open(nps.__file__, 'r') as f:
+        for l in f:
+            m = re.match(r'def +([a-zA-Z0-9_]+)\(', l)
+            if m:
+                yield m.group(1)
+
 with open('README.org', 'w') as f_target_org:
     with open('README', 'w') as f_target:
 
@@ -119,7 +127,7 @@ with open('README.org', 'w') as f_target_org:
 
         write('* INTERFACE\n')
 
-        for func in dir(nps):
+        for func in dirnps():
             if re.match('_', func):
                 continue
 
