@@ -665,14 +665,14 @@ def broadcast_define(*prototype):
             # argument to whatever the current argument has. Any already-known
             # argument must match
             for i_dim in range_rev(len(shape_prototype)):
-                if type(shape_prototype[i_dim]) is not int and \
+                if not isinstance(shape_prototype[i_dim], int) and \
                    shape_prototype[i_dim] not in dims_named:
                     dims_named[shape_prototype[i_dim]] = shape_arg[i_dim]
 
                 # The prototype dimension (named or otherwise) now has a numeric
                 # value. Make sure it matches what I have
                 dim_prototype = dims_named[shape_prototype[i_dim]] \
-                                if type(shape_prototype[i_dim]) is not int \
+                                if not isinstance(shape_prototype[i_dim], int) \
                                    else shape_prototype[i_dim]
 
                 if dim_prototype != shape_arg[i_dim]:
@@ -1127,7 +1127,7 @@ def atleast_dims(x, *dims):
     num_new_axes = need_ndim-x.ndim
 
     # apply an offset to any axes that need it
-    if type(dims) is list:
+    if isinstance(dims, list):
         dims[:] = [ d+num_new_axes if d >= 0 else d for d in dims ]
 
     return x[ (np.newaxis,)*(num_new_axes) + (_colon,)*x.ndim ]
