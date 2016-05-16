@@ -432,13 +432,13 @@ to anything being "horizontal" or "vertical", nor do they talk about "rows" or
 "columns"; these concepts simply don't apply in a generic N-dimensional system.
 These functions are very explicit about the dimensionality of the
 inputs/outputs, and fit well into a broadcasting-aware system. Furthermore, the
-names and semantics of these functions come directly from PDL, which is more
+names and semantics of these new functions come directly from PDL, which is more
 consistent in this area.
 
 Since these functions assume that broadcasting is an important concept in the
-system, all dimensions are counted from the most significant dimension: the last
-dimension in numpy. This means that where an axis index is specified, only
-negative dimension indices are accepted.
+system, the given axis indices should be counted from the most significant
+dimension: the last dimension in numpy. This means that where an axis index is
+specified, negative indices are encouraged. glue() forbids axis>=0 outright.
 
 Example for further justification:
 
