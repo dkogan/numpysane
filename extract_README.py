@@ -19,7 +19,7 @@ import StringIO
 
 def dirnps():
     r'''Same as dir(nps), but returns only functions, in the definition order'''
-    with open(nps.__file__, 'r') as f:
+    with open('numpysane.py', 'r') as f:
         for l in f:
             m = re.match(r'def +([a-zA-Z0-9_]+)\(', l)
             if m:
