@@ -123,7 +123,7 @@ with open('README.org', 'w') as f_target_org:
             write( f_header.read() )
 
         write_orgized(inspect.getdoc(nps))
-        write( '\n\n' )
+        write( '\n' )
 
         write('* INTERFACE\n')
 
@@ -138,7 +138,7 @@ with open('README.org', 'w') as f_target_org:
             if doc:
                 write('** {}()\n'.format(func))
                 write_orgized( doc )
-                write( '\n\n' )
+                write( '\n' )
 
         with open('README.footer.org', 'r') as f_footer:
             write( f_footer.read() )
