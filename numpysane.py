@@ -1079,8 +1079,12 @@ def atleast_dims(x, *dims):
 
     '''
 
-    if len(dims) == 1 and type(dims[0]) is list:
-        dims = dims[0]
+    if any( not isinstance(d, int) for d in dims ):
+        if len(dims) == 1 and isinstance(dims[0], list):
+            dims = dims[0]
+        else:
+            raise NumpysaneError("atleast_dims() takes in axes as integers in separate arguments or\n"
+                                 "as a single modifiable list")
 
     if max(dims) >= x.ndim:
         raise NumpysaneError("Axis {} out of bounds because x.ndim={}.\n"

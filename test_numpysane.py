@@ -235,6 +235,13 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (1,),        nps.atleast_dims, arr(), -1 )
         self.assertValueShape( None, (1,1),       nps.atleast_dims, arr(), -2 )
 
+        l = (-4,1)
+        self.assertError     (                    nps.atleast_dims, arr(2,3,4), l )
+        l = [-4,1]
+        self.assertError     (                    nps.atleast_dims, arr(2,3,4), l, -1 )
+        self.assertValueShape( None, (1,2,3,4),   nps.atleast_dims, arr(2,3,4), l )
+        self.assertListEqual ( l, [-4, 2])
+
         self.assertValueShape( None, (3,4,2),     nps.mv,           arr(2,3,4), -3, -1 )
         self.assertValueShape( None, (3,2,4),     nps.mv,           arr(2,3,4), -3,  1 )
         self.assertValueShape( None, (2,1,1,3,4), nps.mv,           arr(2,3,4), -3, -5 )
