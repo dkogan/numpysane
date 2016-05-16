@@ -503,6 +503,12 @@ Adds a single length-1 dimension at the given position
 **** reorder
 Completely reorders the dimensions in an array
 
+**** dot
+Broadcast-aware non-conjugating dot product. Identical to inner
+
+**** vdot
+Broadcast-aware conjugating dot product
+
 **** inner
 Broadcast-aware inner product.
 
@@ -1017,7 +1023,6 @@ def atleast_dims(x, *dims):
         >>> import numpysane as nps
 
         >>> a = np.arange(6).reshape(2,3)
-
         >>> a
         array([[0, 1, 2],
                [3, 4, 5]])
@@ -1049,33 +1054,58 @@ def atleast_dims(x, *dims):
 
     If the given axes already exist in the given array, the given array itself
     is returned. Otherwise length-1 dimensions are added to the front until all
-    the requested dimensions exist. Only <0 out-bounds axes are allowed to keep
-    the last dimension anchored.
+    the requested dimensions exist. The given axis>=0 dimensions MUST all be
+    in-bounds from the start, otherwise the most-significant axis becomes
+    unaligned; an exception is thrown if this is violated. The given axis<0
+    dimensions that are out-of-bounds result in new dimensions added at the
+    front.
 
-    If new dimensions need to be added at the front, any axes>=0 that the user
-    had become offset by some amount. If it is desired to compensate for this
-    offset, then instead of passing the axes as separate arguments, pass in a
-    list of the axes. This list will be modified to offset the axes>=0
-    appropriately. Ideally, you only pass in axes<0, and this does not apply at
-    all. Example: Let's say you have an array x of shape (2,3,4). If you call
-    atleast_dims(x, 0, -5), then the new array has shape (1,1,2,3,4) to get an
-    axis=-5, but the axis 0 we were referring to had length 2, but now it's a
-    different axis of length 1. Instead you can:
+    If new dimensions need to be added at the front, then any axis>=0 indices
+    become offset. For instance:
 
         >>> x.shape
         (2, 3, 4)
 
-        >>> dims=[0,-5]
+        >>> [x.shape[i] for i in (0,-1)]
+        [2, 4]
 
-        >>> nps.atleast_dims(x, dims).shape
+        >>> x = nps.atleast_dims(x, 0, -1, -5)
+        >>> x.shape
         (1, 1, 2, 3, 4)
 
-        >>> dims
-        [2, -5]
+        >>> [x.shape[i] for i in (0,-1)]
+        [1, 4]
 
-    Note that the dims array was changed, so that the original axis=0 becomes
-    known as axis=2. Again, if you pass in only axis<0, then you don't need to
-    care about this
+    Before the call, axis=0 refers to the length-2 dimension and axis=-1 refers
+    to the length=4 dimension. After the call, axis=-1 refers to the same
+    dimension as before, but axis=0 now refers to a new length=1 dimension. If
+    it is desired to compensate for this offset, then instead of passing the
+    axes as separate arguments, pass in a single list of the axes indices. This
+    list will be modified to offset the axis>=0 appropriately. Ideally, you only
+    pass in axes<0, and this does not apply. Doing this in the above example:
+
+        >>> l
+        [0, -1, -5]
+
+        >>> x.shape
+        (2, 3, 4)
+
+        >>> [x.shape[i] for i in (l[0],l[1])]
+        [2, 4]
+
+        >>> x=nps.atleast_dims(x, l)
+        >>> x.shape
+        (1, 1, 2, 3, 4)
+
+        >>> l
+        [2, -1, -5]
+
+        >>> [x.shape[i] for i in (l[0],l[1])]
+        [2, 4]
+
+    We passed the axis indices in a list, and this list was modified to reflect
+    the new indices: The original axis=0 becomes known as axis=2. Again, if you
+    pass in only axis<0, then you don't need to care about this.
 
     '''
 
@@ -1103,9 +1133,27 @@ def atleast_dims(x, *dims):
     return x[ (np.newaxis,)*(num_new_axes) + (_colon,)*x.ndim ]
 
 def mv(x, axis_from, axis_to):
-    r'''Moves a given axis to a new position. Same as numpy.moveaxis().
+    r'''Moves a given axis to a new position. Similar to numpy.moveaxis().
 
-    New length-1 dimensions are added at the front, as required, and any axes>=0
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(24).reshape(2,3,4)
+        >>> a.shape
+        (2, 3, 4)
+
+        >>> nps.mv( a, -1, 0).shape
+        (4, 2, 3)
+
+        >>> nps.mv( a, -1, -5).shape
+        (4, 1, 1, 2, 3)
+
+        >>> nps.mv( a, 0, -5).shape
+        (2, 1, 1, 3, 4)
+
+    New length-1 dimensions are added at the front, as required, and any axis>=0
     that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
@@ -1114,9 +1162,27 @@ def mv(x, axis_from, axis_to):
     return np.moveaxis( x, *axes )
 
 def xchg(x, axis_a, axis_b):
-    r'''Exchanges the positions of the two given axes. Same as numpy.swapaxes()
+    r'''Exchanges the positions of the two given axes. Similar to numpy.swapaxes()
 
-    New length-1 dimensions are added at the front, as required, and any axes>=0
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(24).reshape(2,3,4)
+        >>> a.shape
+        (2, 3, 4)
+
+        >>> nps.xchg( a, -1, 0).shape
+        (4, 3, 2)
+
+        >>> nps.xchg( a, -1, -5).shape
+        (4, 1, 2, 3, 1)
+
+        >>> nps.xchg( a, 0, -5).shape
+        (2, 1, 1, 3, 4)
+
+    New length-1 dimensions are added at the front, as required, and any axis>=0
     that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
@@ -1127,13 +1193,28 @@ def xchg(x, axis_a, axis_b):
 def transpose(x):
     r'''Reverses the order of the last two dimensions.
 
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(24).reshape(2,3,4)
+        >>> a.shape
+        (2, 3, 4)
+
+        >>> nps.transpose(a).shape
+        (2, 4, 3)
+
+        >>> nps.transpose( np.arange(3) ).shape
+        (3, 1)
+
     A "matrix" is generally seen as a 2D array that we can transpose by looking
     at the 2 dimensions in the opposite order. Here we treat an n-dimensional
     array as an n-2 dimensional object containing 2D matrices. As usual, the
     last two dimensions contain the matrix.
 
-    New length-1 dimensions are added at the front, as required, and any axes>=0
-    that are passed in refer to the array BEFORE these new dimensions are added.
+    New length-1 dimensions are added at the front, as required, meaning that 1D
+    input of shape (n,) results in 2D output of shape (1,n).
 
     '''
     return xchg( atleast_dims(x, -2), -1, -2)
@@ -1141,8 +1222,34 @@ def transpose(x):
 def dummy(x, axis=None):
     r'''Adds a single length-1 dimension at the given position.
 
-    This is very similar to numpy.expand_dims(), but handles out-of-bounds
-    dimensions much better
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(24).reshape(2,3,4)
+        >>> a.shape
+        (2, 3, 4)
+
+        >>> nps.dummy(a, 0).shape
+        (1, 2, 3, 4)
+
+        >>> nps.dummy(a, 1).shape
+        (2, 1, 3, 4)
+
+        >>> nps.dummy(a, -1).shape
+        (2, 3, 4, 1)
+
+        >>> nps.dummy(a, -2).shape
+        (2, 3, 1, 4)
+
+        >>> nps.dummy(a, -5).shape
+        (1, 1, 2, 3, 4)
+
+    This is similar to numpy.expand_dims(), but handles out-of-bounds dimensions
+    better. New length-1 dimensions are added at the front, as required, and any
+    axis>=0 that are passed in refer to the array BEFORE these new dimensions
+    are added.
 
     '''
     need_ndim = axis+1 if axis >= 0 else -axis
@@ -1157,10 +1264,28 @@ def dummy(x, axis=None):
 def reorder(x, *dims):
     r'''Reorders the dimensions of an array.
 
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(24).reshape(2,3,4)
+        >>> a.shape
+        (2, 3, 4)
+
+        >>> nps.reorder( a, 0, -1, 1 ).shape
+        (2, 4, 3)
+
+        >>> nps.reorder( a, -2 , -1, 0 ).shape
+        (3, 4, 2)
+
+        >>> nps.reorder( a, -4 , -2, -5, -1, 0 ).shape
+        (1, 3, 1, 4, 2)
+
     This is very similar to numpy.transpose(), but handles out-of-bounds
     dimensions much better.
 
-    New length-1 dimensions are added at the front, as required, and any axes>=0
+    New length-1 dimensions are added at the front, as required, and any axis>=0
     that are passed in refer to the array BEFORE these new dimensions are added.
 
     '''
@@ -1169,16 +1294,78 @@ def reorder(x, *dims):
     return np.transpose(x, dims)
 
 @broadcast_define( ('n',), ('n',) )
-def inner(a, b):
-    r'''Inner product of two 1-dimensional n-long vectors.'''
-    return np.inner(a,b)
+def dot(a, b):
+    r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(3)
+        >>> b = a+5
+        >>> a
+        array([0, 1, 2])
+
+        >>> b
+        array([5, 6, 7])
+
+        >>> nps.dot(a,b)
+        array(20)
+
+    This is identical to numpysane.inner(). For a conjugating version of this
+    function, use nps.vdot().
+
+    '''
+    return np.dot(a,b)
+
 
 @broadcast_define( ('n',), ('n',) )
 def outer(a, b):
-    r'''Outer product of two 1-dimensional n-long vectors.'''
+    r'''Outer product of two 1-dimensional n-long vectors.
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(3)
+        >>> b = a+5
+        >>> a
+        array([0, 1, 2])
+
+        >>> b
+        array([5, 6, 7])
+
+        >>> nps.outer(a,b)
+        array([[ 0,  0,  0],
+               [ 5,  6,  7],
+               [10, 12, 14]])
+    '''
     return np.outer(a,b)
 
 @broadcast_define( ('n', 'm'), ('m', 'l') )
 def matmult(a, b):
-    r'''Matrix multiplication'''
+    r'''Multiplication of two matrices.
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = np.arange(12).reshape(3,4)
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[ 0,  1,  2,  3],
+               [ 4,  5,  6,  7],
+               [ 8,  9, 10, 11]])
+
+        >>> nps.matmult(a,b)
+        array([[20, 23, 26, 29],
+               [56, 68, 80, 92]])
+    '''
     return np.dot(a,b)
