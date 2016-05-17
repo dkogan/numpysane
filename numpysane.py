@@ -1,7 +1,8 @@
 #!/usr/bin/python
 
-r'''* SYNOPSIS
+r'''more-reasonable core functionality for numpy
 
+* SYNOPSIS
     >>> import numpy as np
     >>> import numpysane as nps
 

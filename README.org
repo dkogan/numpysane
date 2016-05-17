@@ -2,7 +2,6 @@
 numpysane: more-reasonable core functionality for numpy
 
 * SYNOPSIS
-
 #+BEGIN_EXAMPLE
 >>> import numpy as np
 >>> import numpysane as nps
