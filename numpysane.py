@@ -531,6 +531,33 @@ import types
 # m[_colon], but '_colon' can be manipulated in ways that ':' can't
 _colon = slice(None, None, None)
 
+def _clone_function(f, name):
+    r'''Returns a clone of a given function.
+
+    This is useful to copy a function, updating its metadata, such as the
+    documentation, name, etc. There are also differences here between python 2
+    and python 3 that this function handles.
+
+    '''
+    def get(f, what):
+        what2 = 'func_{}'.format(what)
+        what3 = '__{}__' .format(what)
+        try:
+            return getattr(f, what2)
+        except:
+            try:
+                return getattr(f, what3)
+            except:
+                pass
+        return None
+
+    return types.FunctionType(get(f, 'code'),
+                              get(f, 'globals'),
+                              name,
+                              get(f, 'defaults'),
+                              get(f, 'closure'))
+
+
 
 class NumpysaneError(Exception):
     def __init__(self, err): self.err = err
@@ -783,11 +810,7 @@ def broadcast_define(*prototype):
             return accum_dim.output
 
 
-        func_out = types.FunctionType(broadcast_loop.func_code,
-                                      broadcast_loop.func_globals,
-                                      func.__name__,
-                                      broadcast_loop.func_defaults,
-                                      broadcast_loop.func_closure)
+        func_out = _clone_function( broadcast_loop, func.__name__ )
         func_out.__doc__  = func.__doc__ if func.__doc__ else "" + \
                             '''\n\nThis function is broadcast-aware through numpysane.broadcast_define().
 The expected inputs have prototype:
@@ -1341,11 +1364,7 @@ def dot(a, b):
 
 # nps.inner and nps.dot are equivalent. Set the functionality and update the
 # docstring
-inner = types.FunctionType(dot.func_code,
-                           dot.func_globals,
-                           "inner",
-                           dot.func_defaults,
-                           dot.func_closure)
+inner = _clone_function( dot, "inner" )
 doc = dot.__doc__
 doc = doc.replace("vdot",  "aaa")
 doc = doc.replace("dot",   "bbb")
