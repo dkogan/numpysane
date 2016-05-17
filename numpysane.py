@@ -510,7 +510,7 @@ Broadcast-aware non-conjugating dot product. Identical to inner
 Broadcast-aware conjugating dot product
 
 **** inner
-Broadcast-aware inner product.
+Broadcast-aware inner product. Identical to dot
 
 **** outer
 Broadcast-aware outer product.
@@ -780,8 +780,23 @@ def broadcast_define(*prototype):
             return accum_dim.output
 
 
-        broadcast_loop.__doc__ = func.__doc__
-        return broadcast_loop
+        func_out = types.FunctionType(broadcast_loop.func_code,
+                                      broadcast_loop.func_globals,
+                                      func.__name__,
+                                      broadcast_loop.func_defaults,
+                                      broadcast_loop.func_closure)
+        func_out.__doc__  = func.__doc__ + \
+                            '''\n\nThis function is broadcast-aware through numpysane.broadcast_define().
+The expected inputs have prototype:
+
+    {prototype}
+
+Thus first {nargs} positional arguments will broadcast. The trailing shape of
+those arguments must match the prototype; the leading shape must follow the
+standard broadcasting rules. Positional arguments past the first {nargs} and all
+the keyword arguments are passed through untouched.'''.format(prototype = prototype,
+                                                              nargs     = len(prototype))
+        return func_out
     return inner_decorator_for_some_reason
 
 
