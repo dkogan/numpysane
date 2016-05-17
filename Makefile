@@ -11,6 +11,16 @@ test2 test3 check2 check3:
 	python$(patsubst test%,%,$@) test_numpysane.py
 .PHONY: check check2 check3 test test2 test3
 
+# make distribution tarball
+dist:
+	python setup.py sdist
+.PHONY: dist
+
+# make and upload the distribution tarball
+dist_upload:
+	python setup.py sdist upload
+.PHONY: dist_upload
+
 clean:
 	rm -f README.org README
 .PHONY: clean
