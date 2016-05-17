@@ -788,7 +788,7 @@ def broadcast_define(*prototype):
                                       func.__name__,
                                       broadcast_loop.func_defaults,
                                       broadcast_loop.func_closure)
-        func_out.__doc__  = func.__doc__ + \
+        func_out.__doc__  = func.__doc__ if func.__doc__ else "" + \
                             '''\n\nThis function is broadcast-aware through numpysane.broadcast_define().
 The expected inputs have prototype:
 
