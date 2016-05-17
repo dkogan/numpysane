@@ -541,7 +541,7 @@ Broadcast-aware non-conjugating dot product. Identical to inner
 Broadcast-aware conjugating dot product
 
 **** inner
-Broadcast-aware inner product.
+Broadcast-aware inner product. Identical to dot
 
 **** outer
 Broadcast-aware outer product.
@@ -1108,6 +1108,105 @@ dimensions much better.
 
 New length-1 dimensions are added at the front, as required, and any axis>=0
 that are passed in refer to the array BEFORE these new dimensions are added.
+
+** dot()
+Non-conjugating dot product of two 1-dimensional n-long vectors.
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(3)
+>>> b = a+5
+>>> a
+array([0, 1, 2])
+
+>>> b
+array([5, 6, 7])
+
+>>> nps.dot(a,b)
+array(20)
+#+END_EXAMPLE
+
+This is identical to numpysane.inner(). For a conjugating version of this
+function, use nps.vdot().
+
+** vdot()
+Conjugating dot product of two 1-dimensional n-long vectors.
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.array(( 1 + 2j, 3 + 4j, 5 + 6j))
+>>> b = a+5
+>>> a
+array([ 1.+2.j,  3.+4.j,  5.+6.j])
+
+>>> b
+array([  6.+2.j,   8.+4.j,  10.+6.j])
+
+>>> nps.vdot(a,b)
+array((136-60j))
+
+>>> nps.dot(a,b)
+array((24+148j))
+#+END_EXAMPLE
+
+This is identical to numpysane.inner(). For a conjugating version of this
+function, use nps.vdot().
+
+** outer()
+Outer product of two 1-dimensional n-long vectors.
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(3)
+>>> b = a+5
+>>> a
+array([0, 1, 2])
+
+>>> b
+array([5, 6, 7])
+
+>>> nps.outer(a,b)
+array([[ 0,  0,  0],
+       [ 5,  6,  7],
+       [10, 12, 14]])
+#+END_EXAMPLE
+
+** matmult()
+Multiplication of two matrices.
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(6).reshape(2,3)
+>>> b = np.arange(12).reshape(3,4)
+>>> a
+array([[0, 1, 2],
+       [3, 4, 5]])
+
+>>> b
+array([[ 0,  1,  2,  3],
+       [ 4,  5,  6,  7],
+       [ 8,  9, 10, 11]])
+
+>>> nps.matmult(a,b)
+array([[20, 23, 26, 29],
+       [56, 68, 80, 92]])
+#+END_EXAMPLE
 
 * COMPATIBILITY
 
