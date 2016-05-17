@@ -710,9 +710,12 @@ def broadcast_define(*prototype):
         # kwargs
         def broadcast_loop(*args, **kwargs):
 
-            if len(prototype) != len(args):
-                raise NumpysaneError("Mismatched number of input arguments. Wanted {} but got {}". \
+            if len(args) < len(prototype):
+                raise NumpysaneError("Mismatched number of input arguments. Wanted at least {} but got {}". \
                                       format(len(prototype), len(args)))
+
+            args_passthru = list(args[  len(prototype):])
+            args          = args[0:len(prototype) ]
 
             dims_extra = [] # extra dimensions to broadcast through
             dims_named = {} # named dimension lengths
@@ -765,7 +768,7 @@ def broadcast_define(*prototype):
 
                 # This is the last dimension. Evaluate this slice.
                 #
-                sliced_args = [ x[idx] for idx,x in zip(idx_slices, args) ]
+                sliced_args = [ x[idx] for idx,x in zip(idx_slices, args) ] + args_passthru
                 result = func( *sliced_args, **kwargs )
                 if accum_dim.output is None:
                     accum_dim.output = np.zeros( dims_extra + list(result.shape),

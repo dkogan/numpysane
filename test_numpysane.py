@@ -69,7 +69,6 @@ class TestNumpysane(unittest.TestCase):
 
         # wrong number of args
         self.assertError( f1, arr(3) )
-        self.assertError( f1, arr(3),arr(3),arr(3) )
 
         # mismatched args
         self.assertError( f1, arr(3),arr(5) )
@@ -157,6 +156,19 @@ class TestNumpysane(unittest.TestCase):
                           arr(1,  n,3),
                           arr(      5*n),
                           arr(1,    m));
+
+        # Make sure extra args and the kwargs are passed through
+        @nps.broadcast_define( (3,), ('n',3), ('n',), ('m',) )
+        def f3(a,b,c,d, e,f, *args, **kwargs):
+            def val_or_0(x): return x if x else 0
+            return np.array( (a[0], val_or_0(e), val_or_0(f), val_or_0(args[0]), val_or_0( kwargs.get('xxx'))) )
+        self.assertValueShape( np.array( ((0, 1, 2, 3, 6), (3, 1, 2, 3, 6.)) ), (2,5),
+                               f3,
+                               arr(2,    3),
+                               arr(1,  n,3),
+                               arr(      n),
+                               arr(      m),
+                               1, 2, 3, 4., dummy=5, xxx=6);
 
     def test_concatenation(self):
         r'''Checking the various concatenation functions.'''
