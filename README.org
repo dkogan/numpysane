@@ -89,7 +89,7 @@ identically-sized vectors (1-dimensional arrays) and returns a scalar
 arrays of shape (2,3,4), compute the 6 inner products of length-4 each, and
 report the output in an array of shape (2,3). Numpy puts the most-significant
 dimension at the end, which is why this isn't 12 inner products of length-2
-each. This is a mostly-arbitrary design choice, which could have been made
+each. This is a semi-arbitrary design choice, which could have been made
 differently: PDL puts the most-significant dimension at the front, for instance.
 
 The user doesn't choose whether to use broadcasting or not: some functions
@@ -469,12 +469,13 @@ system, the given axis indices should be counted from the most significant
 dimension: the last dimension in numpy. This means that where an axis index is
 specified, negative indices are encouraged. glue() forbids axis>=0 outright.
 
+
 Example for further justification:
 
 An array containing N 3D vectors would have shape (N,3). Another array
 containing a single 3D vector would have shape (3). Counting the dimensions from
 the end, each vector is indexed in dimension -1. However, counting from the
-front the vector is indexed in dimension 0 or 1, depending on which of the two
+front, the vector is indexed in dimension 0 or 1, depending on which of the two
 arrays we're looking at. If we want to add the single vector to the array
 containing the N vectors, and we mistakenly try to concatenate along the first
 dimension, it would fail if N != 3. But if we're unlucky, and N=3, then we'd get
@@ -486,7 +487,7 @@ the first dimension:
 #+BEGIN_EXAMPLE
 >>> a = np.arange(2*3).reshape(2,3)
 
->>> x
+>>> a
 array([[0, 1, 2],
        [3, 4, 5]])
 
