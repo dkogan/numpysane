@@ -1,7 +1,7 @@
 * COMPATIBILITY
 
-Python2 and python3 should are both supported. Please report a bug if either one
-doesn't work.
+Python 2 and Python 3 should both be supported. Please report a bug if either
+one doesn't work.
 
 * REPOSITORY
 

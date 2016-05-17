@@ -614,11 +614,11 @@ def broadcast_define(*prototype):
 
       - All dimensions !=1 must be identical
       - Missing dimensions are implicitly set to 1
-      - Dimensions that are =1 are set to the lengths implied by other arguments
-      - The output has a shape where
-        - The trailing dimensions are whatever the function being broadcasted
-          outputs
-        - The leading dimensions come from the extra dimensions in the inputs
+
+    - The output has a shape where
+      - The trailing dimensions are whatever the function being broadcasted
+        outputs
+      - The leading dimensions come from the extra dimensions in the inputs
 
     Let's look at a more involved example. Let's say we have a function that
     takes a set of points in R^2 and a single center point in R^2, and finds a
