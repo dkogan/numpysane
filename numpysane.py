@@ -525,6 +525,7 @@ The function listed above are a start, but more will be added with time.
 
 import numpy as np
 from functools import reduce
+import types
 
 # object needed for fancy slices. m[:] is exactly the same as
 # m[_colon], but '_colon' can be manipulated in ways that ':' can't
@@ -779,6 +780,7 @@ def broadcast_define(*prototype):
             return accum_dim.output
 
 
+        broadcast_loop.__doc__ = func.__doc__
         return broadcast_loop
     return inner_decorator_for_some_reason
 
@@ -1319,6 +1321,50 @@ def dot(a, b):
     '''
     return np.dot(a,b)
 
+# nps.inner and nps.dot are equivalent. Set the functionality and update the
+# docstring
+inner = types.FunctionType(dot.func_code,
+                           dot.func_globals,
+                           "inner",
+                           dot.func_defaults,
+                           dot.func_closure)
+doc = dot.__doc__
+doc = doc.replace("vdot",  "aaa")
+doc = doc.replace("dot",   "bbb")
+doc = doc.replace("inner", "ccc")
+doc = doc.replace("ccc",   "dot")
+doc = doc.replace("bbb",   "inner")
+doc = doc.replace("aaa",   "vdot")
+inner.__doc__ = doc
+
+@broadcast_define( ('n',), ('n',) )
+def vdot(a, b):
+    r'''Conjugating dot product of two 1-dimensional n-long vectors.
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.array(( 1 + 2j, 3 + 4j, 5 + 6j))
+        >>> b = a+5
+        >>> a
+        array([ 1.+2.j,  3.+4.j,  5.+6.j])
+
+        >>> b
+        array([  6.+2.j,   8.+4.j,  10.+6.j])
+
+        >>> nps.vdot(a,b)
+        array((136-60j))
+
+        >>> nps.dot(a,b)
+        array((24+148j))
+
+    This is identical to numpysane.inner(). For a conjugating version of this
+    function, use nps.vdot().
+
+    '''
+    return np.vdot(a,b)
 
 @broadcast_define( ('n',), ('n',) )
 def outer(a, b):
