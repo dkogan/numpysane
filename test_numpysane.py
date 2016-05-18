@@ -202,6 +202,51 @@ class TestNumpysane(unittest.TestCase):
                                arr(1,  3,4),
                                arr(2,    2),
                                5)
+        self.assertError(      f5,
+                               arr(      3),
+                               arr(1,  3,4),
+                               arr(2,    2),
+                               arr(5))
+
+        # Test the generator
+        i=0
+        for s in nps.broadcast_generate( (('n',), ('n','m'), (2,), ()),
+                                         (arr(      3),
+                                          arr(1,  3,4),
+                                          arr(2,    2),
+                                          np.array(5)) ):
+            self.assertNumpyAlmostEqual( arr(3),       s[0] )
+            self.assertNumpyAlmostEqual( arr(3,4),     s[1] )
+            self.assertNumpyAlmostEqual( arr(2) + 2*i, s[2] )
+            self.assertNumpyAlmostEqual( np.array(5),  s[3] )
+            self.assertListEqual( s[3].shape, ())
+            i = i+1
+
+        i=0
+        for s in nps.broadcast_generate( (('n',), ('n','m'), (2,), ()),
+                                         (arr(      3),
+                                          arr(1,  3,4),
+                                          arr(2,    2),
+                                          5) ):
+            self.assertNumpyAlmostEqual( arr(3),       s[0] )
+            self.assertNumpyAlmostEqual( arr(3,4),     s[1] )
+            self.assertNumpyAlmostEqual( arr(2) + 2*i, s[2] )
+            self.assertNumpyAlmostEqual( np.array(5),  s[3] )
+            self.assertListEqual( s[3].shape, ())
+            i = i+1
+
+        i=0
+        for s in nps.broadcast_generate( (('n',), ('n','m'), (2,), ()),
+                                         (arr(      3),
+                                          arr(1,  3,4),
+                                          arr(2,    2),
+                                          arr(2)) ):
+            self.assertNumpyAlmostEqual( arr(3),       s[0] )
+            self.assertNumpyAlmostEqual( arr(3,4),     s[1] )
+            self.assertNumpyAlmostEqual( arr(2) + 2*i, s[2] )
+            self.assertNumpyAlmostEqual( np.array(i),  s[3] )
+            self.assertListEqual( s[3].shape, ())
+            i = i+1
 
 
     def test_concatenation(self):
