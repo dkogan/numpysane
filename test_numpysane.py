@@ -91,71 +91,71 @@ class TestNumpysane(unittest.TestCase):
                                arr(  3),
                                arr(n,3),
                                arr(  n),
-                               arr(  m));
+                               arr(  m))
         self.assertValueShape( np.array((d,)), (1,m),
                                f2,
                                arr(1,    3),
                                arr(1,  n,3),
                                arr(      n),
-                               arr(1,    m));
+                               arr(1,    m))
         self.assertValueShape( np.array((d,)), (1,m,),
                                f2,
                                arr(1,    3),
                                arr(1,  n,3),
                                arr(      n),
-                               arr(      m));
+                               arr(      m))
         self.assertValueShape( np.array((d,d+m,d+2*m,d+3*m,d+4*m)), (5,m),
                                f2,
                                arr(5,    3),
                                arr(5,  n,3),
                                arr(      n),
-                               arr(5,    m));
+                               arr(5,    m))
         self.assertValueShape( np.array(((d,d+m,d+2*m,d+3*m,d+4*m),)), (1,5,m),
                                f2,
                                arr(1,5,    3),
                                arr(  5,  n,3),
                                arr(        n),
-                               arr(  5,    m));
+                               arr(  5,    m))
         self.assertValueShape( np.array(((d,d+m,d+2*m,d+3*m,d+4*m), (d,d+m,d+2*m,d+3*m,d+4*m))), (2,5,m),
                                f2,
                                arr(1,5,    3),
                                arr(2,5,  n,3),
                                arr(        n),
-                               arr(  5,    m));
+                               arr(  5,    m))
         self.assertValueShape( np.array(((d,d+m,d+2*m,d+3*m,d+4*m), (d,d+m,d+2*m,d+3*m,d+4*m))), (2,5,m),
                                f2,
                                arr(1,5,    3),
                                arr(2,1,  n,3),
                                arr(        n),
-                               arr(  5,    m));
+                               arr(  5,    m))
         self.assertValueShape( np.array((((d,d,d,d,d), (d,d,d,d,d)),)), (1,2,5,m),
                                f2,
                                arr(1,1,5,    3),
                                arr(1,2,1,  n,3),
                                arr(1,        n),
-                               arr(1,  1,    m));
+                               arr(1,  1,    m))
 
         # mismatched args
         self.assertError( f2,
                           arr(5,    3),
                           arr(5,  n,3),
                           arr(      m),
-                          arr(5,    m));
+                          arr(5,    m))
         self.assertError( f2,
                           arr(5,    2),
                           arr(5,  n,3),
                           arr(      n),
-                          arr(5,    m));
+                          arr(5,    m))
         self.assertError( f2,
                           arr(5,    2),
                           arr(5,  n,2),
                           arr(      n),
-                          arr(5,    m));
+                          arr(5,    m))
         self.assertError( f2,
                           arr(1,    3),
                           arr(1,  n,3),
                           arr(      5*n),
-                          arr(1,    m));
+                          arr(1,    m))
 
         # Make sure extra args and the kwargs are passed through
         @nps.broadcast_define( (3,), ('n',3), ('n',), ('m',) )
@@ -168,7 +168,7 @@ class TestNumpysane(unittest.TestCase):
                                arr(1,  n,3),
                                arr(      n),
                                arr(      m),
-                               1, 2, 3, 4., dummy=5, xxx=6);
+                               1, 2, 3, 4., dummy=5, xxx=6)
 
     def test_concatenation(self):
         r'''Checking the various concatenation functions.'''
