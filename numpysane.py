@@ -566,6 +566,87 @@ class NumpysaneError(Exception):
     def __str__(self):       return self.err
 
 
+def _eval_broadcast_dims( args, prototype, dims_extra, dims_named ):
+    r'''Helper function to evaluate a given list of arguments in respect to a given
+    broadcasting prototype. This function will flag any errors in the
+    dimensionality of the inputs. If no errors are detected, the outer shape of
+    the broadcast is stored in the dims_extra list, and the values of the
+    symbolic dimensions are stored in the dims_named dict
+
+    '''
+
+    def parse_dim( name_arg,
+                   shape_prototype, shape_arg, dims_extra, dims_named ):
+
+        def range_rev(n):
+            r'''Returns a range from -1 to -n.
+
+            Useful to index variable-sized lists while aligning their ends.'''
+            return [-i-1 for i in range(n)]
+
+
+
+        # first, I make sure the input is at least as dimension-ful as the
+        # prototype. I make this a hard requirement. Even if the missing
+        # dimensions have length 1, it is likely a mistake on the part of the
+        # user
+        if len(shape_prototype) > len(shape_arg):
+            raise NumpysaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
+
+        # Loop through the dimensions. Set the dimensionality of any new named
+        # argument to whatever the current argument has. Any already-known
+        # argument must match
+        for i_dim in range_rev(len(shape_prototype)):
+            if not isinstance(shape_prototype[i_dim], int) and \
+               shape_prototype[i_dim] not in dims_named:
+                dims_named[shape_prototype[i_dim]] = shape_arg[i_dim]
+
+            # The prototype dimension (named or otherwise) now has a numeric
+            # value. Make sure it matches what I have
+            dim_prototype = dims_named[shape_prototype[i_dim]] \
+                            if not isinstance(shape_prototype[i_dim], int) \
+                               else shape_prototype[i_dim]
+
+            if dim_prototype != shape_arg[i_dim]:
+                raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
+                    format(name_arg,
+                           shape_prototype[i_dim],
+                           dim_prototype,
+                           shape_arg[i_dim]))
+
+        # I now know that this argument matches the prototype. I look at the
+        # extra dimensions to broadcast, and make sure they match with the
+        # dimensions I saw previously
+        ndims_extra_here = len(shape_arg) - len(shape_prototype)
+
+        # This argument has ndims_extra_here dimensions to broadcast. The
+        # current shape to broadcast must be at least as large, and must match
+        if ndims_extra_here > len(dims_extra):
+            dims_extra[:0] = [1] * (ndims_extra_here - len(dims_extra))
+        for i_dim in range_rev(ndims_extra_here):
+            dim_arg = shape_arg[i_dim - len(shape_prototype)]
+            if dim_arg != 1:
+                if dims_extra[i_dim] == 1:
+                    dims_extra[i_dim] = dim_arg
+                elif dims_extra[i_dim] != dim_arg:
+                    raise NumpysaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
+                        format(name_arg,
+                               shape_prototype,
+                               i_dim,
+                               dims_extra[i_dim],
+                               dim_arg))
+
+
+    # clear out the accumulators
+    dims_extra[:] = []
+    dims_named.clear()
+    for i_arg in range(len(args)):
+        parse_dim( i_arg,
+                   prototype[i_arg], args[i_arg].shape,
+                   dims_extra, dims_named )
+
+
+
 def broadcast_define(*prototype):
     r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
 
@@ -676,65 +757,6 @@ def broadcast_define(*prototype):
 
     '''
     def inner_decorator_for_some_reason(func):
-        def parse_dims( name_arg,
-                        shape_prototype, shape_arg, dims_extra, dims_named ):
-            def range_rev(n):
-                r'''Returns a range from -1 to -n.
-
-                Useful to index variable-sized lists while aligning their ends.'''
-                return [-i-1 for i in range(n)]
-
-            # first, I make sure the input is at least as dimension-ful as the
-            # prototype. I make this a hard requirement. Even if the missing
-            # dimensions have length 1, it is likely a mistake on the part of the
-            # user
-            if len(shape_prototype) > len(shape_arg):
-                raise NumpysaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
-
-            # Loop through the dimensions. Set the dimensionality of any new named
-            # argument to whatever the current argument has. Any already-known
-            # argument must match
-            for i_dim in range_rev(len(shape_prototype)):
-                if not isinstance(shape_prototype[i_dim], int) and \
-                   shape_prototype[i_dim] not in dims_named:
-                    dims_named[shape_prototype[i_dim]] = shape_arg[i_dim]
-
-                # The prototype dimension (named or otherwise) now has a numeric
-                # value. Make sure it matches what I have
-                dim_prototype = dims_named[shape_prototype[i_dim]] \
-                                if not isinstance(shape_prototype[i_dim], int) \
-                                   else shape_prototype[i_dim]
-
-                if dim_prototype != shape_arg[i_dim]:
-                    raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
-                        format(name_arg,
-                               shape_prototype[i_dim],
-                               dim_prototype,
-                               shape_arg[i_dim]))
-
-            # I now know that this argument matches the prototype. I look at the
-            # extra dimensions to broadcast, and make sure they match with the
-            # dimensions I saw previously
-            ndims_extra_here = len(shape_arg) - len(shape_prototype)
-
-            # This argument has ndims_extra_here dimensions to broadcast. The
-            # current shape to broadcast must be at least as large, and must match
-            if ndims_extra_here > len(dims_extra):
-                dims_extra[:0] = [1] * (ndims_extra_here - len(dims_extra))
-            for i_dim in range_rev(ndims_extra_here):
-                dim_arg = shape_arg[i_dim - len(shape_prototype)]
-                if dim_arg != 1:
-                    if dims_extra[i_dim] == 1:
-                        dims_extra[i_dim] = dim_arg
-                    elif dims_extra[i_dim] != dim_arg:
-                        raise NumpysaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
-                            format(name_arg,
-                                   shape_prototype,
-                                   i_dim,
-                                   dims_extra[i_dim],
-                                   dim_arg))
-
-
         # args broadcast, kwargs do not. All auxillary data should go into the
         # kwargs
         def broadcast_loop(*args, **kwargs):
@@ -747,11 +769,7 @@ def broadcast_define(*prototype):
             args          = args[0:len(prototype) ]
 
             dims_extra = [] # extra dimensions to broadcast through
-            dims_named = {} # named dimension lengths
-            for i_arg in range(len(args)):
-                parse_dims( i_arg,
-                            prototype[i_arg], args[i_arg].shape,
-                            dims_extra, dims_named )
+            _eval_broadcast_dims( args, prototype, dims_extra, {} )
 
 
             # I checked all the dimensions and aligned everything. I have my
