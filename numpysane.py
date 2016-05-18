@@ -647,10 +647,10 @@ def _eval_broadcast_dims( args, prototype, dims_extra, dims_named ):
 
 
 
-def _broadcast_accum_dim( i_dims_extra, idx_extra,
+def _broadcast_iter_dim( i_dims_extra,
 
-                          idx_slices, args, prototype,
-                          dims_extra ):
+                         idx_slices, args, prototype,
+                         dims_extra ):
     r'''Recursive generator to iterate through all the broadcasting slices.
 
     Each recursive call loops through a single dimension. I can do
@@ -684,16 +684,15 @@ def _broadcast_accum_dim( i_dims_extra, idx_extra,
                 if x_dim >= 0 and x.shape[x_dim] > 1:
                     idx_slice[x_dim] = dim
 
-            idx_extra[i_dims_extra] = dim
-            for x,idx in _broadcast_accum_dim( i_dims_extra+1, idx_extra,
+            for x in _broadcast_iter_dim( i_dims_extra+1,
 
-                                               idx_slices, args, prototype,
-                                               dims_extra):
-                yield x,idx
+                                          idx_slices, args, prototype,
+                                          dims_extra):
+                yield x
         return
 
     # This is the last dimension. Evaluate this slice.
-    yield [x[idx] for idx,x in zip(idx_slices, args)], idx_extra
+    yield tuple( x[idx] for idx,x in zip(idx_slices, args) )
 
 
 
@@ -816,28 +815,38 @@ def broadcast_define(*prototype):
                 raise NumpysaneError("Mismatched number of input arguments. Wanted at least {} but got {}". \
                                       format(len(prototype), len(args)))
 
-            args_passthru = list(args[  len(prototype):])
+            args_passthru = args[  len(prototype):]
             args          = args[0:len(prototype) ]
 
             dims_extra = [] # extra dimensions to broadcast through
             _eval_broadcast_dims( args, prototype, dims_extra, {} )
 
+            # if no broadcasting involved, just call the function
+            if not dims_extra:
+                sliced_args = args + args_passthru
+                return func( *sliced_args, **kwargs )
 
             # I checked all the dimensions and aligned everything. I have my
             # to-broadcast dimension counts. Iterate through all the broadcasting
             # output, and gather the results
-
-            output = None
-            for x,idx in _broadcast_accum_dim( 0, [0] * len(dims_extra),
-                                               None, args, prototype,
-                                               dims_extra ):
+            output           = None
+            output_flattened = None
+            i_slice = 0
+            for x in _broadcast_iter_dim( 0,
+                                          None, args, prototype,
+                                          dims_extra ):
                 sliced_args = x + args_passthru
                 result = func( *sliced_args, **kwargs )
 
                 if output is None:
                     output = np.zeros( dims_extra + list(result.shape),
                                        dtype = result.dtype)
-                output[idx + [Ellipsis]] = result
+
+                    output_flattened = output.reshape( (reduce( lambda a,b: a*b, dims_extra),) +
+                                                        result.shape)
+
+                output_flattened[i_slice, ...] = result
+                i_slice = i_slice+1
 
             return output
 
