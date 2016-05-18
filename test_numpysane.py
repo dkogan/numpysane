@@ -28,7 +28,7 @@ class TestNumpysane(unittest.TestCase):
     def assertNumpyAlmostEqual(self, first, second):
         self.assertListEqual(first.shape, second.shape)
         diff = first - second
-        diff = diff.ravel()
+        diff = diff.ravel().astype(float)
         rms = np.sqrt(diff.dot(diff) / diff.size)
         self.assertLess( rms, 1e-6, msg='matrix discrepancy:\n{} vs\n{}. Diff:\n{}'.format(first,second,diff) )
 
@@ -162,7 +162,7 @@ class TestNumpysane(unittest.TestCase):
         def f3(a,b,c,d, e,f, *args, **kwargs):
             def val_or_0(x): return x if x else 0
             return np.array( (a[0], val_or_0(e), val_or_0(f), val_or_0(args[0]), val_or_0( kwargs.get('xxx'))) )
-        self.assertValueShape( np.array( ((0, 1, 2, 3, 6), (3, 1, 2, 3, 6.)) ), (2,5),
+        self.assertValueShape( np.array( ((0, 1, 2, 3, 6), (3, 1, 2, 3, 6)) ), (2,5),
                                f3,
                                arr(2,    3),
                                arr(1,  n,3),
