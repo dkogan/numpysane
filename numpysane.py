@@ -909,6 +909,50 @@ the keyword arguments are passed through untouched.'''.format(prototype = protot
     return inner_decorator_for_some_reason
 
 
+def broadcast_generate(prototype, args):
+    r'''A generator that produces broadcasted slices
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
+
+        >>> for s in nps.broadcast_generate( (('n',), ('n',)), (a,b)):
+        ...     print "slice: {}".format(s)
+        slice: (array([0, 1, 2]), array([100, 101, 102]))
+        slice: (array([3, 4, 5]), array([103, 104, 105]))
+    '''
+
+    if len(args) != len(prototype):
+        raise NumpysaneError("Mismatched number of input arguments. Wanted {} but got {}". \
+                              format(len(prototype), len(args)))
+
+    # make sure all the arguments are numpy arrays
+    args = tuple(np.asarray(arg) for arg in args)
+
+    dims_extra = [] # extra dimensions to broadcast through
+    _eval_broadcast_dims( args, prototype, dims_extra, {} )
+
+    # I checked all the dimensions and aligned everything. I have my
+    # to-broadcast dimension counts. Iterate through all the broadcasting
+    # output, and gather the results
+    for x in _broadcast_iter_dim( 0,
+                                  None, args, prototype,
+                                  dims_extra ):
+        yield x
+
+
 def glue(*args, **kwargs):
     r'''Concatenates a given list of arrays along the given 'axis' keyword argument.
 
