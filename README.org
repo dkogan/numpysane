@@ -175,9 +175,14 @@ will return an output array of shape (2,5, ...), where ... is the shape of each
 output slice. Note again that the prototype dictates the TRAILING shape of the
 inputs.
 
-Stock numpy has some rudimentary support for this with its vectorize() function,
-but it assumes only scalar inputs and outputs, which severaly limits its
-usefulness.
+Another related function in this module broadcast_generate(). It's similar to
+broadcast_define(), but instead of adding broadcasting-awareness to an existing
+function, it simply generates tuples from a set of arguments according to a
+given prototype.
+
+Stock numpy has some rudimentary support for all this with its vectorize()
+function, but it assumes only scalar inputs and outputs, which severaly limits
+its usefulness.
 
 *** New planned functionality
 
@@ -550,7 +555,7 @@ Broadcast-aware outer product.
 Broadcast-aware matrix multiplication
 
 *** New planned functionality
-The function listed above are a start, but more will be added with time.
+The functions listed above are a start, but more will be added with time.
 
 * INTERFACE
 ** broadcast_define()
@@ -610,6 +615,34 @@ summary:
     outputs
   - The leading dimensions come from the extra dimensions in the inputs
 
+Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
+and these broadcast as one would expect:
+
+#+BEGIN_EXAMPLE
+>>> @nps.broadcast_define( ('n',), ('n',), ())
+... def scaled_inner_product(a, b, scale):
+...     return a.dot(b)*scale
+
+>>> a = np.arange(6).reshape(2,3)
+>>> b = a + 100
+>>> scale = np.array((10,100))
+
+>>> a
+array([[0, 1, 2],
+       [3, 4, 5]])
+
+>>> b
+array([[100, 101, 102],
+       [103, 104, 105]])
+
+>>> scale
+array([ 10, 100])
+
+>>> scaled_inner_product(a,b,scale)
+array([[  3050],
+       [125000]])
+#+END_EXAMPLE
+
 Let's look at a more involved example. Let's say we have a function that
 takes a set of points in R^2 and a single center point in R^2, and finds a
 best-fit least-squares line that passes through the given center point. Let
@@ -668,6 +701,32 @@ gp.plot( *nps.mv(xy,-1,0), _with='linespoints',
 #+END_SRC
 
 This function is analogous to thread_define() in PDL.
+
+** broadcast_generate()
+A generator that produces broadcasted slices
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(6).reshape(2,3)
+>>> b = a + 100
+
+>>> a
+array([[0, 1, 2],
+       [3, 4, 5]])
+
+>>> b
+array([[100, 101, 102],
+       [103, 104, 105]])
+
+>>> for s in nps.broadcast_generate( (('n',), ('n',)), (a,b)):
+...     print "slice: {}".format(s)
+slice: (array([0, 1, 2]), array([100, 101, 102]))
+slice: (array([3, 4, 5]), array([103, 104, 105]))
+#+END_EXAMPLE
 
 ** glue()
 Concatenates a given list of arrays along the given 'axis' keyword argument.
