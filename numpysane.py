@@ -168,9 +168,14 @@ will return an output array of shape (2,5, ...), where ... is the shape of each
 output slice. Note again that the prototype dictates the TRAILING shape of the
 inputs.
 
-Stock numpy has some rudimentary support for this with its vectorize() function,
-but it assumes only scalar inputs and outputs, which severaly limits its
-usefulness.
+Another related function in this module broadcast_generate(). It's similar to
+broadcast_define(), but instead of adding broadcasting-awareness to an existing
+function, it simply generates tuples from a set of arguments according to a
+given prototype.
+
+Stock numpy has some rudimentary support for all this with its vectorize()
+function, but it assumes only scalar inputs and outputs, which severaly limits
+its usefulness.
 
 *** New planned functionality
 
@@ -521,7 +526,7 @@ Broadcast-aware outer product.
 Broadcast-aware matrix multiplication
 
 *** New planned functionality
-The function listed above are a start, but more will be added with time.
+The functions listed above are a start, but more will be added with time.
 
 '''
 
