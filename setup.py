@@ -10,4 +10,5 @@ setup(name         = 'numpysane',
       description  = 'more-reasonable core functionality for numpy',
       license      = 'LGPL-3+',
       py_modules   = ['numpysane'],
-      cmdclass     = {})
+      test_suite   = 'test_numpysane',
+      install_requires = 'numpy')
