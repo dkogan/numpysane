@@ -170,6 +170,40 @@ class TestNumpysane(unittest.TestCase):
                                arr(      m),
                                1, 2, 3, 4., dummy=5, xxx=6)
 
+        # Make sure scalars (0-dimensional array) can broadcast
+        @nps.broadcast_define( ('n',), ('n','m'), (2,), () )
+        def f4(a,b,c,d):
+            return d
+        @nps.broadcast_define( ('n',), ('n','m'), (2,), () )
+        def f5(a,b,c,d):
+            return nps.glue( c, d, axis=-1 )
+
+        self.assertValueShape( np.array((5,5)), (2,),
+                               f4,
+                               arr(      3),
+                               arr(1,  3,4),
+                               arr(2,    2),
+                               np.array(5))
+        self.assertValueShape( np.array((5,5)), (2,),
+                               f4,
+                               arr(      3),
+                               arr(1,  3,4),
+                               arr(2,    2),
+                               5)
+        self.assertValueShape( np.array(((0,1,5),(2,3,5))), (2,3),
+                               f5,
+                               arr(      3),
+                               arr(1,  3,4),
+                               arr(2,    2),
+                               np.array(5))
+        self.assertValueShape( np.array(((0,1,5),(2,3,5))), (2,3),
+                               f5,
+                               arr(      3),
+                               arr(1,  3,4),
+                               arr(2,    2),
+                               5)
+
+
     def test_concatenation(self):
         r'''Checking the various concatenation functions.'''
 

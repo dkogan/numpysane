@@ -692,7 +692,9 @@ def _broadcast_iter_dim( i_dims_extra,
         return
 
     # This is the last dimension. Evaluate this slice.
-    yield tuple( x[idx] for idx,x in zip(idx_slices, args) )
+
+    # the "if idx else x" business if for 0-dimensional arrays.
+    yield tuple( x[idx] if idx else x for idx,x in zip(idx_slices, args) )
 
 
 
@@ -751,6 +753,32 @@ def broadcast_define(*prototype):
       - The trailing dimensions are whatever the function being broadcasted
         outputs
       - The leading dimensions come from the extra dimensions in the inputs
+
+    Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
+    and these broadcast as one would expect:
+
+        >>> @nps.broadcast_define( ('n',), ('n',), ())
+        ... def scaled_inner_product(a, b, scale):
+        ...     return a.dot(b)*scale
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = a + 100
+        >>> scale = np.array((10,100))
+
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[100, 101, 102],
+               [103, 104, 105]])
+
+        >>> scale
+        array([ 10, 100])
+
+        >>> scaled_inner_product(a,b,scale)
+        array([[  3050],
+               [125000]])
 
     Let's look at a more involved example. Let's say we have a function that
     takes a set of points in R^2 and a single center point in R^2, and finds a
@@ -817,6 +845,9 @@ def broadcast_define(*prototype):
 
             args_passthru = args[  len(prototype):]
             args          = args[0:len(prototype) ]
+
+            # make sure all the arguments are numpy arrays
+            args = tuple(np.asarray(arg) for arg in args)
 
             dims_extra = [] # extra dimensions to broadcast through
             _eval_broadcast_dims( args, prototype, dims_extra, {} )
