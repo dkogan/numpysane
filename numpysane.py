@@ -694,7 +694,18 @@ def _broadcast_iter_dim( i_dims_extra,
     # This is the last dimension. Evaluate this slice.
 
     # the "if idx else x" business if for 0-dimensional arrays.
-    yield tuple( x[idx] if idx else x for idx,x in zip(idx_slices, args) )
+    # tuple(idx) because of wonky behavior differences:
+    #     >>> a
+    #     array([[0, 1, 2],
+    #            [3, 4, 5]])
+    #
+    #     >>> a[tuple((1,1))]
+    #     4
+    #
+    #     >>> a[list((1,1))]
+    #     array([[3, 4, 5],
+    #            [3, 4, 5]])
+    yield tuple( x[tuple(idx)] if idx else x for idx,x in zip(idx_slices, args) )
 
 
 
