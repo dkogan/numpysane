@@ -676,14 +676,14 @@ def broadcast_define(*prototype):
 
     '''
     def inner_decorator_for_some_reason(func):
-        def range_rev(n):
-            r'''Returns a range from -1 to -n.
-
-            Useful to index variable-sized lists while aligning their ends.'''
-            return [-i-1 for i in range(n)]
-
         def parse_dims( name_arg,
                         shape_prototype, shape_arg, dims_extra, dims_named ):
+            def range_rev(n):
+                r'''Returns a range from -1 to -n.
+
+                Useful to index variable-sized lists while aligning their ends.'''
+                return [-i-1 for i in range(n)]
+
             # first, I make sure the input is at least as dimension-ful as the
             # prototype. I make this a hard requirement. Even if the missing
             # dimensions have length 1, it is likely a mistake on the part of the
