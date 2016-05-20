@@ -188,12 +188,6 @@ its usefulness.
 
 In addition to this basic broadcasting support, I'm planning the following:
 
-- Output memory should be used more efficiently. This means that the output
-  array should be allocated once, and each slice output should be written
-  directly into the correct place in the array. To make this possible, the
-  output dimensions need to be a part of the prototype, and the output array
-  should be passable to the function being wrapped.
-
 - A C-level broadcast_define(). This would be the analogue of PDL::PP
   (http://pdl.perl.org/PDLdocs/PP.html). This flavor of broadcast_define() would
   be invoked by the build system to wrap C functions. It would implement
@@ -700,7 +694,106 @@ gp.plot( *nps.mv(xy,-1,0), _with='linespoints',
          unset='grid', square=1)
 #+END_SRC
 
-This function is analogous to thread_define() in PDL.
+The examples above all create a separate output array for each broadcasted
+slice, and copy the contents from each such slice into the large output
+array that contains all the results. This is inefficient, and it is possible
+to pre-allocate an array to forgo these extra allocations and copies. There
+are several settings to control this. If the function being broadcasted can
+write its output to a given array instead of creating a new one, most of the
+inefficiency goes away. broadcast_define() supports the case where this
+function takes this array in a kwarg: the name of this kwarg can be given to
+broadcast_define() like so:
+
+#+BEGIN_SRC python
+@nps.broadcast_define( ....., out_kwarg = "out" )
+def func( ....., out):
+    .....
+    out[:] = result
+#+END_SRC
+
+In order for broadcast_define() to pass such an output array to the inner
+function, this output array must be available, which means that it must be
+given to us somehow, or we must create it.
+
+The most efficient way to make a broadcasted call is to create the full
+output array beforehand, and to pass that to the broadcasted function. In
+this case, nothing extra will be allocated, and no unnecessary copies will
+be made. This can be done like this:
+
+#+BEGIN_SRC python
+@nps.broadcast_define( (('n',), ('n',)), ....., out_kwarg = "out" )
+def inner_product(a, b, out):
+    .....
+    out.setfield(a.dot(b), out.dtype)
+    return out
+
+out = np.empty((2,4), float)
+inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), out=out)
+#+END_SRC
+
+In this example, the caller knows that it's calling an inner_product
+function, and that the shape of each output slice would be (). The caller
+also knows the input dimensions and that we have an extra broadcasting
+dimension (2,4), so the output array will have shape (2,4) + () = (2,4).
+With this knowledge, the caller preallocates the array, and passes it to the
+broadcasted function call. Furthermore, in this case the inner function will
+be called with an output array EVERY time, and this is the only mode the
+inner function needs to support.
+
+If the caller doesn't know (or doesn't want to pre-compute) the shape of the
+output, it can let the broadcasting machinery create this array for them. In
+order for this to be possible, the shape of the output should be
+pre-declared, and the dtype of the output should be known:
+
+#+BEGIN_SRC python
+@nps.broadcast_define( (('n',), ('n',)),
+                       (),
+                       out_kwarg = "out" )
+def inner_product(a, b, out):
+    .....
+    out.setfield(a.dot(b), out.dtype)
+    return out
+
+out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), dtype=int)
+#+END_SRC
+
+Note that the caller didn't need to specify the prototype of the output or
+the extra broadcasting dimensions (output prototype is in the
+broadcast_define() call, but not the inner_product() call). Specifying the
+dtype here is optional: it defaults to float if omitted. If we want the
+output array to be pre-allocated, the output prototype (it is () in this
+example) is required: we must know the shape of the output array in order to
+create it.
+
+Without a declared output prototype, we can still make mostly- efficient
+calls: the broadcasting mechanism can call the inner function for the first
+slice as we showed earlier, by creating a new array for the slice. This new
+array required an extra allocation and copy, but it contains the required
+shape information. This infomation will be used to allocate the output, and
+the subsequent calls to the inner function will be efficient:
+
+#+BEGIN_SRC python
+@nps.broadcast_define( (('n',), ('n',)),
+                       out_kwarg = "out" )
+def inner_product(a, b, out=None):
+    .....
+    if out is None:
+        return a.dot(b)
+    out.setfield(a.dot(b), out.dtype)
+    return out
+
+out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3))
+#+END_SRC
+
+Here we were slighly inefficient, but the ONLY required extra specification
+was out_kwarg: that's mostly all you need. Also it is important to note that
+in this case the inner function is called both with passing it an output
+array to fill in, and with asking it to create a new one (by passing
+out=None to the inner function). This inner function then must support both
+modes of operation. If the inner function does not support filling in an
+output array, none of these efficiency improvements are possible.
+
+broadcast_define() is analogous to thread_define() in PDL.
 
 ** broadcast_generate()
 A generator that produces broadcasted slices

@@ -44,9 +44,12 @@ class TestNumpysane(unittest.TestCase):
 
         '''
         res = f(*args, **kwargs)
-        self.assertListEqual(res.shape, s)
+        if s is not None:
+            self.assertListEqual(res.shape, s)
         if value is not None:
             self.assertNumpyAlmostEqual(res, value)
+        if 'dtype' in kwargs:
+            self.assertEqual(res.dtype, kwargs['dtype'])
 
     def test_broadcasting(self):
         r'''Checking broadcasting rules.'''
@@ -247,6 +250,171 @@ class TestNumpysane(unittest.TestCase):
             self.assertNumpyAlmostEqual( np.array(i),  s[3] )
             self.assertListEqual( s[3].shape, ())
             i = i+1
+
+    def test_broadcasting_into_output(self):
+        r'''Checking broadcasting with the output array defined.'''
+
+        # I think about all 2^4 = 16 combinations:
+        #
+        # broadcast_define(): yes/no prototype_output, out_kwarg
+        # broadcasted call:   yes/no dtype, output
+
+        prototype = (('n',), ('n',))
+        in1, in2 = arr(3), arr(2,4,3)
+        out_ref = np.array([[ 5, 14, 23, 32],
+                            [41, 50, 59, 68]])
+        outshape_ref = (2,4)
+
+        def f(a, b, out=None, dtype=None):
+            r'''Basic inner product.'''
+
+            if out is None:
+                if dtype is None:
+                    return a.dot(b)
+                else:
+                    return a.dot(b).astype(dtype)
+
+            if f.do_dtype_check:
+                if dtype is not None:
+                    self.assertEqual( out.dtype, dtype )
+
+            if f.do_base_check:
+                if f.base is not None:
+                    self.assertIs(out.base, f.base)
+                    f.base_check_count = f.base_check_count+1
+                else:
+                    f.base_check_count = 0
+
+                f.base = out.base
+
+            if f.do_dim_check:
+                if out.shape != ():
+                    raise nps.NumpysaneError("mismatched lists")
+
+            out.setfield(a.dot(b), out.dtype)
+            return out
+
+        # First we look at the case where broadcast_define() has no out_kwarg.
+        # Then the output cannot be specified at all. If prototype_output
+        # exists, then it is either used to create the output array, or to
+        # validate the dimensions of output slices obtained from elsewhere. The
+        # dtype is simply passed through to the inner function, is free to use
+        # it, to not use it, or to crash in response (the f() function above
+        # will take it; created arrays will be of that type; passed-in arrays
+        # will create an error for a wrong type)
+        f1 = nps.broadcast_define(prototype)                        (f)
+        f2 = nps.broadcast_define(prototype, prototype_output=()   )(f)
+        f3 = nps.broadcast_define(prototype, prototype_output=(1,) )(f)
+
+        f.do_base_check  = False
+        f.do_dtype_check = False
+        f.do_dim_check   = True
+        self.assertValueShape( out_ref, outshape_ref, f1, in1, in2)
+        self.assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=float)
+        self.assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=int)
+        self.assertValueShape( out_ref, outshape_ref, f2, in1, in2)
+        self.assertError     (                        f3, in1, in2)
+
+
+        # OK then. Let's now pass in an out_kwarg. Here we do not yet
+        # pre-allocate an output. Thus if we don't pass in a prototype_output
+        # either, the first slice will dictate the output shape, and we'll have
+        # 7 inner calls into an output array (6 base comparisons). If we DO pass
+        # in a prototype_output, then we will allocate immediately, and we'll
+        # see 8 inner calls into an output array (7 base comparisons)
+        f1 = nps.broadcast_define(prototype, out_kwarg="out")                        (f)
+        f2 = nps.broadcast_define(prototype, out_kwarg="out", prototype_output=()   )(f)
+        f3 = nps.broadcast_define(prototype, out_kwarg="out", prototype_output=(1,) )(f)
+
+        f.do_base_check  = True
+        f.do_dtype_check = True
+        f.do_dim_check   = True
+
+        f.base = None
+        self.assertValueShape( out_ref, outshape_ref, f1, in1, in2)
+        self.assertEqual( 6, f.base_check_count )
+        f.base = None
+        self.assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=float)
+        self.assertEqual( 6, f.base_check_count )
+        f.base = None
+        self.assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=int)
+        self.assertEqual( 6, f.base_check_count )
+
+        f.base = None
+        self.assertValueShape( out_ref, outshape_ref, f2, in1, in2)
+        self.assertEqual( 7, f.base_check_count )
+        f.base = None
+        self.assertValueShape( out_ref, outshape_ref, f2, in1, in2, dtype=float)
+        self.assertEqual( 7, f.base_check_count )
+        f.base = None
+        self.assertValueShape( out_ref, outshape_ref, f2, in1, in2, dtype=int)
+        self.assertEqual( 7, f.base_check_count )
+
+        # Here the inner function will get an improperly-sized array to fill in.
+        # broadcast_define() itself won't see any issues with this, but the
+        # inner function is free to detect the error
+        f.do_dim_check = False
+        f.base = None
+        self.assertValueShape( None, None, f3, in1, in2)
+        f.do_dim_check = True
+        f.base = None
+        self.assertError( f3, in1, in2)
+
+
+
+        # Now pre-allocate the full output array ourselves. Any prototype_output
+        # we pass in is used for validation. Any dtype passed in does nothing,
+        # but assertValueShape() will flag discrepancies. We use the same
+        # f1,f2,f3 as above
+
+        f.do_base_check  = True
+        f.do_dtype_check = False
+        f.do_dim_check   = True
+
+        # correct shape, varying dtypes
+        out0 = np.empty( outshape_ref, dtype=float )
+        out1 = np.empty( outshape_ref, dtype=int )
+
+        # shape has too many dimensions
+        out2 = np.empty( outshape_ref + (1,), dtype=int )
+        out3 = np.empty( outshape_ref + (2,), dtype=int )
+        out4 = np.empty( (1,) + outshape_ref, dtype=int )
+        out5 = np.empty( (2,) + outshape_ref, dtype=int )
+
+        # shape has the correct number of dimensions, but they aren't right
+        out6 = np.empty( (1,) + outshape_ref[1:], dtype=int )
+        out7 = np.empty( outshape_ref[:1] + (1,), dtype=int )
+
+
+        # f1 and f2 should work exactly the same, since prototype_output is just
+        # a validating parameter
+        for f12 in f1,f2:
+            f.base = None
+            self.assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out0)
+            self.assertEqual( 7, f.base_check_count )
+            f.base = None
+            self.assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out0, dtype=float)
+            self.assertEqual( 7, f.base_check_count )
+
+            f.base = None
+            self.assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out1)
+            self.assertEqual( 7, f.base_check_count )
+            f.base = None
+            self.assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out1, dtype=int)
+            self.assertEqual( 7, f.base_check_count )
+
+        # any improperly-sized output matrices WILL be flagged if
+        # prototype_output is given, and will likely be flagged if it isn't
+        # also, although there are cases where this wouldn't happen. I simply
+        # expect all of these to fail
+        for out_misshaped in out2,out3,out4,out5,out6,out7:
+            f.do_dim_check = False
+            f.base = None
+            self.assertError( f2, in1, in2, out=out_misshaped)
+            f.do_dim_check = True
+            f.base = None
+            self.assertError( f1, in1, in2, out=out_misshaped)
+
 
 
     def test_concatenation(self):

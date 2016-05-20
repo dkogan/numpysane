@@ -181,12 +181,6 @@ its usefulness.
 
 In addition to this basic broadcasting support, I'm planning the following:
 
-- Output memory should be used more efficiently. This means that the output
-  array should be allocated once, and each slice output should be written
-  directly into the correct place in the array. To make this possible, the
-  output dimensions need to be a part of the prototype, and the output array
-  should be passable to the function being wrapped.
-
 - A C-level broadcast_define(). This would be the analogue of PDL::PP
   (http://pdl.perl.org/PDLdocs/PP.html). This flavor of broadcast_define() would
   be invoked by the build system to wrap C functions. It would implement
@@ -720,7 +714,7 @@ def _broadcast_iter_dim( i_dims_extra,
 
 
 
-def broadcast_define(prototype):
+def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
 
     Synopsis:
@@ -852,7 +846,98 @@ def broadcast_define(prototype):
                                               mb_single[1]) for mb_single in mb],
                  unset='grid', square=1)
 
-    This function is analogous to thread_define() in PDL.
+    The examples above all create a separate output array for each broadcasted
+    slice, and copy the contents from each such slice into the large output
+    array that contains all the results. This is inefficient, and it is possible
+    to pre-allocate an array to forgo these extra allocations and copies. There
+    are several settings to control this. If the function being broadcasted can
+    write its output to a given array instead of creating a new one, most of the
+    inefficiency goes away. broadcast_define() supports the case where this
+    function takes this array in a kwarg: the name of this kwarg can be given to
+    broadcast_define() like so:
+
+        @nps.broadcast_define( ....., out_kwarg = "out" )
+        def func( ....., out):
+            .....
+            out[:] = result
+
+    In order for broadcast_define() to pass such an output array to the inner
+    function, this output array must be available, which means that it must be
+    given to us somehow, or we must create it.
+
+    The most efficient way to make a broadcasted call is to create the full
+    output array beforehand, and to pass that to the broadcasted function. In
+    this case, nothing extra will be allocated, and no unnecessary copies will
+    be made. This can be done like this:
+
+        @nps.broadcast_define( (('n',), ('n',)), ....., out_kwarg = "out" )
+        def inner_product(a, b, out):
+            .....
+            out.setfield(a.dot(b), out.dtype)
+            return out
+
+        out = np.empty((2,4), float)
+        inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), out=out)
+
+    In this example, the caller knows that it's calling an inner_product
+    function, and that the shape of each output slice would be (). The caller
+    also knows the input dimensions and that we have an extra broadcasting
+    dimension (2,4), so the output array will have shape (2,4) + () = (2,4).
+    With this knowledge, the caller preallocates the array, and passes it to the
+    broadcasted function call. Furthermore, in this case the inner function will
+    be called with an output array EVERY time, and this is the only mode the
+    inner function needs to support.
+
+    If the caller doesn't know (or doesn't want to pre-compute) the shape of the
+    output, it can let the broadcasting machinery create this array for them. In
+    order for this to be possible, the shape of the output should be
+    pre-declared, and the dtype of the output should be known:
+
+        @nps.broadcast_define( (('n',), ('n',)),
+                               (),
+                               out_kwarg = "out" )
+        def inner_product(a, b, out):
+            .....
+            out.setfield(a.dot(b), out.dtype)
+            return out
+
+        out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), dtype=int)
+
+    Note that the caller didn't need to specify the prototype of the output or
+    the extra broadcasting dimensions (output prototype is in the
+    broadcast_define() call, but not the inner_product() call). Specifying the
+    dtype here is optional: it defaults to float if omitted. If we want the
+    output array to be pre-allocated, the output prototype (it is () in this
+    example) is required: we must know the shape of the output array in order to
+    create it.
+
+    Without a declared output prototype, we can still make mostly- efficient
+    calls: the broadcasting mechanism can call the inner function for the first
+    slice as we showed earlier, by creating a new array for the slice. This new
+    array required an extra allocation and copy, but it contains the required
+    shape information. This infomation will be used to allocate the output, and
+    the subsequent calls to the inner function will be efficient:
+
+        @nps.broadcast_define( (('n',), ('n',)),
+                               out_kwarg = "out" )
+        def inner_product(a, b, out=None):
+            .....
+            if out is None:
+                return a.dot(b)
+            out.setfield(a.dot(b), out.dtype)
+            return out
+
+        out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3))
+
+    Here we were slighly inefficient, but the ONLY required extra specification
+    was out_kwarg: that's mostly all you need. Also it is important to note that
+    in this case the inner function is called both with passing it an output
+    array to fill in, and with asking it to create a new one (by passing
+    out=None to the inner function). This inner function then must support both
+    modes of operation. If the inner function does not support filling in an
+    output array, none of these efficiency improvements are possible.
+
+    broadcast_define() is analogous to thread_define() in PDL.
 
     '''
     def inner_decorator_for_some_reason(func):
@@ -871,7 +956,8 @@ def broadcast_define(prototype):
             args = tuple(np.asarray(arg) for arg in args)
 
             dims_extra = [] # extra dimensions to broadcast through
-            _eval_broadcast_dims( args, prototype, dims_extra, {} )
+            dims_named = {} # values of the named dimensions
+            _eval_broadcast_dims( args, prototype, dims_extra, dims_named )
 
             # if no broadcasting involved, just call the function
             if not dims_extra:
@@ -881,22 +967,63 @@ def broadcast_define(prototype):
             # I checked all the dimensions and aligned everything. I have my
             # to-broadcast dimension counts. Iterate through all the broadcasting
             # output, and gather the results
-            output           = None
+            output = None
+
+            # reshaped output. I write to this array
             output_flattened = None
+
+            # substitute named variable values into the output prototype
+            prototype_output_local = None
+            if prototype_output is not None:
+                prototype_output_local = [d if type(d) is int
+                                          else dims_extra[d] for d in prototype_output]
+
+            # if the output was supposed to go to a particular place, set that
+            kwargs_dtype = {}
+            if 'dtype' in kwargs:
+                kwargs_dtype['dtype'] = kwargs['dtype']
+            if out_kwarg and out_kwarg in kwargs:
+                output = kwargs[out_kwarg]
+                if prototype_output_local is not None:
+                    expected_shape = dims_extra + prototype_output_local
+                    if output.shape != tuple(expected_shape):
+                        raise NumpysaneError("Inconsistent output shape: expected {}, but got {}".format(expected_shape, output.shape))
+            # if we know enough to allocate the output, do that
+            elif prototype_output_local is not None:
+                output = np.empty(dims_extra + prototype_output_local,
+                                  **kwargs_dtype)
+
+            if output is not None:
+                output_flattened = output.reshape( (_product(dims_extra),) +
+                                                   output.shape[len(dims_extra):] )
+
             i_slice = 0
             for x in _broadcast_iter_dim( 0,
                                           None, args, prototype,
                                           dims_extra ):
+
+                # if the function knows how to write directly to an array,
+                # request that
+                if output is not None and out_kwarg:
+                    kwargs[out_kwarg] = output_flattened[i_slice, ...]
+
                 sliced_args = x + args_passthru
                 result = func( *sliced_args, **kwargs )
 
                 if output is None:
-                    output = np.zeros( dims_extra + list(result.shape),
+                    output = np.empty( dims_extra + list(result.shape),
                                        dtype = result.dtype)
-
                     output_flattened = output.reshape( (_product(dims_extra),) + result.shape)
 
-                output_flattened[i_slice, ...] = result
+                    output_flattened[i_slice, ...] = result
+                elif not out_kwarg:
+                    output_flattened[i_slice, ...] = result
+
+                if prototype_output_local is None:
+                    prototype_output_local = result.shape
+                elif result.shape != tuple(prototype_output_local):
+                    raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_local, result.shape))
+
                 i_slice = i_slice+1
 
             return output
@@ -905,15 +1032,20 @@ def broadcast_define(prototype):
         func_out = _clone_function( broadcast_loop, func.__name__ )
         func_out.__doc__  = func.__doc__ if func.__doc__ else "" + \
                             '''\n\nThis function is broadcast-aware through numpysane.broadcast_define().
-The expected inputs have prototype:
+The expected inputs have input prototype:
 
     {prototype}
+{output_prototype_text}{output_prototype}
 
-Thus first {nargs} positional arguments will broadcast. The trailing shape of
-those arguments must match the prototype; the leading shape must follow the
-standard broadcasting rules. Positional arguments past the first {nargs} and all
-the keyword arguments are passed through untouched.'''.format(prototype = prototype,
-                                                              nargs     = len(prototype))
+The first {nargs} positional arguments will broadcast. The trailing shape of
+those arguments must match the input prototype; the leading shape must follow
+the standard broadcasting rules. Positional arguments past the first {nargs} and
+all the keyword arguments are passed through untouched.'''. \
+        format(prototype = prototype,
+               output_prototype_text = '' if prototype_output is None else
+               '\nand output prototype\n\n    ',
+               output_prototype = '' if prototype_output is None else prototype_output,
+               nargs     = len(prototype))
         return func_out
     return inner_decorator_for_some_reason
 
