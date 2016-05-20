@@ -39,7 +39,7 @@ r'''more-reasonable core functionality for numpy
            [[100, 101, 102],
             [103, 104, 105]]])
 
-    >>> @nps.broadcast_define( ('n',), ('n',) )
+    >>> @nps.broadcast_define( (('n',), ('n',)) )
     ... def inner_product(a, b):
     ...     return a.dot(b)
 
@@ -114,7 +114,7 @@ example:
 
     >>> import numpysane as nps
 
-    >>> @nps.broadcast_define( ('n',), ('n',) )
+    >>> @nps.broadcast_define( (('n',), ('n',)) )
     ... def inner_product(a, b):
     ...     return a.dot(b)
 
@@ -720,7 +720,7 @@ def _broadcast_iter_dim( i_dims_extra,
 
 
 
-def broadcast_define(*prototype):
+def broadcast_define(prototype):
     r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
 
     Synopsis:
@@ -728,7 +728,7 @@ def broadcast_define(*prototype):
         >>> import numpy as np
         >>> import numpysane as nps
 
-        >>> @nps.broadcast_define( ('n',), ('n',) )
+        >>> @nps.broadcast_define( (('n',), ('n',)) )
         ... def inner_product(a, b):
         ...     return a.dot(b)
 
@@ -778,7 +778,7 @@ def broadcast_define(*prototype):
     Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
     and these broadcast as one would expect:
 
-        >>> @nps.broadcast_define( ('n',), ('n',), ())
+        >>> @nps.broadcast_define( (('n',), ('n',), ()))
         ... def scaled_inner_product(a, b, scale):
         ...     return a.dot(b)*scale
 
@@ -810,7 +810,7 @@ def broadcast_define(*prototype):
         import numpy as np
         import numpysane as nps
 
-        @nps.broadcast_define( ('n',2), (2,) )
+        @nps.broadcast_define( (('n',2), (2,)) )
         def fit(xy, c):
             # line-through-origin-model: y = m*x
             # E = sum( (m*x - y)**2 )
@@ -1472,7 +1472,7 @@ def reorder(x, *dims):
     x = atleast_dims(x, dims)
     return np.transpose(x, dims)
 
-@broadcast_define( ('n',), ('n',) )
+@broadcast_define( (('n',), ('n',)) )
 def dot(a, b):
     r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
 
@@ -1510,7 +1510,7 @@ doc = doc.replace("bbb",   "inner")
 doc = doc.replace("aaa",   "vdot")
 inner.__doc__ = doc
 
-@broadcast_define( ('n',), ('n',) )
+@broadcast_define( (('n',), ('n',)) )
 def vdot(a, b):
     r'''Conjugating dot product of two 1-dimensional n-long vectors.
 
@@ -1539,7 +1539,7 @@ def vdot(a, b):
     '''
     return np.vdot(a,b)
 
-@broadcast_define( ('n',), ('n',) )
+@broadcast_define( (('n',), ('n',)) )
 def outer(a, b):
     r'''Outer product of two 1-dimensional n-long vectors.
 
@@ -1563,7 +1563,7 @@ def outer(a, b):
     '''
     return np.outer(a,b)
 
-@broadcast_define( ('n', 'm'), ('m', 'l') )
+@broadcast_define( (('n', 'm'), ('m', 'l')) )
 def matmult(a, b):
     r'''Multiplication of two matrices.
 

@@ -50,7 +50,7 @@ class TestNumpysane(unittest.TestCase):
 
     def test_broadcasting(self):
         r'''Checking broadcasting rules.'''
-        @nps.broadcast_define( ('n',), ('n',) )
+        @nps.broadcast_define( (('n',), ('n',)) )
         def f1(a, b):
             r'''Basic inner product.'''
             return a.dot(b)
@@ -78,7 +78,7 @@ class TestNumpysane(unittest.TestCase):
 
 
         # fancier function, has some preset dimensions
-        @nps.broadcast_define( (3,), ('n',3), ('n',), ('m',) )
+        @nps.broadcast_define( ((3,), ('n',3), ('n',), ('m',)) )
         def f2(a,b,c,d):
             return d
 
@@ -158,7 +158,7 @@ class TestNumpysane(unittest.TestCase):
                           arr(1,    m))
 
         # Make sure extra args and the kwargs are passed through
-        @nps.broadcast_define( (3,), ('n',3), ('n',), ('m',) )
+        @nps.broadcast_define( ((3,), ('n',3), ('n',), ('m',)) )
         def f3(a,b,c,d, e,f, *args, **kwargs):
             def val_or_0(x): return x if x else 0
             return np.array( (a[0], val_or_0(e), val_or_0(f), val_or_0(args[0]), val_or_0( kwargs.get('xxx'))) )
@@ -171,10 +171,10 @@ class TestNumpysane(unittest.TestCase):
                                1, 2, 3, 4., dummy=5, xxx=6)
 
         # Make sure scalars (0-dimensional array) can broadcast
-        @nps.broadcast_define( ('n',), ('n','m'), (2,), () )
+        @nps.broadcast_define( (('n',), ('n','m'), (2,), ()) )
         def f4(a,b,c,d):
             return d
-        @nps.broadcast_define( ('n',), ('n','m'), (2,), () )
+        @nps.broadcast_define( (('n',), ('n','m'), (2,), ()) )
         def f5(a,b,c,d):
             return nps.glue( c, d, axis=-1 )
 

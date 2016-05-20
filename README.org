@@ -39,7 +39,7 @@ array([[[  0,   1,   2],
        [[100, 101, 102],
         [103, 104, 105]]])
 
->>> @nps.broadcast_define( ('n',), ('n',) )
+>>> @nps.broadcast_define( (('n',), ('n',)) )
 ... def inner_product(a, b):
 ...     return a.dot(b)
 
@@ -116,7 +116,7 @@ example:
 #+BEGIN_EXAMPLE
 >>> import numpysane as nps
 
->>> @nps.broadcast_define( ('n',), ('n',) )
+>>> @nps.broadcast_define( (('n',), ('n',)) )
 ... def inner_product(a, b):
 ...     return a.dot(b)
 #+END_EXAMPLE
@@ -567,7 +567,7 @@ Synopsis:
 >>> import numpy as np
 >>> import numpysane as nps
 
->>> @nps.broadcast_define( ('n',), ('n',) )
+>>> @nps.broadcast_define( (('n',), ('n',)) )
 ... def inner_product(a, b):
 ...     return a.dot(b)
 
@@ -619,7 +619,7 @@ Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
 and these broadcast as one would expect:
 
 #+BEGIN_EXAMPLE
->>> @nps.broadcast_define( ('n',), ('n',), ())
+>>> @nps.broadcast_define( (('n',), ('n',), ()))
 ... def scaled_inner_product(a, b, scale):
 ...     return a.dot(b)*scale
 
@@ -653,7 +653,7 @@ of the fit. This broadcasting-enabled function can be defined like this:
 import numpy as np
 import numpysane as nps
 
-@nps.broadcast_define( ('n',2), (2,) )
+@nps.broadcast_define( (('n',2), (2,)) )
 def fit(xy, c):
     # line-through-origin-model: y = m*x
     # E = sum( (m*x - y)**2 )
