@@ -538,6 +538,11 @@ import types
 # m[_colon], but '_colon' can be manipulated in ways that ':' can't
 _colon = slice(None, None, None)
 
+def _product(l):
+    r'''Returns product of all values in the given list'''
+    return reduce( lambda a,b: a*b, l )
+
+
 def _clone_function(f, name):
     r'''Returns a clone of a given function.
 
@@ -889,8 +894,7 @@ def broadcast_define(*prototype):
                     output = np.zeros( dims_extra + list(result.shape),
                                        dtype = result.dtype)
 
-                    output_flattened = output.reshape( (reduce( lambda a,b: a*b, dims_extra),) +
-                                                        result.shape)
+                    output_flattened = output.reshape( (_product(dims_extra),) + result.shape)
 
                 output_flattened[i_slice, ...] = result
                 i_slice = i_slice+1
@@ -1186,7 +1190,7 @@ def clump(x, **kwargs):
     if x.ndim < n:
         n = x.ndim
 
-    s = list(x.shape[:-n]) + [ reduce( lambda a,b: a*b, x.shape[-n:]) ]
+    s = list(x.shape[:-n]) + [ _product(x.shape[-n:]) ]
     return x.reshape(s)
 
 def atleast_dims(x, *dims):
