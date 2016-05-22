@@ -976,7 +976,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             prototype_output_local = None
             if prototype_output is not None:
                 prototype_output_local = [d if type(d) is int
-                                          else dims_extra[d] for d in prototype_output]
+                                          else dims_named[d] for d in prototype_output]
 
             # if the output was supposed to go to a particular place, set that
             kwargs_dtype = {}
