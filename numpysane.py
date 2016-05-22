@@ -1604,8 +1604,8 @@ def reorder(x, *dims):
     x = atleast_dims(x, dims)
     return np.transpose(x, dims)
 
-@broadcast_define( (('n',), ('n',)) )
-def dot(a, b):
+@broadcast_define( (('n',), ('n',)), prototype_output=(), out_kwarg='out' )
+def dot(a, b, out=None):
     r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
 
     Synopsis:
@@ -1628,7 +1628,11 @@ def dot(a, b):
     function, use nps.vdot().
 
     '''
-    return np.dot(a,b)
+    if out is None:
+        return np.dot(a,b)
+
+    out.setfield(a.dot(b), out.dtype)
+    return out
 
 # nps.inner and nps.dot are equivalent. Set the functionality and update the
 # docstring
@@ -1642,8 +1646,8 @@ doc = doc.replace("bbb",   "inner")
 doc = doc.replace("aaa",   "vdot")
 inner.__doc__ = doc
 
-@broadcast_define( (('n',), ('n',)) )
-def vdot(a, b):
+@broadcast_define( (('n',), ('n',)), prototype_output=(), out_kwarg='out' )
+def vdot(a, b, out=None):
     r'''Conjugating dot product of two 1-dimensional n-long vectors.
 
     Synopsis:
@@ -1665,14 +1669,17 @@ def vdot(a, b):
         >>> nps.dot(a,b)
         array((24+148j))
 
-    This is identical to numpysane.inner(). For a conjugating version of this
-    function, use nps.vdot().
+    For a non-conjugating version of this function, use nps.dot().
 
     '''
-    return np.vdot(a,b)
+    if out is None:
+        return np.vdot(a,b)
 
-@broadcast_define( (('n',), ('n',)) )
-def outer(a, b):
+    out.setfield(np.vdot(a,b), out.dtype)
+    return out
+
+@broadcast_define( (('n',), ('n',)), prototype_output=('n','n'), out_kwarg='out' )
+def outer(a, b, out=None):
     r'''Outer product of two 1-dimensional n-long vectors.
 
     Synopsis:
@@ -1693,10 +1700,14 @@ def outer(a, b):
                [ 5,  6,  7],
                [10, 12, 14]])
     '''
-    return np.outer(a,b)
+    if out is None:
+        return np.outer(a,b)
 
-@broadcast_define( (('n', 'm'), ('m', 'l')) )
-def matmult(a, b):
+    out.setfield(np.outer(a,b), out.dtype)
+    return out
+
+@broadcast_define( (('n', 'm'), ('m', 'l')), prototype_output=('n','l'), out_kwarg='out' )
+def matmult(a, b, out=None):
     r'''Multiplication of two matrices.
 
     Synopsis:
@@ -1719,4 +1730,8 @@ def matmult(a, b):
         array([[20, 23, 26, 29],
                [56, 68, 80, 92]])
     '''
-    return np.dot(a,b)
+    if out is None:
+        return np.dot(a,b)
+
+    out.setfield(a.dot(b), out.dtype)
+    return out

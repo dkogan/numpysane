@@ -1285,6 +1285,24 @@ array(20)
 This is identical to numpysane.inner(). For a conjugating version of this
 function, use nps.vdot().
 
+This function is broadcast-aware through numpysane.broadcast_define().
+The expected inputs have input prototype:
+
+#+BEGIN_SRC python
+(('n',), ('n',))
+#+END_SRC
+
+and output prototype
+
+#+BEGIN_SRC python
+()
+#+END_SRC
+
+The first 2 positional arguments will broadcast. The trailing shape of
+those arguments must match the input prototype; the leading shape must follow
+the standard broadcasting rules. Positional arguments past the first 2 and
+all the keyword arguments are passed through untouched.
+
 ** vdot()
 Conjugating dot product of two 1-dimensional n-long vectors.
 
@@ -1309,8 +1327,25 @@ array((136-60j))
 array((24+148j))
 #+END_EXAMPLE
 
-This is identical to numpysane.inner(). For a conjugating version of this
-function, use nps.vdot().
+For a non-conjugating version of this function, use nps.dot().
+
+This function is broadcast-aware through numpysane.broadcast_define().
+The expected inputs have input prototype:
+
+#+BEGIN_SRC python
+(('n',), ('n',))
+#+END_SRC
+
+and output prototype
+
+#+BEGIN_SRC python
+()
+#+END_SRC
+
+The first 2 positional arguments will broadcast. The trailing shape of
+those arguments must match the input prototype; the leading shape must follow
+the standard broadcasting rules. Positional arguments past the first 2 and
+all the keyword arguments are passed through untouched.
 
 ** outer()
 Outer product of two 1-dimensional n-long vectors.
@@ -1334,6 +1369,24 @@ array([[ 0,  0,  0],
        [ 5,  6,  7],
        [10, 12, 14]])
 #+END_EXAMPLE
+
+This function is broadcast-aware through numpysane.broadcast_define().
+The expected inputs have input prototype:
+
+#+BEGIN_SRC python
+(('n',), ('n',))
+#+END_SRC
+
+and output prototype
+
+#+BEGIN_SRC python
+('n', 'n')
+#+END_SRC
+
+The first 2 positional arguments will broadcast. The trailing shape of
+those arguments must match the input prototype; the leading shape must follow
+the standard broadcasting rules. Positional arguments past the first 2 and
+all the keyword arguments are passed through untouched.
 
 ** matmult()
 Multiplication of two matrices.
@@ -1359,6 +1412,24 @@ array([[ 0,  1,  2,  3],
 array([[20, 23, 26, 29],
        [56, 68, 80, 92]])
 #+END_EXAMPLE
+
+This function is broadcast-aware through numpysane.broadcast_define().
+The expected inputs have input prototype:
+
+#+BEGIN_SRC python
+(('n', 'm'), ('m', 'l'))
+#+END_SRC
+
+and output prototype
+
+#+BEGIN_SRC python
+('n', 'l')
+#+END_SRC
+
+The first 2 positional arguments will broadcast. The trailing shape of
+those arguments must match the input prototype; the leading shape must follow
+the standard broadcasting rules. Positional arguments past the first 2 and
+all the keyword arguments are passed through untouched.
 
 * COMPATIBILITY
 
