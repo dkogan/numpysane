@@ -527,6 +527,8 @@ The functions listed above are a start, but more will be added with time.
 import numpy as np
 from functools import reduce
 import types
+import inspect
+
 
 # object needed for fancy slices. m[:] is exactly the same as
 # m[_colon], but '_colon' can be manipulated in ways that ':' can't
@@ -1030,22 +1032,25 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
 
 
         func_out = _clone_function( broadcast_loop, func.__name__ )
-        func_out.__doc__  = func.__doc__ if func.__doc__ else "" + \
-                            '''\n\nThis function is broadcast-aware through numpysane.broadcast_define().
+        func_out.__doc__  = inspect.getdoc(func)
+        if func_out.__doc__ is None:
+            func_out.__doc__ = ''
+        func_out.__doc__+= \
+'''\n\nThis function is broadcast-aware through numpysane.broadcast_define().
 The expected inputs have input prototype:
 
     {prototype}
-{output_prototype_text}{output_prototype}
+
+{output_prototype_text}
 
 The first {nargs} positional arguments will broadcast. The trailing shape of
 those arguments must match the input prototype; the leading shape must follow
 the standard broadcasting rules. Positional arguments past the first {nargs} and
 all the keyword arguments are passed through untouched.'''. \
         format(prototype = prototype,
-               output_prototype_text = '' if prototype_output is None else
-               '\nand output prototype\n\n    ',
-               output_prototype = '' if prototype_output is None else prototype_output,
-               nargs     = len(prototype))
+               output_prototype_text = 'No output prototype is defined.' if prototype_output is None else
+               'and output prototype\n\n    {}'.format(prototype_output),
+               nargs = len(prototype))
         return func_out
     return inner_decorator_for_some_reason
 
