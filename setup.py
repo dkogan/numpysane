@@ -8,6 +8,10 @@ setup(name         = 'numpysane',
       author_email = 'dima@secretsauce.net',
       url          = 'http://github.com/dkogan/numpysane',
       description  = 'more-reasonable core functionality for numpy',
+
+      long_description = """numpysane is a collection of core routines to provide basic numpy
+functionality in a more reasonable way""",
+
       license      = 'LGPL-3+',
       py_modules   = ['numpysane'],
       test_suite   = 'test_numpysane',
