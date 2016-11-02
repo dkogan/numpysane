@@ -1475,7 +1475,18 @@ def mv(x, axis_from, axis_to):
     '''
     axes = [axis_from, axis_to]
     x = atleast_dims(x, axes)
-    return np.moveaxis( x, *axes )
+
+    # The below is equivalent to
+    #   return np.moveaxis( x, *axes )
+    # but some older installs have numpy 1.8, where this isn't available
+
+    axis_from = axes[0] if axes[0] >= 0 else x.ndim + axes[0]
+    axis_to   = axes[1] if axes[1] >= 0 else x.ndim + axes[1]
+
+    # python3 needs the list() cast
+    order = list(range(0, axis_from)) + list(range((axis_from+1), x.ndim))
+    order.insert(axis_to, axis_from)
+    return np.transpose(x, order)
 
 def xchg(x, axis_a, axis_b):
     r'''Exchanges the positions of the two given axes. Similar to numpy.swapaxes()
