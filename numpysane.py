@@ -593,11 +593,11 @@ def _eval_broadcast_dims( args, prototype, dims_extra, dims_named ):
 
 
         # first, I make sure the input is at least as dimension-ful as the
-        # prototype. I make this a hard requirement. Even if the missing
-        # dimensions have length 1, it is likely a mistake on the part of the
-        # user
+        # prototype. I do this by prepending dummy dimensions of length-1 as
+        # necessary
         if len(shape_prototype) > len(shape_arg):
-            raise NumpysaneError("Argument {} has {} dimensions, but the prototype {} demands at least {}".format(name_arg, len(shape_arg), shape_prototype, len(shape_prototype)))
+            ndims_missing_here = len(shape_prototype) - len(shape_arg)
+            shape_arg = (1,) * ndims_missing_here + shape_arg
 
         # Loop through the dimensions. Set the dimensionality of any new named
         # argument to whatever the current argument has. Any already-known
