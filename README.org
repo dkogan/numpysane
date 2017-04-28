@@ -1388,8 +1388,8 @@ those arguments must match the input prototype; the leading shape must follow
 the standard broadcasting rules. Positional arguments past the first 2 and
 all the keyword arguments are passed through untouched.
 
-** matmult()
-Multiplication of two matrices.
+** matmult2()
+Multiplication of two matrices
 
 Synopsis:
 
@@ -1408,10 +1408,16 @@ array([[ 0,  1,  2,  3],
        [ 4,  5,  6,  7],
        [ 8,  9, 10, 11]])
 
->>> nps.matmult(a,b)
+>>> nps.matmult2(a,b)
 array([[20, 23, 26, 29],
        [56, 68, 80, 92]])
 #+END_EXAMPLE
+
+This multiplies exactly 2 matrices, and the output object can be given in
+the 'out' argument. If the usual case where the you let numpysane create and
+return the result, you can use numpysane.matmult() instead. An advantage of
+that function is that it can multiply an arbitrary N matrices together, not
+just 2.
 
 This function is broadcast-aware through numpysane.broadcast_define().
 The expected inputs have input prototype:
@@ -1430,6 +1436,43 @@ The first 2 positional arguments will broadcast. The trailing shape of
 those arguments must match the input prototype; the leading shape must follow
 the standard broadcasting rules. Positional arguments past the first 2 and
 all the keyword arguments are passed through untouched.
+
+** matmult()
+Multiplication of N matrices
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(6).reshape(2,3)
+>>> b = np.arange(12).reshape(3,4)
+>>> a
+array([[0, 1, 2],
+       [3, 4, 5]])
+
+>>> b
+array([[ 0,  1,  2,  3],
+       [ 4,  5,  6,  7],
+       [ 8,  9, 10, 11]])
+
+>>> c
+array([[0],
+       [1],
+       [2],
+       [3]])
+
+>>> nps.matmult(a,b,c)
+array([[162],
+       [504]])
+#+END_EXAMPLE
+
+This multiplies exactly 2 matrices, and the output object can be given in
+the 'out' argument. If the usual case where the you let numpysane create and
+return the result, you can use numpysane.matmult() instead. An advantage of
+that function is that it can multiply an arbitrary N matrices together, not
+just 2.
 
 * COMPATIBILITY
 
