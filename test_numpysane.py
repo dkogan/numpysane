@@ -630,8 +630,16 @@ class TestNumpysane(unittest.TestCase):
                           [ 906,  960, 1014]]]])
 
         self._check_output_modes( ref,
-                                  nps.matmult, arr(2,1,2,4), arr(2,4,3),
+                                  nps.matmult2, arr(2,1,2,4), arr(2,4,3),
                                   float )
+
+        ref2 = np.array([[[[  156.], [  452.]],
+                          [[  372.], [ 1244.]]],
+                         [[[  748.], [ 1044.]],
+                          [[ 2116.], [ 2988.]]]])
+
+        self.assertNumpyAlmostEqual(ref2,
+                                    nps.matmult(arr(2,1,2,4), arr(2,4,3), arr(3,1)))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -1723,8 +1723,8 @@ def outer(a, b, out=None):
     return out
 
 @broadcast_define( (('n', 'm'), ('m', 'l')), prototype_output=('n','l'), out_kwarg='out' )
-def matmult(a, b, out=None):
-    r'''Multiplication of two matrices.
+def matmult2(a, b, out=None):
+    r'''Multiplication of two matrices
 
     Synopsis:
 
@@ -1742,12 +1742,57 @@ def matmult(a, b, out=None):
                [ 4,  5,  6,  7],
                [ 8,  9, 10, 11]])
 
-        >>> nps.matmult(a,b)
+        >>> nps.matmult2(a,b)
         array([[20, 23, 26, 29],
                [56, 68, 80, 92]])
+
+    This multiplies exactly 2 matrices, and the output object can be given in
+    the 'out' argument. If the usual case where the you let numpysane create and
+    return the result, you can use numpysane.matmult() instead. An advantage of
+    that function is that it can multiply an arbitrary N matrices together, not
+    just 2.
+
     '''
     if out is None:
         return np.dot(a,b)
 
     out.setfield(a.dot(b), out.dtype)
     return out
+
+def matmult( *args ):
+    r'''Multiplication of N matrices
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6).reshape(2,3)
+        >>> b = np.arange(12).reshape(3,4)
+        >>> a
+        array([[0, 1, 2],
+               [3, 4, 5]])
+
+        >>> b
+        array([[ 0,  1,  2,  3],
+               [ 4,  5,  6,  7],
+               [ 8,  9, 10, 11]])
+
+        >>> c
+        array([[0],
+               [1],
+               [2],
+               [3]])
+
+        >>> nps.matmult(a,b,c)
+        array([[162],
+               [504]])
+
+    This multiplies exactly 2 matrices, and the output object can be given in
+    the 'out' argument. If the usual case where the you let numpysane create and
+    return the result, you can use numpysane.matmult() instead. An advantage of
+    that function is that it can multiply an arbitrary N matrices together, not
+    just 2.
+
+    '''
+    return reduce( matmult2, args )
