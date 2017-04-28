@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name         = 'numpysane',
-      version      = '0.7',
+      version      = '0.8',
       author       = 'Dima Kogan',
       author_email = 'dima@secretsauce.net',
       url          = 'http://github.com/dkogan/numpysane',
