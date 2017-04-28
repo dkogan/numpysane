@@ -251,6 +251,10 @@ class TestNumpysane(unittest.TestCase):
             self.assertListEqual( s[3].shape, ())
             i = i+1
 
+        # Make sure we add dummy length-1 dimensions
+        self.assertValueShape( None, (3,),
+                               nps.matmult, arr(4), arr(4,3) )
+
     def test_broadcasting_into_output(self):
         r'''Checking broadcasting with the output array defined.'''
 
