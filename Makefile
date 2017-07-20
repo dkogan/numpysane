@@ -5,9 +5,11 @@ all: README README.org
 %EADME %EADME.org: numpysane.py README.footer.org extract_README.py
 	python extract_README.py numpysane
 
-check: check2 check3
 test:  test2  test3
-test2 test3 check2 check3:
+check: check2 check3
+check2: test2
+check3: test3
+test2 test3:
 	python$(patsubst test%,%,$@) test_numpysane.py
 .PHONY: check check2 check3 test test2 test3
 
