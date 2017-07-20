@@ -1126,6 +1126,11 @@ def glue(*args, **kwargs):
         array([[  0,   1,   2, 100, 101, 102],
                [  3,   4,   5, 103, 104, 105]])
 
+        # empty arrays ignored when glueing. Useful for initializing an accumulation
+        >>> nps.glue(a,b, np.array(()), axis=-1)
+        array([[  0,   1,   2, 100, 101, 102],
+               [  3,   4,   5, 103, 104, 105]])
+
         >>> nps.glue(a,b,row, axis=-2)
         array([[   0,    1,    2],
                [   3,    4,    5],
@@ -1244,7 +1249,7 @@ def glue(*args, **kwargs):
     # Now I add dummy dimensions at the front of each array, to bring the source
     # arrays to the same dimensionality. After this is done, ndims for all the
     # matrices will be the same, and np.concatenate() should know what to do.
-    args = [ x[(np.newaxis,)*(max_ndim - x.ndim) + (Ellipsis,)] for x in args ]
+    args = [ x[(np.newaxis,)*(max_ndim - x.ndim) + (Ellipsis,)] for x in args if x.size != 0 ]
 
     return np.concatenate( args, axis=axis )
 

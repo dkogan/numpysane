@@ -468,6 +468,13 @@ class TestNumpysane(unittest.TestCase):
         self.assertError(                       nps.glue, arr(1,3), arr(2,3), axis=-4 )
         self.assertError(                       nps.cat,  arr(1,3), arr(2,3) )
 
+        # empty arrays are accepted and ignored
+        self.assertValueShape( None, (2,3),     nps.glue, np.array(()), arr(2,3),     axis=-2 )
+        self.assertValueShape( None, (1,2,3),   nps.glue, np.array(()), arr(2,3),     axis=-3 )
+        self.assertValueShape( None, (3,),      nps.glue, arr(3),       np.array(()), axis=-1 )
+        self.assertValueShape( None, (1,3),     nps.glue, arr(3),       np.array(()), axis=-2 )
+        self.assertValueShape( None, (3,3),     nps.glue, arr(3),       arr(2,3), np.array(()), axis=-2 )
+
     def test_dimension_manipulation(self):
         r'''Checking the various functions that manipulate dimensions.'''
 
