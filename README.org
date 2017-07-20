@@ -849,6 +849,11 @@ array([1000, 1001, 1002])
 array([[  0,   1,   2, 100, 101, 102],
        [  3,   4,   5, 103, 104, 105]])
 
+# empty arrays ignored when glueing. Useful for initializing an accumulation
+>>> nps.glue(a,b, np.array(()), axis=-1)
+array([[  0,   1,   2, 100, 101, 102],
+       [  3,   4,   5, 103, 104, 105]])
+
 >>> nps.glue(a,b,row, axis=-2)
 array([[   0,    1,    2],
        [   3,    4,    5],
