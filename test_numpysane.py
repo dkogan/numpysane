@@ -433,7 +433,7 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (4,3),     nps.glue, arr(2,3), arr(2,3), axis=-2 )
         self.assertValueShape( None, (2,2,3),   nps.glue, arr(2,3), arr(2,3), axis=-3 )
         self.assertValueShape( None, (2,1,2,3), nps.glue, arr(2,3), arr(2,3), axis=-4 )
-        self.assertValueShape( None, (2,2,3),   nps.glue, arr(2,3), arr(2,3) )
+        self.assertError     (                  nps.glue, arr(2,3), arr(2,3) )
         self.assertValueShape( None, (2,2,3),   nps.cat,  arr(2,3), arr(2,3) )
 
         # extra length-1 dims added as needed, data not duplicated as needed

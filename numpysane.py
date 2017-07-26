@@ -467,9 +467,9 @@ the first dimension:
 New functions this module provides (documented fully in the next section):
 
 **** glue
-Concatenates arrays along a given axis. Implicit length-1 dimensions are added
-at the start as needed. Dimensions other than the glueing axis must match
-exactly.
+Concatenates arrays along a given axis ('axis' must be given in a kwarg).
+Implicit length-1 dimensions are added at the start as needed. Dimensions other
+than the glueing axis must match exactly.
 
 **** cat
 Concatenate a given list of arrays along a new least-significant (leading) axis.
@@ -480,9 +480,6 @@ match, and no data duplication occurs.
 Reshapes the array by grouping together 'n' dimensions, where 'n' is given in a
 kwarg. If 'n' > 0, then n leading dimensions are clumped; if 'n' < 0, then -n
 trailing dimensions are clumped
-
-So for instance, if x.shape is (2,3,4) then nps.clump(x, n = -2).shape is (2,12)
-and nps.clump(x, n = 2).shape is (6, 4)
 
 **** atleast_dims
 Adds length-1 dimensions at the front of an array so that all the given
@@ -1148,9 +1145,7 @@ def glue(*args, **kwargs):
                [[100, 101, 102],
                 [103, 104, 105]]])
 
-    If no 'axis' keyword argument is given, a new dimension is added at the
-    front, and we concatenate along that new dimension. This case is equivalent
-    to numpysane.cat()
+    The 'axis' must be given in a keyword argument.
 
     In order to count dimensions from the inner-most outwards, this function accepts
     only negative axis arguments. This is because numpy broadcasts from the last
@@ -1233,19 +1228,17 @@ def glue(*args, **kwargs):
     '''
 
     axis = kwargs.get('axis')
-    if axis is not None and axis >= 0:
+    if axis is None:
+        raise NumpysaneError("glue() requires the axis to be given in the 'axis' kwarg")
+    if axis >= 0:
         raise NumpysaneError("axis >= 0 can make broadcasting dimensions inconsistent, and is thus not allowed")
 
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
 
-    # If no axis is given, add a new axis at the front, and glue along it
-    max_ndim = max( x.ndim for x in args )
-    if axis is None:
-        axis = -1 - max_ndim
-
     # if we're glueing along a dimension beyond what we already have, expand the
     # target dimension count
+    max_ndim = max( x.ndim for x in args )
     if max_ndim < -axis:
         max_ndim = -axis
 
@@ -1312,7 +1305,8 @@ def cat(*args):
     from iterating a numpy array; see the example above.
 
     '''
-    return glue(*args) # axis is unspecified
+    max_ndim = max( x.ndim for x in args )
+    return glue(*args, axis = -1 - max_ndim)
 
 
 def clump(x, **kwargs):
@@ -1323,6 +1317,14 @@ def clump(x, **kwargs):
         >>> import numpysane as nps
         >>> nps.clump( arr(2,3,4), n = -2).shape
         (2, 12)
+
+    Reshapes the array by grouping together 'n' dimensions, where 'n' is given
+    in a kwarg. If 'n' > 0, then n leading dimensions are clumped; if 'n' < 0,
+    then -n trailing dimensions are clumped
+
+    So for instance, if x.shape is (2,3,4) then nps.clump(x, n = -2).shape is
+    (2,12) and nps.clump(x, n = 2).shape is (6, 4)
+
     '''
     n = kwargs.get('n')
     if n is None:
