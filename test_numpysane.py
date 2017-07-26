@@ -478,13 +478,17 @@ class TestNumpysane(unittest.TestCase):
     def test_dimension_manipulation(self):
         r'''Checking the various functions that manipulate dimensions.'''
 
-        self.assertError     (                    nps.clump,        arr(2,3,4), n=-1 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=5 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=4 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=3 )
+        self.assertValueShape( None, (6,4),       nps.clump,        arr(2,3,4), n=2 )
+        self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=1 )
         self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=0 )
         self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=1 )
-        self.assertValueShape( None, (2,12),      nps.clump,        arr(2,3,4), n=2 )
-        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=3 )
-        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=4 )
-        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=5 )
+        self.assertValueShape( None, (2,12),      nps.clump,        arr(2,3,4), n=-2 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=-3 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=-4 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=-5 )
 
         self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -1, 1 )
         self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -2, 1 )

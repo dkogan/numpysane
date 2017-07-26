@@ -477,9 +477,12 @@ Again, implicit length-1 dimensions are added, and the resulting shapes must
 match, and no data duplication occurs.
 
 **** clump
-Reshapes the array by grouping together the 'n' most significant dimensions,
-where 'n' is given. So for instance, if x.shape is (2,3,4) then
-nps.clump(x,2).shape is (2,12)
+Reshapes the array by grouping together 'n' dimensions, where 'n' is given in a
+kwarg. If 'n' > 0, then n leading dimensions are clumped; if 'n' < 0, then -n
+trailing dimensions are clumped
+
+So for instance, if x.shape is (2,3,4) then nps.clump(x, n = -2).shape is (2,12)
+and nps.clump(x, n = 2).shape is (6, 4)
 
 **** atleast_dims
 Adds length-1 dimensions at the front of an array so that all the given
@@ -1313,26 +1316,29 @@ def cat(*args):
 
 
 def clump(x, **kwargs):
-    r'''Groups the given n most significant dimensions together.
+    r'''Groups the given n dimensions together.
 
     Synopsis:
 
         >>> import numpysane as nps
-        >>> nps.clump( arr(2,3,4), n=2).shape
+        >>> nps.clump( arr(2,3,4), n = -2).shape
         (2, 12)
     '''
     n = kwargs.get('n')
     if n is None:
         raise NumpysaneError("clump() requires a dimension count in the 'n' kwarg")
-    if n < 0:
-        raise NumpysaneError("clump() requires n > 0")
-    if n <= 1:
+    if -1 <= n and n <= 1:
         return x
 
-    if x.ndim < n:
+    if  x.ndim <  n:
         n = x.ndim
+    if -x.ndim > n:
+        n = -x.ndim
 
-    s = list(x.shape[:-n]) + [ _product(x.shape[-n:]) ]
+    if n < 0:
+        s = list(x.shape[:n]) + [ _product(x.shape[n:]) ]
+    else:
+        s = [ _product(x.shape[:n]) ] + list(x.shape[n:])
     return x.reshape(s)
 
 def atleast_dims(x, *dims):
