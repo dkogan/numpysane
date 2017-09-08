@@ -1610,7 +1610,8 @@ def transpose(x):
     last two dimensions contain the matrix.
 
     New length-1 dimensions are added at the front, as required, meaning that 1D
-    input of shape (n,) results in 2D output of shape (1,n).
+    input of shape (n,) is interpreted as a 2D input of shape (1,n), and the
+    transpose is 2 of shape (n,1).
 
     '''
     return xchg( atleast_dims(x, -2), -1, -2)
