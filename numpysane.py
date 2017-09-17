@@ -529,6 +529,8 @@ from functools import reduce
 import types
 import inspect
 
+# setup.py assumes the version is a simple string in '' quotes
+__version__ = '0.10'
 
 # object needed for fancy slices. m[:] is exactly the same as
 # m[_colon], but '_colon' can be manipulated in ways that ':' can't
