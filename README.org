@@ -955,6 +955,16 @@ array([[[[[  0,   1,   2],
 (2, 1, 1, 2, 3)
 #+END_EXAMPLE
 
+In numpysane older than 0.10 the semantics were slightly different: the axis
+kwarg was optional, and glue(*args) would glue along a new leading
+dimension, and thus would be equivalent to cat(*args). This resulted in very
+confusing error messages if the user accidentally omitted the kwarg. To
+request the legacy behavior, do
+
+#+BEGIN_SRC python
+nps.glue.legacy_version = '0.9'
+#+END_SRC
+
 ** cat()
 Concatenates a given list of arrays along a new first (outer) dimension.
 
@@ -1028,6 +1038,15 @@ then -n trailing dimensions are clumped
 
 So for instance, if x.shape is (2,3,4) then nps.clump(x, n = -2).shape is
 (2,12) and nps.clump(x, n = 2).shape is (6, 4)
+
+In numpysane older than 0.10 the semantics were different: n > 0 was
+required, and we ALWAYS clumped the trailing dimensions. Thus the new
+clump(-n) is equivalent to the old clump(n). To request the legacy behavior,
+do
+
+#+BEGIN_SRC python
+nps.clump.legacy_version = '0.9'
+#+END_SRC
 
 ** atleast_dims()
 Returns an array with extra length-1 dimensions to contain all given axes.
