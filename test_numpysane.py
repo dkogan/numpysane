@@ -475,6 +475,12 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (1,3),     nps.glue, arr(3),       np.array(()), axis=-2 )
         self.assertValueShape( None, (3,3),     nps.glue, arr(3),       arr(2,3), np.array(()), axis=-2 )
 
+        # legacy behavior allows one to omit the 'axis' kwarg
+        nps.glue.legacy_version = '0.9'
+        self.assertValueShape( None, (2,2,3),   nps.glue, arr(2,3), arr(2,3) )
+        delattr(nps.glue, 'legacy_version')
+
+
     def test_dimension_manipulation(self):
         r'''Checking the various functions that manipulate dimensions.'''
 
@@ -489,6 +495,16 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=-3 )
         self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=-4 )
         self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=-5 )
+
+        # legacy behavior: n>0 required, and always clumps the trailing dimensions
+        nps.clump.legacy_version = '0.9'
+        self.assertError     (                    nps.clump,        arr(2,3,4), n=-1 )
+        self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=0 )
+        self.assertValueShape( None, (2,3,4),     nps.clump,        arr(2,3,4), n=1 )
+        self.assertValueShape( None, (2,12),      nps.clump,        arr(2,3,4), n=2 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=3 )
+        self.assertValueShape( None, (24,),       nps.clump,        arr(2,3,4), n=4 )
+        delattr(nps.clump, 'legacy_version')
 
         self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -1, 1 )
         self.assertValueShape( None, (2,3,4),     nps.atleast_dims, arr(2,3,4), -2, 1 )

@@ -528,6 +528,7 @@ import numpy as np
 from functools import reduce
 import types
 import inspect
+from distutils.version import StrictVersion
 
 # setup.py assumes the version is a simple string in '' quotes
 __version__ = '0.10'
@@ -1227,20 +1228,42 @@ def glue(*args, **kwargs):
         >>> res.shape
         (2, 1, 1, 2, 3)
 
+    In numpysane older than 0.10 the semantics were slightly different: the axis
+    kwarg was optional, and glue(*args) would glue along a new leading
+    dimension, and thus would be equivalent to cat(*args). This resulted in very
+    confusing error messages if the user accidentally omitted the kwarg. To
+    request the legacy behavior, do
+
+        nps.glue.legacy_version = '0.9'
+
     '''
+    legacy = \
+        hasattr(glue, 'legacy_version') and \
+        StrictVersion(glue.legacy_version) <= StrictVersion('0.9')
 
     axis = kwargs.get('axis')
-    if axis is None:
-        raise NumpysaneError("glue() requires the axis to be given in the 'axis' kwarg")
-    if axis >= 0:
-        raise NumpysaneError("axis >= 0 can make broadcasting dimensions inconsistent, and is thus not allowed")
+
+    if legacy:
+        if axis is not None and axis >= 0:
+            raise NumpysaneError("axis >= 0 can make broadcasting dimensions inconsistent, and is thus not allowed")
+    else:
+        if axis is None:
+            raise NumpysaneError("glue() requires the axis to be given in the 'axis' kwarg")
+        if axis >= 0:
+            raise NumpysaneError("axis >= 0 can make broadcasting dimensions inconsistent, and is thus not allowed")
+
 
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
 
+    # Legacy behavior: if no axis is given, add a new axis at the front, and
+    # glue along it
+    max_ndim = max( x.ndim for x in args )
+    if axis is None:
+        axis = -1 - max_ndim
+
     # if we're glueing along a dimension beyond what we already have, expand the
     # target dimension count
-    max_ndim = max( x.ndim for x in args )
     if max_ndim < -axis:
         max_ndim = -axis
 
@@ -1327,10 +1350,39 @@ def clump(x, **kwargs):
     So for instance, if x.shape is (2,3,4) then nps.clump(x, n = -2).shape is
     (2,12) and nps.clump(x, n = 2).shape is (6, 4)
 
+    In numpysane older than 0.10 the semantics were different: n > 0 was
+    required, and we ALWAYS clumped the trailing dimensions. Thus the new
+    clump(-n) is equivalent to the old clump(n). To request the legacy behavior,
+    do
+
+        nps.clump.legacy_version = '0.9'
+
     '''
+    legacy = \
+        hasattr(clump, 'legacy_version') and \
+        StrictVersion(clump.legacy_version) <= StrictVersion('0.9')
+
+
     n = kwargs.get('n')
     if n is None:
         raise NumpysaneError("clump() requires a dimension count in the 'n' kwarg")
+
+
+    if legacy:
+        # old PDL-like clump(). Takes positive dimension counts, and acts from
+        # the most-significant dimension (from the back)
+        if n < 0:
+            raise NumpysaneError("clump() requires n > 0")
+        if n <= 1:
+            return x
+
+        if x.ndim < n:
+            n = x.ndim
+
+        s = list(x.shape[:-n]) + [ _product(x.shape[-n:]) ]
+        return x.reshape(s)
+
+
     if -1 <= n and n <= 1:
         return x
 
