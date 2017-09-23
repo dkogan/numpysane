@@ -1713,10 +1713,11 @@ def dot(a, b, out=None):
     function has no special handling: normal broadcasting rules are applied.
 
     '''
+    v = np.dot(a,b)
     if out is None:
-        return np.dot(a,b)
+        return v
 
-    out.setfield(a.dot(b), out.dtype)
+    out.setfield(v, out.dtype)
     return out
 
 # nps.inner and nps.dot are equivalent. Set the functionality and update the
