@@ -1689,7 +1689,12 @@ def reorder(x, *dims):
     x = atleast_dims(x, dims)
     return np.transpose(x, dims)
 
-@broadcast_define( (('n',), ('n',)), prototype_output=(), out_kwarg='out' )
+
+# Note that this explicitly isn't done with @broadcast_define. Instead I
+# implement the internals with core numpy routines. The advantage is that these
+# are some of very few numpy functions that support broadcasting, and they do so
+# on the C level, so their broadcasting loop is FAST. Much more so than my
+# current @broadcast_define loop
 def dot(a, b, out=None):
     r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
 
@@ -1715,7 +1720,7 @@ def dot(a, b, out=None):
     function has no special handling: normal broadcasting rules are applied.
 
     '''
-    v = np.dot(a,b)
+    v = np.sum(a*b, axis=-1)
     if out is None:
         return v
 
@@ -1734,7 +1739,11 @@ doc = doc.replace("bbb",   "inner")
 doc = doc.replace("aaa",   "vdot")
 inner.__doc__ = doc
 
-@broadcast_define( (('n',), ('n',)), prototype_output=(), out_kwarg='out' )
+# Note that this explicitly isn't done with @broadcast_define. Instead I
+# implement the internals with core numpy routines. The advantage is that these
+# are some of very few numpy functions that support broadcasting, and they do so
+# on the C level, so their broadcasting loop is FAST. Much more so than my
+# current @broadcast_define loop
 def vdot(a, b, out=None):
     r'''Conjugating dot product of two 1-dimensional n-long vectors.
 
@@ -1765,11 +1774,7 @@ def vdot(a, b, out=None):
     broadcasting rules are applied.
 
     '''
-    if out is None:
-        return np.vdot(a,b)
-
-    out.setfield(np.vdot(a,b), out.dtype)
-    return out
+    return dot(np.conj(a), b, out=out)
 
 @broadcast_define( (('n',), ('n',)), prototype_output=('n','n'), out_kwarg='out' )
 def outer(a, b, out=None):
