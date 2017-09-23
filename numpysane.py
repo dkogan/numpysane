@@ -1708,7 +1708,9 @@ def dot(a, b, out=None):
         array(20)
 
     This is identical to numpysane.inner(). For a conjugating version of this
-    function, use nps.vdot().
+    function, use nps.vdot(). Note that the numpy dot() has some special
+    handling when its dot() is given more than 1-dimensional input. THIS
+    function has no special handling: normal broadcasting rules are applied.
 
     '''
     if out is None:
@@ -1752,7 +1754,10 @@ def vdot(a, b, out=None):
         >>> nps.dot(a,b)
         array((24+148j))
 
-    For a non-conjugating version of this function, use nps.dot().
+    For a non-conjugating version of this function, use nps.dot(). Note that the
+    numpy vdot() has some special handling when its vdot() is given more than
+    1-dimensional input. THIS function has no special handling: normal
+    broadcasting rules are applied.
 
     '''
     if out is None:
