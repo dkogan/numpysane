@@ -1736,6 +1736,8 @@ inner.__doc__ = doc
 def vdot(a, b, out=None):
     r'''Conjugating dot product of two 1-dimensional n-long vectors.
 
+    vdot(a,b) is equivalent to dot(np.conj(a), b)
+
     Synopsis:
 
         >>> import numpy as np
