@@ -185,7 +185,9 @@ In addition to this basic broadcasting support, I'm planning the following:
   (http://pdl.perl.org/PDLdocs/PP.html). This flavor of broadcast_define() would
   be invoked by the build system to wrap C functions. It would implement
   broadcasting awareness in C code it generates, which should work more
-  effectively for performance-sensitive inner loops.
+  effectively for performance-sensitive inner loops. Currently broadcasting
+  loops are all implemented in python, and this can get noticeably slow for
+  large broadcasts.
 
 - Automatic parallelization for broadcasted slices. Since each broadcasting loop
   is independent, this is a very natural place to add parallelism.
@@ -1707,9 +1709,9 @@ def dot(a, b, out=None):
         >>> nps.dot(a,b)
         array(20)
 
-    This is identical to numpysane.inner(). For a conjugating version of this
-    function, use nps.vdot(). Note that the numpy dot() has some special
-    handling when its dot() is given more than 1-dimensional input. THIS
+    this is identical to numpysane.inner(). for a conjugating version of this
+    function, use nps.vdot(). note that the numpy dot() has some special
+    handling when its dot() is given more than 1-dimensional input. this
     function has no special handling: normal broadcasting rules are applied.
 
     '''
