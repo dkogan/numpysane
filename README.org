@@ -192,7 +192,9 @@ In addition to this basic broadcasting support, I'm planning the following:
   (http://pdl.perl.org/PDLdocs/PP.html). This flavor of broadcast_define() would
   be invoked by the build system to wrap C functions. It would implement
   broadcasting awareness in C code it generates, which should work more
-  effectively for performance-sensitive inner loops.
+  effectively for performance-sensitive inner loops. Currently broadcasting
+  loops are all implemented in python, and this can get noticeably slow for
+  large broadcasts.
 
 - Automatic parallelization for broadcasted slices. Since each broadcasting loop
   is independent, this is a very natural place to add parallelism.
@@ -1312,29 +1314,15 @@ array([5, 6, 7])
 array(20)
 #+END_EXAMPLE
 
-This is identical to numpysane.inner(). For a conjugating version of this
-function, use nps.vdot().
-
-This function is broadcast-aware through numpysane.broadcast_define().
-The expected inputs have input prototype:
-
-#+BEGIN_SRC python
-(('n',), ('n',))
-#+END_SRC
-
-and output prototype
-
-#+BEGIN_SRC python
-()
-#+END_SRC
-
-The first 2 positional arguments will broadcast. The trailing shape of
-those arguments must match the input prototype; the leading shape must follow
-the standard broadcasting rules. Positional arguments past the first 2 and
-all the keyword arguments are passed through untouched.
+this is identical to numpysane.inner(). for a conjugating version of this
+function, use nps.vdot(). note that the numpy dot() has some special
+handling when its dot() is given more than 1-dimensional input. this
+function has no special handling: normal broadcasting rules are applied.
 
 ** vdot()
 Conjugating dot product of two 1-dimensional n-long vectors.
+
+vdot(a,b) is equivalent to dot(np.conj(a), b)
 
 Synopsis:
 
@@ -1357,25 +1345,10 @@ array((136-60j))
 array((24+148j))
 #+END_EXAMPLE
 
-For a non-conjugating version of this function, use nps.dot().
-
-This function is broadcast-aware through numpysane.broadcast_define().
-The expected inputs have input prototype:
-
-#+BEGIN_SRC python
-(('n',), ('n',))
-#+END_SRC
-
-and output prototype
-
-#+BEGIN_SRC python
-()
-#+END_SRC
-
-The first 2 positional arguments will broadcast. The trailing shape of
-those arguments must match the input prototype; the leading shape must follow
-the standard broadcasting rules. Positional arguments past the first 2 and
-all the keyword arguments are passed through untouched.
+For a non-conjugating version of this function, use nps.dot(). Note that the
+numpy vdot() has some special handling when its vdot() is given more than
+1-dimensional input. THIS function has no special handling: normal
+broadcasting rules are applied.
 
 ** outer()
 Outer product of two 1-dimensional n-long vectors.
@@ -1519,7 +1492,7 @@ Dima Kogan <dima@secretsauce.net>
 
 * LICENSE AND COPYRIGHT
 
-Copyright 2016 Dima Kogan.
+Copyright 2016-2017 Dima Kogan.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License (version 3 or higher) as
