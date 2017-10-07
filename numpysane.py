@@ -535,8 +535,9 @@ from distutils.version import StrictVersion
 # setup.py assumes the version is a simple string in '' quotes
 __version__ = '0.11'
 
-# object needed for fancy slices. m[:] is exactly the same as
-# m[_colon], but '_colon' can be manipulated in ways that ':' can't
+# object needed for fancy slices. m[:] is exactly the same as m[_colon], but
+# '_colon' is a normal python object, so it can be manipulated in ways that ':'
+# can't
 _colon = slice(None, None, None)
 
 def _product(l):
@@ -1814,8 +1815,9 @@ def matmult2(a, b, out=None):
         >>> import numpy as np
         >>> import numpysane as nps
 
-        >>> a = np.arange(6).reshape(2,3)
+        >>> a = np.arange(6) .reshape(2,3)
         >>> b = np.arange(12).reshape(3,4)
+
         >>> a
         array([[0, 1, 2],
                [3, 4, 5]])
@@ -1850,8 +1852,10 @@ def matmult( *args ):
         >>> import numpy as np
         >>> import numpysane as nps
 
-        >>> a = np.arange(6).reshape(2,3)
+        >>> a = np.arange(6) .reshape(2,3)
         >>> b = np.arange(12).reshape(3,4)
+        >>> c = np.arange(4) .reshape(4,1)
+
         >>> a
         array([[0, 1, 2],
                [3, 4, 5]])
@@ -1871,11 +1875,9 @@ def matmult( *args ):
         array([[162],
                [504]])
 
-    This multiplies exactly 2 matrices, and the output object can be given in
-    the 'out' argument. If the usual case where the you let numpysane create and
-    return the result, you can use numpysane.matmult() instead. An advantage of
-    that function is that it can multiply an arbitrary N matrices together, not
-    just 2.
+    This multiplies N matrices together by repeatedly calling matmult2() for
+    each adjacent pair. Unlike matmult2(), the arguments MUST all be matrices to
+    multiply, an 'out' kwarg for the output is not supported here.
 
     '''
     return reduce( matmult2, args )
