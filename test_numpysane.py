@@ -562,17 +562,17 @@ class TestNumpysane(unittest.TestCase):
         self.assertError     (                    nps.reorder,      arr(2,3,4),  -4, -2, -5, -1, 0, 5 )
 
 
-    def _check_output_modes( self, ref, func, a, b, dtype ):
+    def _check_output_modes( self, ref, func, *args, **kwargs ):
         r'''makes sure func(a,b) == ref.
 
         Tests both a pre-allocated array and a slice-at-a-time allocate/copy
         mode
 
         '''
-        self.assertValueShape( ref, ref.shape, func, a, b )
+        self.assertValueShape( ref, ref.shape, func, *args )
 
-        output = np.empty(ref.shape, dtype=dtype)
-        self.assertValueShape( ref, ref.shape, func, a, b, out=output )
+        output = np.empty(ref.shape, **kwargs)
+        self.assertValueShape( ref, ref.shape, func, *args, out=output )
         self.assertNumpyAlmostEqual(output, ref)
 
     def test_inner(self):
@@ -589,19 +589,19 @@ class TestNumpysane(unittest.TestCase):
 
                                              [[ 480, 1830, 3430],
                                               [4005, 5730, 7705.0]]]),
-                      nps.inner, arr(2,3,5), arr(4,1,3,5), float )
+                      nps.inner, arr(2,3,5), arr(4,1,3,5), dtype=float )
 
         self._check_output_modes( np.array((24+148j)),
                                   nps.dot,
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
-                                  np.complex)
+                                  dtype=np.complex)
 
         self._check_output_modes( np.array((136-60j)),
                                   nps.vdot,
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
-                                  np.complex)
+                                  dtype=np.complex)
 
         # complex values AND non-trivial dimensions
         a = arr(  2,3,5).astype(np.complex)
@@ -629,12 +629,12 @@ class TestNumpysane(unittest.TestCase):
         self._check_output_modes( dot_ref,
                                   nps.dot,
                                   a, b,
-                                  np.complex)
+                                  dtype=np.complex)
 
         self._check_output_modes( vdot_ref,
                                   nps.vdot,
                                   a, b,
-                                  np.complex)
+                                  dtype=np.complex)
 
 
     def test_outer(self):
@@ -670,7 +670,7 @@ class TestNumpysane(unittest.TestCase):
 
         self._check_output_modes( ref,
                                   nps.outer, arr(2,3,5), arr(4,1,3,5),
-                                  float )
+                                  dtype=float )
 
     def test_matmult(self):
         r'''Testing the broadcasted matrix multiplication'''
@@ -691,7 +691,7 @@ class TestNumpysane(unittest.TestCase):
 
         self._check_output_modes( ref,
                                   nps.matmult2, arr(2,1,2,4), arr(2,4,3),
-                                  float )
+                                  dtype=float )
 
         ref2 = np.array([[[[  156.], [  452.]],
                           [[  372.], [ 1244.]]],
