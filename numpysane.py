@@ -1806,7 +1806,16 @@ def outer(a, b, out=None):
     out.setfield(np.outer(a,b), out.dtype)
     return out
 
-@broadcast_define( (('n', 'm'), ('m', 'l')), prototype_output=('n','l'), out_kwarg='out' )
+# Could be implemented with a simple loop around np.dot():
+#
+#     @broadcast_define( (('n', 'm'), ('m', 'l')), prototype_output=('n','l'), out_kwarg='out' )
+#     def matmult2(a, b, out=None):
+#         return np.dot(a,b)
+#
+# but this would produce a python broadcasting loop, which is potentially slow.
+# Instead I'm using the np.matmul() primitive to get C broadcasting loops. This
+# function has stupid special-case rules for low-dimensional arrays, so I make
+# sure to do the normal broadcasting thing in those cases
 def matmult2(a, b, out=None):
     r'''Multiplication of two matrices
 
@@ -1838,11 +1847,45 @@ def matmult2(a, b, out=None):
     just 2.
 
     '''
-    if out is None:
-        return np.dot(a,b)
 
-    out.setfield(a.dot(b), out.dtype)
-    return out
+    if not isinstance(a, np.ndarray) and not isinstance(b, np.ndarray):
+        # two non-arrays (assuming two scalars)
+        if out is not None:
+            o = a*b
+            out.setfield(o, out.dtype)
+            out.resize([])
+            return out
+        return a*b
+
+    if not isinstance(a, np.ndarray) or len(a.shape) == 0:
+        # one non-array (assuming one scalar)
+        if out is not None:
+            out.setfield(a*b, out.dtype)
+            out.resize(b.shape)
+            return out
+        return a*b
+
+    if not isinstance(b, np.ndarray) or len(b.shape) == 0:
+        # one non-array (assuming one scalar)
+        if out is not None:
+            out.setfield(a*b, out.dtype)
+            out.resize(a.shape)
+            return out
+        return a*b
+
+    Nprepended = 0
+    if len(a.shape) == 1:
+        a = a[np.newaxis, :]
+        if out is not None:
+            out = out[np.newaxis, ...]
+        Nprepended = 1
+
+    if len(b.shape) == 1:
+        b = b[np.newaxis, :]
+
+    o = np.matmul(a,b, out)
+    o.resize( o.shape[Nprepended:] )
+    return o
 
 def matmult( *args ):
     r'''Multiplication of N matrices

@@ -698,8 +698,31 @@ class TestNumpysane(unittest.TestCase):
                          [[[  748.], [ 1044.]],
                           [[ 2116.], [ 2988.]]]])
 
+        self._check_output_modes(ref2,
+                                 nps.matmult2, arr(2,1,2,4), nps.matmult2(arr(2,4,3), arr(3,1)))
+
+        # not doing _check_output_modes() because matmult() doesn't take an
+        # 'out' kwarg
         self.assertNumpyAlmostEqual(ref2,
                                     nps.matmult(arr(2,1,2,4), arr(2,4,3), arr(3,1)))
 
+        # checking the null-dimensionality logic
+        A = arr(2,3)
+        self._check_output_modes( nps.inner(nps.transpose(A), np.arange(2)),
+                                  nps.matmult2,
+                                  np.arange(2), A )
+
+        A = arr(3)
+        self._check_output_modes( A*2,
+                                  nps.matmult2,
+                                  np.array([2]), A )
+
+        A = arr(3)
+        self._check_output_modes( A*2,
+                                  nps.matmult2,
+                                  np.array(2), A )
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
+
+
