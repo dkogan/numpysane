@@ -1400,8 +1400,9 @@ Synopsis:
 >>> import numpy as np
 >>> import numpysane as nps
 
->>> a = np.arange(6).reshape(2,3)
+>>> a = np.arange(6) .reshape(2,3)
 >>> b = np.arange(12).reshape(3,4)
+
 >>> a
 array([[0, 1, 2],
        [3, 4, 5]])
@@ -1422,24 +1423,6 @@ return the result, you can use numpysane.matmult() instead. An advantage of
 that function is that it can multiply an arbitrary N matrices together, not
 just 2.
 
-This function is broadcast-aware through numpysane.broadcast_define().
-The expected inputs have input prototype:
-
-#+BEGIN_SRC python
-(('n', 'm'), ('m', 'l'))
-#+END_SRC
-
-and output prototype
-
-#+BEGIN_SRC python
-('n', 'l')
-#+END_SRC
-
-The first 2 positional arguments will broadcast. The trailing shape of
-those arguments must match the input prototype; the leading shape must follow
-the standard broadcasting rules. Positional arguments past the first 2 and
-all the keyword arguments are passed through untouched.
-
 ** matmult()
 Multiplication of N matrices
 
@@ -1449,8 +1432,10 @@ Synopsis:
 >>> import numpy as np
 >>> import numpysane as nps
 
->>> a = np.arange(6).reshape(2,3)
+>>> a = np.arange(6) .reshape(2,3)
 >>> b = np.arange(12).reshape(3,4)
+>>> c = np.arange(4) .reshape(4,1)
+
 >>> a
 array([[0, 1, 2],
        [3, 4, 5]])
@@ -1471,11 +1456,9 @@ array([[162],
        [504]])
 #+END_EXAMPLE
 
-This multiplies exactly 2 matrices, and the output object can be given in
-the 'out' argument. If the usual case where the you let numpysane create and
-return the result, you can use numpysane.matmult() instead. An advantage of
-that function is that it can multiply an arbitrary N matrices together, not
-just 2.
+This multiplies N matrices together by repeatedly calling matmult2() for
+each adjacent pair. Unlike matmult2(), the arguments MUST all be matrices to
+multiply, an 'out' kwarg for the output is not supported here.
 
 * COMPATIBILITY
 
