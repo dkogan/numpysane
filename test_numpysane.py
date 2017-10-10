@@ -253,7 +253,21 @@ class TestNumpysane(unittest.TestCase):
 
         # Make sure we add dummy length-1 dimensions
         self.assertValueShape( None, (3,),
-                               nps.matmult, arr(4), arr(4,3) )
+                               nps.matmult,  arr(4), arr(4,3) )
+        self.assertValueShape( None, (3,),
+                               nps.matmult2, arr(4), arr(4,3) )
+        self.assertValueShape( None, (1,3,),
+                               nps.matmult, arr(1,4), arr(4,3) )
+        self.assertValueShape( None, (1,3,),
+                               nps.matmult2, arr(1,4), arr(4,3) )
+        self.assertValueShape( None, (10,3,),
+                               nps.matmult, arr(4), arr(10,4,3) )
+        self.assertValueShape( None, (10,3,),
+                               nps.matmult2, arr(4), arr(10,4,3) )
+        self.assertValueShape( None, (10,1,3,),
+                               nps.matmult, arr(1,4), arr(10,4,3) )
+        self.assertValueShape( None, (10,1,3,),
+                               nps.matmult2, arr(1,4), arr(10,4,3) )
 
     def test_broadcasting_into_output(self):
         r'''Checking broadcasting with the output array defined.'''
