@@ -1873,18 +1873,19 @@ def matmult2(a, b, out=None):
             return out
         return a*b
 
-    Nprepended = 0
+    prepended = False
     if len(a.shape) == 1:
         a = a[np.newaxis, :]
         if out is not None:
             out = out[np.newaxis, ...]
-        Nprepended = 1
+        prepended = True
 
     if len(b.shape) == 1:
         b = b[np.newaxis, :]
 
     o = np.matmul(a,b, out)
-    o.resize( o.shape[Nprepended:] )
+    if prepended:
+        o.resize( o[...,0,:].shape )
     return o
 
 def matmult( *args ):
