@@ -1261,6 +1261,8 @@ def glue(*args, **kwargs):
 
     # ignore empty arrays( shape == (0,) ) but not scalars ( shape == ())
     args = [ x for x in args if x.shape != (0,) ]
+    if not args:
+        return np.zeros((0,))
 
     # Legacy behavior: if no axis is given, add a new axis at the front, and
     # glue along it

@@ -517,6 +517,9 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (5,0),     nps.glue, arr(2,0), arr(3,0),     axis=-2 )
         self.assertError(                       nps.glue, arr(2,0), arr(3,0),     axis=-3 )
 
+        self.assertValueShape( None, (0,),      nps.glue, arr(0,),  arr(0,),      axis=-1 )
+        self.assertValueShape( None, (2,),      nps.glue, arr(2,),  arr(0,),      axis=-1 )
+        self.assertValueShape( None, (2,),      nps.glue, arr(0,),  arr(2,),      axis=-1 )
         self.assertValueShape( None, (0,6),     nps.glue, arr(0,3), arr(0,3),     axis=-1 )
         self.assertValueShape( None, (0,3),     nps.glue, arr(0,3), arr(0,3),     axis=-2 )
         self.assertValueShape( None, (2,0,3),   nps.glue, arr(0,3), arr(0,3),     axis=-3 )
