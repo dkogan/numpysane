@@ -1337,6 +1337,8 @@ def cat(*args):
     from iterating a numpy array; see the example above.
 
     '''
+    if len(args) == 0:
+        return np.array(())
     max_ndim = max( x.ndim for x in args )
     return glue(*args, axis = -1 - max_ndim)
 
