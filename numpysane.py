@@ -8,7 +8,7 @@ r'''more-reasonable core functionality for numpy
 
     >>> a   = np.arange(6).reshape(2,3)
     >>> b   = a + 100
-    >>> row = a[0,:]
+    >>> row = a[0,:] + 1000
 
     >>> a
     array([[0, 1, 2],
@@ -59,10 +59,10 @@ have used PDL in the past.
 Instead of writing a new module (this module), it would be really nice to simply
 patch numpy to give everybody the more reasonable behavior. I'd be very happy to
 do that, but the issues lie with some very core functionality, and any changes
-in behavior would likely break existing code. Any comments in how to achieve
-better behaviors in a less forky manner as welcome.
+in behavior would break existing code. Any comments in how to achieve better
+behaviors in a less forky manner are welcome.
 
-Finally, if the system DOES make sense in some way that I'm simply not
+Finally, if the existing system DOES make sense in some way that I'm simply not
 understanding, I'm happy to listen. I have no intention to disparage anyone or
 anything; I just want a more usable system for numerical computations.
 
@@ -87,8 +87,8 @@ identically-sized vectors (1-dimensional arrays) and returns a scalar
 arrays of shape (2,3,4), compute the 6 inner products of length-4 each, and
 report the output in an array of shape (2,3). Numpy puts the most-significant
 dimension at the end, which is why this isn't 12 inner products of length-2
-each. This is a semi-arbitrary design choice, which could have been made
-differently: PDL puts the most-significant dimension at the front, for instance.
+each. This is an arbitrary design choice, which could have been made
+differently: PDL puts the most-significant dimension at the front.
 
 The user doesn't choose whether to use broadcasting or not: some functions
 support it, and some do not. In PDL, broadcasting (called "threading" in that
@@ -101,11 +101,12 @@ By contrast, in numpy very few functions know how to broadcast. On top of that,
 the documentation is usually silent about the broadcasting status of a function
 in question. And on top of THAT, broadcasting rules state that an array of
 dimensions (n,m) is functionally identical to one of dimensions
-(1,1,1,....1,n,m). However, many numpy functions have special-case rules to
-create different behaviors for inputs with different numbers of dimensions, and
-this creates unexpected results. The effect of all this is a messy situation
-where the user is often not sure of the exact behavior of the functions they're
-calling, and trial and error is required to make the system do what one wants.
+(1,1,1,....1,n,m). Sadly, numpy does not respect its own broadcasting rules, and
+many functions have special-case logic to create different behaviors for inputs
+with different numbers of dimensions; and this creates unexpected results. The
+effect of all this is a messy situation where the user is often not sure of the
+exact behavior of the functions they're calling, and trial and error is required
+to make the system do what one wants.
 
 *** Solution
 This module contains functionality to make any arbitrary function broadcastable.
