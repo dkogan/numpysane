@@ -520,6 +520,16 @@ class TestNumpysane(unittest.TestCase):
         self.assertValueShape( None, (0,),      nps.glue, arr(0,),  arr(0,),      axis=-1 )
         self.assertValueShape( None, (2,),      nps.glue, arr(2,),  arr(0,),      axis=-1 )
         self.assertValueShape( None, (2,),      nps.glue, arr(0,),  arr(2,),      axis=-1 )
+        self.assertValueShape( None, (1,2,),    nps.glue, arr(2,),  arr(0,),      axis=-2 )
+        self.assertValueShape( None, (1,2,),    nps.glue, arr(0,),  arr(2,),      axis=-2 )
+
+        # same as before, but np.array(()) instead of np.arange(0)
+        self.assertValueShape( None, (0,),      nps.glue, np.array(()), np.array(()), axis=-1 )
+        self.assertValueShape( None, (2,),      nps.glue, arr(2,),  np.array(()), axis=-1 )
+        self.assertValueShape( None, (2,),      nps.glue, np.array(()),arr(2,),   axis=-1 )
+        self.assertValueShape( None, (1,2,),    nps.glue, arr(2,),  np.array(()), axis=-2 )
+        self.assertValueShape( None, (1,2,),    nps.glue, np.array(()),  arr(2,), axis=-2 )
+
         self.assertValueShape( None, (0,6),     nps.glue, arr(0,3), arr(0,3),     axis=-1 )
         self.assertValueShape( None, (0,3),     nps.glue, arr(0,3), arr(0,3),     axis=-2 )
         self.assertValueShape( None, (2,0,3),   nps.glue, arr(0,3), arr(0,3),     axis=-3 )
