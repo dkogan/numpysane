@@ -537,7 +537,7 @@ import inspect
 from distutils.version import StrictVersion
 
 # setup.py assumes the version is a simple string in '' quotes
-__version__ = '0.15'
+__version__ = '0.16'
 
 # object needed for fancy slices. m[:] is exactly the same as m[_colon], but
 # '_colon' is a normal python object, so it can be manipulated in ways that ':'
