@@ -548,6 +548,9 @@ Broadcast-aware inner product. Identical to dot
 **** outer
 Broadcast-aware outer product.
 
+**** norm2
+Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
+
 **** matmult
 Broadcast-aware matrix multiplication
 
@@ -1391,6 +1394,25 @@ The first 2 positional arguments will broadcast. The trailing shape of
 those arguments must match the input prototype; the leading shape must follow
 the standard broadcasting rules. Positional arguments past the first 2 and
 all the keyword arguments are passed through untouched.
+
+** norm2()
+Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(3)
+>>> a
+array([0, 1, 2])
+
+>>> nps.norm2(a)
+array(5)
+#+END_EXAMPLE
+
+This is a convenience function to compute a 2-norm
 
 ** matmult2()
 Multiplication of two matrices

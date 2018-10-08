@@ -519,6 +519,9 @@ Broadcast-aware inner product. Identical to dot
 **** outer
 Broadcast-aware outer product.
 
+**** norm2
+Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
+
 **** matmult
 Broadcast-aware matrix multiplication
 
@@ -1721,7 +1724,7 @@ def dot(a, b, out=None):
         array([5, 6, 7])
 
         >>> nps.dot(a,b)
-        array(20)
+        20
 
     this is identical to numpysane.inner(). for a conjugating version of this
     function, use nps.vdot(). note that the numpy dot() has some special
@@ -1812,6 +1815,31 @@ def outer(a, b, out=None):
 
     out.setfield(np.outer(a,b), out.dtype)
     return out
+
+# Note that this explicitly isn't done with @broadcast_define. Instead I
+# implement the internals with core numpy routines. The advantage is that these
+# are some of very few numpy functions that support broadcasting, and they do so
+# on the C level, so their broadcasting loop is FAST. Much more so than my
+# current @broadcast_define loop
+def norm2(a, **kwargs):
+    r'''Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(3)
+        >>> a
+        array([0, 1, 2])
+
+        >>> nps.norm2(a)
+        5
+
+    This is a convenience function to compute a 2-norm
+
+    '''
+    return inner(a,a, **kwargs)
 
 # Could be implemented with a simple loop around np.dot():
 #
