@@ -522,6 +522,9 @@ Broadcast-aware outer product.
 **** norm2
 Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
 
+**** trace
+Broadcast-aware trace.
+
 **** matmult
 Broadcast-aware matrix multiplication
 
@@ -1840,6 +1843,37 @@ def norm2(a, **kwargs):
 
     '''
     return inner(a,a, **kwargs)
+
+@broadcast_define( (('n','n',),), prototype_output=() )
+def trace(a):
+    r'''Broadcast-aware trace
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(3*4*4).reshape(3,4,4)
+        >>> a
+        array([[[ 0,  1,  2,  3],
+                [ 4,  5,  6,  7],
+                [ 8,  9, 10, 11],
+                [12, 13, 14, 15]],
+
+               [[16, 17, 18, 19],
+                [20, 21, 22, 23],
+                [24, 25, 26, 27],
+                [28, 29, 30, 31]],
+
+               [[32, 33, 34, 35],
+                [36, 37, 38, 39],
+                [40, 41, 42, 43],
+                [44, 45, 46, 47]]])
+
+        >>> nps.trace(a)
+        array([ 30,  94, 158])
+    '''
+    return np.trace(a)
 
 # Could be implemented with a simple loop around np.dot():
 #

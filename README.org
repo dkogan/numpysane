@@ -551,6 +551,9 @@ Broadcast-aware outer product.
 **** norm2
 Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
 
+**** trace
+Broadcast-aware trace.
+
 **** matmult
 Broadcast-aware matrix multiplication
 
@@ -1315,7 +1318,7 @@ array([0, 1, 2])
 array([5, 6, 7])
 
 >>> nps.dot(a,b)
-array(20)
+20
 #+END_EXAMPLE
 
 this is identical to numpysane.inner(). for a conjugating version of this
@@ -1409,10 +1412,58 @@ Synopsis:
 array([0, 1, 2])
 
 >>> nps.norm2(a)
-array(5)
+5
 #+END_EXAMPLE
 
 This is a convenience function to compute a 2-norm
+
+** trace()
+Broadcast-aware trace
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(3*4*4).reshape(3,4,4)
+>>> a
+array([[[ 0,  1,  2,  3],
+        [ 4,  5,  6,  7],
+        [ 8,  9, 10, 11],
+        [12, 13, 14, 15]],
+
+       [[16, 17, 18, 19],
+        [20, 21, 22, 23],
+        [24, 25, 26, 27],
+        [28, 29, 30, 31]],
+
+       [[32, 33, 34, 35],
+        [36, 37, 38, 39],
+        [40, 41, 42, 43],
+        [44, 45, 46, 47]]])
+
+>>> nps.trace(a)
+array([ 30,  94, 158])
+#+END_EXAMPLE
+
+This function is broadcast-aware through numpysane.broadcast_define().
+The expected inputs have input prototype:
+
+#+BEGIN_SRC python
+(('n', 'n'),)
+#+END_SRC
+
+and output prototype
+
+#+BEGIN_SRC python
+()
+#+END_SRC
+
+The first 1 positional arguments will broadcast. The trailing shape of
+those arguments must match the input prototype; the leading shape must follow
+the standard broadcasting rules. Positional arguments past the first 1 and
+all the keyword arguments are passed through untouched.
 
 ** matmult2()
 Multiplication of two matrices
