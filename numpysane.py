@@ -1994,3 +1994,15 @@ def matmult( *args ):
 
     '''
     return reduce( matmult2, args )
+
+
+
+# I use np.matmul at one point. This was added in numpy 1.10.0, but
+# apparently I want to support even older releases. I thus provide a
+# compatibility function in that case. This is slower (python loop instead of C
+# loop), but at least it works
+if not hasattr(np, 'matmul'):
+    @broadcast_define( (('n','m'),('m','o')), ('n','o'))
+    def matmul(a,b, out=None):
+        return np.dot(a,b,out)
+    np.matmul = matmul
