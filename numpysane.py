@@ -585,12 +585,17 @@ class NumpysaneError(Exception):
     def __str__(self):       return self.err
 
 
-def _eval_broadcast_dims( args, prototype, dims_extra, dims_named ):
+def _eval_broadcast_dims( args, prototype ):
     r'''Helper function to evaluate a given list of arguments in respect to a given
     broadcasting prototype. This function will flag any errors in the
-    dimensionality of the inputs. If no errors are detected, the outer shape of
-    the broadcast is stored in the dims_extra list, and the values of the
-    symbolic dimensions are stored in the dims_named dict
+    dimensionality of the inputs. If no errors are detected, it returns
+
+      dims_extra,dims_named
+
+    where
+
+      dims_extra is the outer shape of the broadcast
+      dims_named is the values of the named dimensions
 
     '''
 
@@ -657,12 +662,15 @@ def _eval_broadcast_dims( args, prototype, dims_extra, dims_named ):
 
 
     # clear out the accumulators
-    dims_extra[:] = []
-    dims_named.clear()
+    dims_extra = []
+    dims_named = {}
+
     for i_arg in range(len(args)):
         parse_dim( i_arg,
                    prototype[i_arg], args[i_arg].shape,
                    dims_extra, dims_named )
+
+    return dims_extra,dims_named
 
 
 
@@ -970,9 +978,10 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             # make sure all the arguments are numpy arrays
             args = tuple(np.asarray(arg) for arg in args)
 
-            dims_extra = [] # extra dimensions to broadcast through
-            dims_named = {} # values of the named dimensions
-            _eval_broadcast_dims( args, prototype, dims_extra, dims_named )
+            # dims_extra: extra dimensions to broadcast through
+            # dims_named: values of the named dimensions
+            dims_extra,dims_named = \
+                _eval_broadcast_dims( args, prototype)
 
             # if no broadcasting involved, just call the function
             if not dims_extra:
@@ -1100,8 +1109,10 @@ def broadcast_generate(prototype, args):
     # make sure all the arguments are numpy arrays
     args = tuple(np.asarray(arg) for arg in args)
 
-    dims_extra = [] # extra dimensions to broadcast through
-    _eval_broadcast_dims( args, prototype, dims_extra, {} )
+    # dims_extra: extra dimensions to broadcast through
+    # dims_named: values of the named dimensions
+    dims_extra,dims_named = \
+        _eval_broadcast_dims( args, prototype )
 
     # I checked all the dimensions and aligned everything. I have my
     # to-broadcast dimension counts. Iterate through all the broadcasting
