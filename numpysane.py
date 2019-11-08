@@ -1719,8 +1719,8 @@ def reorder(x, *dims):
 # Note that this explicitly isn't done with @broadcast_define. Instead I
 # implement the internals with core numpy routines. The advantage is that these
 # are some of very few numpy functions that support broadcasting, and they do so
-# on the C level, so their broadcasting loop is FAST. Much more so than my
-# current @broadcast_define loop
+# in C, so their broadcasting loop is FAST. Much more so than my current
+# @broadcast_define loop
 def dot(a, b, out=None):
     r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
 
@@ -1833,8 +1833,8 @@ def outer(a, b, out=None):
 # Note that this explicitly isn't done with @broadcast_define. Instead I
 # implement the internals with core numpy routines. The advantage is that these
 # are some of very few numpy functions that support broadcasting, and they do so
-# on the C level, so their broadcasting loop is FAST. Much more so than my
-# current @broadcast_define loop
+# in C, so their broadcasting loop is FAST. Much more so than my current
+# @broadcast_define loop
 def norm2(a, **kwargs):
     r'''Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
 
