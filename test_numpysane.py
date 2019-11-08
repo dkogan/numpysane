@@ -25,18 +25,18 @@ class TestNumpysane(unittest.TestCase):
         for v1,v2 in zip(s1,s2):
             self.assertEqual(v1,v2, msg="Lists {} and {} do not match".format(s1,s2))
 
-    def assertNumpyAlmostEqual(self, first, second):
-        self.assertListEqual(first.shape, second.shape)
-        diff = first - second
+    def assertNumpyAlmostEqual(self, value_ref, value_got):
+        self.assertListEqual(value_ref.shape, value_got.shape)
+        diff = value_ref - value_got
         diff = diff.ravel().astype( diff.dtype if not diff.dtype == np.complex else np.complex)
         rms = np.sqrt(diff.dot(diff) / diff.size)
-        self.assertLess( rms, 1e-6, msg='matrix discrepancy:\n{} vs\n{}. Diff:\n{}'.format(first,second,diff) )
+        self.assertLess( rms, 1e-6, msg='value discrepancy:\nwanted   {}\nbut got {}\nDiff:   {}'.format(value_ref,value_got,diff) )
 
     def assertError(self, f, *args, **kwargs):
         r'''Convenience wrapper for my use of assertRaises()'''
         return self.assertRaises((nps.NumpysaneError, ValueError), f, *args, **kwargs)
 
-    def assertValueShape(self, value, s, f, *args, **kwargs):
+    def assertValueShape(self, value_ref, s, f, *args, **kwargs):
         r'''Makes sure a given call produces a given value and shape.
 
         It is redundant to specify both, but it makes it clear I'm asking for
@@ -46,8 +46,8 @@ class TestNumpysane(unittest.TestCase):
         res = f(*args, **kwargs)
         if s is not None:
             self.assertListEqual(res.shape, s)
-        if value is not None:
-            self.assertNumpyAlmostEqual(res, value)
+        if value_ref is not None:
+            self.assertNumpyAlmostEqual(value_ref, res)
         if 'dtype' in kwargs:
             self.assertEqual(res.dtype, kwargs['dtype'])
 
@@ -636,12 +636,16 @@ class TestNumpysane(unittest.TestCase):
         Tests both a pre-allocated array and a slice-at-a-time allocate/copy
         mode
 
+        Only one kwarg is known: 'out_inplace_dtype'
+
         '''
+
         self.assertValueShape( ref, ref.shape, func, *args )
 
-        output = np.empty(ref.shape, **kwargs)
+        out_inplace_dtype = kwargs.get('out_inplace_dtype')
+        output = np.empty(ref.shape, dtype=out_inplace_dtype)
         self.assertValueShape( ref, ref.shape, func, *args, out=output )
-        self.assertNumpyAlmostEqual(output, ref)
+        self.assertNumpyAlmostEqual(ref, output)
 
     def test_inner(self):
         r'''Testing the broadcasted inner product'''
@@ -657,19 +661,19 @@ class TestNumpysane(unittest.TestCase):
 
                                              [[ 480, 1830, 3430],
                                               [4005, 5730, 7705.0]]]),
-                      nps.inner, arr(2,3,5), arr(4,1,3,5), dtype=float )
+                      nps.inner, arr(2,3,5), arr(4,1,3,5), out_inplace_dtype=float )
 
         self.assertResult_inoutplace( np.array((24+148j)),
                                   nps.dot,
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
-                                  dtype=np.complex)
+                                  out_inplace_dtype=np.complex)
 
         self.assertResult_inoutplace( np.array((136-60j)),
                                   nps.vdot,
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
-                                  dtype=np.complex)
+                                  out_inplace_dtype=np.complex)
 
         # complex values AND non-trivial dimensions
         a = arr(  2,3,5).astype(np.complex)
@@ -697,12 +701,12 @@ class TestNumpysane(unittest.TestCase):
         self.assertResult_inoutplace( dot_ref,
                                   nps.dot,
                                   a, b,
-                                  dtype=np.complex)
+                                  out_inplace_dtype=np.complex)
 
         self.assertResult_inoutplace( vdot_ref,
                                   nps.vdot,
                                   a, b,
-                                  dtype=np.complex)
+                                  out_inplace_dtype=np.complex)
 
 
     def test_outer(self):
@@ -738,7 +742,7 @@ class TestNumpysane(unittest.TestCase):
 
         self.assertResult_inoutplace( ref,
                                   nps.outer, arr(2,3,5), arr(4,1,3,5),
-                                  dtype=float )
+                                  out_inplace_dtype=float )
 
     def test_matmult(self):
         r'''Testing the broadcasted matrix multiplication'''
@@ -759,7 +763,7 @@ class TestNumpysane(unittest.TestCase):
 
         self.assertResult_inoutplace( ref,
                                   nps.matmult2, arr(2,1,2,4), arr(2,4,3),
-                                  dtype=float )
+                                  out_inplace_dtype=float )
 
         ref2 = np.array([[[[  156.], [  452.]],
                           [[  372.], [ 1244.]]],
