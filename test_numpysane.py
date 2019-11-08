@@ -630,7 +630,7 @@ class TestNumpysane(unittest.TestCase):
         self.assertError     (                    nps.reorder,      arr(2,3,4),  -4, -2, -5, -1, 0, 5 )
 
 
-    def _check_output_modes( self, ref, func, *args, **kwargs ):
+    def assertResult_inoutplace( self, ref, func, *args, **kwargs ):
         r'''makes sure func(a,b) == ref.
 
         Tests both a pre-allocated array and a slice-at-a-time allocate/copy
@@ -646,7 +646,7 @@ class TestNumpysane(unittest.TestCase):
     def test_inner(self):
         r'''Testing the broadcasted inner product'''
 
-        self._check_output_modes(  np.array([[[  30,  255,  730],
+        self.assertResult_inoutplace(  np.array([[[  30,  255,  730],
                                               [ 180,  780, 1630]],
 
                                              [[ 180,  780, 1630],
@@ -659,13 +659,13 @@ class TestNumpysane(unittest.TestCase):
                                               [4005, 5730, 7705.0]]]),
                       nps.inner, arr(2,3,5), arr(4,1,3,5), dtype=float )
 
-        self._check_output_modes( np.array((24+148j)),
+        self.assertResult_inoutplace( np.array((24+148j)),
                                   nps.dot,
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
                                   dtype=np.complex)
 
-        self._check_output_modes( np.array((136-60j)),
+        self.assertResult_inoutplace( np.array((136-60j)),
                                   nps.vdot,
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                                   np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
@@ -694,12 +694,12 @@ class TestNumpysane(unittest.TestCase):
                             [[  -970.0   -1930.0j,  -11570.0  -15230.0j,  -38420.0  -45280.0j],
                              [  -64720.0 -72730.0j, -121070.0 -132530.0j, -201170.0 -216580.0j]]])
 
-        self._check_output_modes( dot_ref,
+        self.assertResult_inoutplace( dot_ref,
                                   nps.dot,
                                   a, b,
                                   dtype=np.complex)
 
-        self._check_output_modes( vdot_ref,
+        self.assertResult_inoutplace( vdot_ref,
                                   nps.vdot,
                                   a, b,
                                   dtype=np.complex)
@@ -736,7 +736,7 @@ class TestNumpysane(unittest.TestCase):
                         [[1000,1050,1100,1150,1200],[1020,1071,1122,1173,1224],[1040,1092,1144,1196,1248],[1060,1113,1166,1219,1272],[1080,1134,1188,1242,1296]],
                         [[1375,1430,1485,1540,1595],[1400,1456,1512,1568,1624],[1425,1482,1539,1596,1653],[1450,1508,1566,1624,1682],[1475,1534,1593,1652,1711]]]]]))
 
-        self._check_output_modes( ref,
+        self.assertResult_inoutplace( ref,
                                   nps.outer, arr(2,3,5), arr(4,1,3,5),
                                   dtype=float )
 
@@ -757,7 +757,7 @@ class TestNumpysane(unittest.TestCase):
                          [[ 642,  680,  718],
                           [ 906,  960, 1014]]]])
 
-        self._check_output_modes( ref,
+        self.assertResult_inoutplace( ref,
                                   nps.matmult2, arr(2,1,2,4), arr(2,4,3),
                                   dtype=float )
 
@@ -766,29 +766,29 @@ class TestNumpysane(unittest.TestCase):
                          [[[  748.], [ 1044.]],
                           [[ 2116.], [ 2988.]]]])
 
-        self._check_output_modes(ref2,
+        self.assertResult_inoutplace(ref2,
                                  nps.matmult2, arr(2,1,2,4), nps.matmult2(arr(2,4,3), arr(3,1)))
 
-        # not doing _check_output_modes() because matmult() doesn't take an
+        # not doing assertResult_inoutplace() because matmult() doesn't take an
         # 'out' kwarg
         self.assertNumpyAlmostEqual(ref2,
                                     nps.matmult(arr(2,1,2,4), arr(2,4,3), arr(3,1)))
 
         # checking the null-dimensionality logic
         A = arr(2,3)
-        self._check_output_modes( nps.inner(nps.transpose(A), np.arange(2)),
-                                  nps.matmult2,
-                                  np.arange(2), A )
+        self.assertResult_inoutplace( nps.inner(nps.transpose(A), np.arange(2)),
+                                      nps.matmult2,
+                                      np.arange(2), A )
 
         A = arr(3)
-        self._check_output_modes( A*2,
-                                  nps.matmult2,
-                                  np.array([2]), A )
+        self.assertResult_inoutplace( A*2,
+                                      nps.matmult2,
+                                      np.array([2]), A )
 
         A = arr(3)
-        self._check_output_modes( A*2,
-                                  nps.matmult2,
-                                  np.array(2), A )
+        self.assertResult_inoutplace( A*2,
+                                      nps.matmult2,
+                                      np.array(2), A )
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
