@@ -44,6 +44,8 @@ class TestNumpysane(unittest.TestCase):
 
         '''
         res = f(*args, **kwargs)
+        if 'out' in kwargs:
+            self.assertTrue(res is kwargs['out'])
         if s is not None:
             self.assertListEqual(res.shape, s)
         if value_ref is not None:
