@@ -2001,7 +2001,7 @@ def matmult( *args ):
 
     This multiplies N matrices together by repeatedly calling matmult2() for
     each adjacent pair. Unlike matmult2(), the arguments MUST all be matrices to
-    multiply, an 'out' kwarg for the output is not supported here.
+    multiply. The 'out' kwarg for the output is not supported here.
 
     This function supports broadcasting fully, in C internally
 
