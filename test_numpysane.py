@@ -714,6 +714,65 @@ def test_inner():
                               a, b,
                               out_inplace_dtype=np.complex)
 
+
+def test_mag():
+    r'''Testing the broadcasted magnitude product'''
+
+    # input is a 1D array of integers, no output dtype specified. Output
+    # should be a floating-point scalar
+    assertResult_inoutplace(  np.sqrt(nps.norm2(np.arange(5))),
+                              nps.mag, arr(5, dtype=int) )
+
+    # input is a 1D array of floats, no output dtype specified. Output
+    # should be a floating-point scalar
+    assertResult_inoutplace(  np.sqrt(nps.norm2(np.arange(5))),
+                              nps.mag, arr(5, dtype=float) )
+
+    # input is a 1D array of integers, output dtype=int. Output should be an
+    # integer scalar
+    output = np.empty((), dtype=int)
+    nps.mag( np.arange(5, dtype=int),
+             out = output )
+    confirm_equal(int(np.sqrt(nps.norm2(np.arange(5)))), output)
+
+    # input is a 1D array of integers, output dtype=float. Output should be an
+    # float scalar
+    output = np.empty((), dtype=float)
+    nps.mag( np.arange(5, dtype=int),
+             out = output )
+    confirm_equal(np.sqrt(nps.norm2(np.arange(5))), output)
+
+    # input is a 2D array of integers, no output dtype specified. Output
+    # should be a floating-point 1D vector
+    assertResult_inoutplace(  np.sqrt(np.array(( nps.norm2(np.arange(5)),
+                                                 nps.norm2(np.arange(5,10))))),
+                              nps.mag, arr(2,5, dtype=int) )
+
+    # input is a 2D array of floats, no output dtype specified. Output
+    # should be a floating-point 1D vector
+    assertResult_inoutplace(  np.sqrt(np.array(( nps.norm2(np.arange(5)),
+                                                 nps.norm2(np.arange(5,10))))),
+                              nps.mag, arr(2,5, dtype=float) )
+
+    # input is a 2D array of integers, output dtype=int. Output should be an
+    # array of integers
+    output = np.empty((2,), dtype=int)
+    nps.mag( arr(2,5, dtype=int),
+             out = output )
+    confirm_equal(np.sqrt(np.array(( nps.norm2(np.arange(5)),
+                                     nps.norm2(np.arange(5,10))))).astype(int),
+                  output)
+
+    # input is a 2D array of integers, output dtype=float. Output should be an
+    # array of floats
+    output = np.empty((2,), dtype=float)
+    nps.mag( arr(2,5, dtype=int),
+             out = output )
+    confirm_equal(np.sqrt(np.array(( nps.norm2(np.arange(5)),
+                                     nps.norm2(np.arange(5,10))))),
+                  output)
+
+
 def test_outer():
     r'''Testing the broadcasted outer product'''
 
@@ -808,6 +867,7 @@ test_broadcasting_into_output()
 test_concatenation()
 test_dimension_manipulation()
 test_inner()
+test_mag()
 test_outer()
 test_matmult()
 

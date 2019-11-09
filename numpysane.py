@@ -522,6 +522,10 @@ Broadcast-aware outer product.
 **** norm2
 Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
 
+**** mag
+Broadcast-aware vector magnitude. mag(x) is functionally identical to
+sqrt(inner(x,x))
+
 **** trace
 Broadcast-aware trace.
 
@@ -1855,6 +1859,42 @@ def norm2(a, **kwargs):
 
     '''
     return inner(a,a, **kwargs)
+
+def mag(a, out=None):
+    r'''Magnitude of a vector. mag(x) is functionally identical to sqrt(inner(x,x))
+
+    Synopsis:
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(3)
+        >>> a
+        array([0, 1, 2])
+
+        >>> nps.mag(a)
+        2.23606797749979
+
+    This is a convenience function to compute a magnitude of a vector, with full
+    broadcasting support. If and explicit "out" array isn't given, we produce
+    output of dtype=float. Otherwise "out" retains its dtype
+
+    '''
+
+    if out is None:
+        out = inner(a,a, dtype=float)
+
+        if not isinstance(out, np.ndarray):
+            # given two vectors, and without and 'out' array, inner() produces a
+            # scalar, not an array. So I can't updated it inplace, and just
+            # return a copy
+            return np.sqrt(out)
+    else:
+        inner(a,a, out=out)
+
+    # in-place sqrt
+    np.sqrt.at(out,())
+    return out
 
 @broadcast_define( (('n','n',),), prototype_output=() )
 def trace(a):
