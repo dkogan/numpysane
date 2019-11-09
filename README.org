@@ -551,6 +551,10 @@ Broadcast-aware outer product.
 **** norm2
 Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
 
+**** mag
+Broadcast-aware vector magnitude. mag(x) is functionally identical to
+sqrt(inner(x,x))
+
 **** trace
 Broadcast-aware trace.
 
@@ -1417,6 +1421,27 @@ array([0, 1, 2])
 
 This is a convenience function to compute a 2-norm
 
+** mag()
+Magnitude of a vector. mag(x) is functionally identical to sqrt(inner(x,x))
+
+Synopsis:
+
+#+BEGIN_EXAMPLE
+>>> import numpy as np
+>>> import numpysane as nps
+
+>>> a = np.arange(3)
+>>> a
+array([0, 1, 2])
+
+>>> nps.mag(a)
+2.23606797749979
+#+END_EXAMPLE
+
+This is a convenience function to compute a magnitude of a vector, with full
+broadcasting support. If and explicit "out" array isn't given, we produce
+output of dtype=float. Otherwise "out" retains its dtype
+
 ** trace()
 Broadcast-aware trace
 
@@ -1532,7 +1557,9 @@ array([[162],
 
 This multiplies N matrices together by repeatedly calling matmult2() for
 each adjacent pair. Unlike matmult2(), the arguments MUST all be matrices to
-multiply, an 'out' kwarg for the output is not supported here.
+multiply. The 'out' kwarg for the output is not supported here.
+
+This function supports broadcasting fully, in C internally
 
 * COMPATIBILITY
 
