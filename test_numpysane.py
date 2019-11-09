@@ -8,12 +8,12 @@ from functools import reduce
 from testutils import *
 
 
-def arr(*shape):
+def arr(*shape, dtype=float):
     r'''Return an arange() array of the given shape.'''
     if len(shape) == 0:
-        return np.array(3)
+        return np.array(3, dtype=dtype)
     product = reduce( lambda x,y: x*y, shape)
-    return np.arange(product).reshape(*shape)
+    return np.arange(product, dtype=dtype).reshape(*shape)
 
 
 def assertValueShape(value_ref, s, f, *args, **kwargs):
