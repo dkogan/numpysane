@@ -608,6 +608,24 @@ def test_inner():
                                           [4005, 5730, 7705.0]]]),
                   nps.inner, arr(2,3,5), arr(4,1,3,5), out_inplace_dtype=float )
 
+    assertResult_inoutplace(  np.array([[[  30,  255,  730],
+                                          [ 180,  780, 1630]],
+
+                                         [[ 180,  780, 1630],
+                                          [1455, 2430, 3655]],
+
+                                         [[ 330, 1305, 2530],
+                                          [2730, 4080, 5680]],
+
+                                         [[ 480, 1830, 3430],
+                                          [4005, 5730, 7705.0]]]),
+                              nps.inner, arr(2,3,5), arr(4,1,3,5), dtype=float,
+                              out_inplace_dtype=float )
+
+    output = np.empty((4,2,3), dtype=float)
+    confirm_raises( lambda: nps.inner( arr(2,3,5), arr(4,1,3,5), dtype=int, out=output ),
+                    "inner(out=out, dtype=dtype) have out=dtype==dtype" )
+
     assertResult_inoutplace( np.array((24+148j)),
                               nps.dot,
                               np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),

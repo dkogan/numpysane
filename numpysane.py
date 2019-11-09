@@ -1721,7 +1721,7 @@ def reorder(x, *dims):
 # are some of very few numpy functions that support broadcasting, and they do so
 # in C, so their broadcasting loop is FAST. Much more so than my current
 # @broadcast_define loop
-def dot(a, b, out=None):
+def dot(a, b, out=None, dtype=None):
     r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
 
     Synopsis:
@@ -1746,7 +1746,10 @@ def dot(a, b, out=None):
     function has no special handling: normal broadcasting rules are applied.
 
     '''
-    v = np.sum(a*b, axis=-1, out=out )
+    if out is not None and dtype is not None and out.dtype != dtype:
+        raise NumpysaneError("'out' and 'dtype' given explicitly, but the dtypes are mismatched!")
+
+    v = np.sum(a*b, axis=-1, out=out, dtype=dtype )
     if out is None:
         return v
     return out
@@ -1768,7 +1771,7 @@ inner.__doc__ = doc
 # are some of very few numpy functions that support broadcasting, and they do so
 # on the C level, so their broadcasting loop is FAST. Much more so than my
 # current @broadcast_define loop
-def vdot(a, b, out=None):
+def vdot(a, b, out=None, dtype=None):
     r'''Conjugating dot product of two 1-dimensional n-long vectors.
 
     vdot(a,b) is equivalent to dot(np.conj(a), b)
@@ -1798,7 +1801,7 @@ def vdot(a, b, out=None):
     broadcasting rules are applied.
 
     '''
-    return dot(np.conj(a), b, out=out)
+    return dot(np.conj(a), b, out=out, dtype=dtype)
 
 @broadcast_define( (('n',), ('n',)), prototype_output=('n','n'), out_kwarg='out' )
 def outer(a, b, out=None):
