@@ -678,10 +678,9 @@ def _eval_broadcast_dims( args, prototype ):
 
 
 
-def _broadcast_iter_dim( i_dims_extra,
-
-                         idx_slices, args, prototype,
-                         dims_extra ):
+def _broadcast_iter_dim( args, prototype, dims_extra,
+                         # Omit these at the top level
+                         i_dims_extra = 0, idx_slices = None):
     r'''Recursive generator to iterate through all the broadcasting slices.
 
     Each recursive call loops through a single dimension. I can do
@@ -715,10 +714,8 @@ def _broadcast_iter_dim( i_dims_extra,
                 if x_dim >= 0 and x.shape[x_dim] > 1:
                     idx_slice[x_dim] = dim
 
-            for x in _broadcast_iter_dim( i_dims_extra+1,
-
-                                          idx_slices, args, prototype,
-                                          dims_extra):
+            for x in _broadcast_iter_dim( args, prototype, dims_extra,
+                                          i_dims_extra+1, idx_slices ):
                 yield x
         return
 
@@ -1026,9 +1023,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                                                    output.shape[len(dims_extra):] )
 
             i_slice = 0
-            for x in _broadcast_iter_dim( 0,
-                                          None, args, prototype,
-                                          dims_extra ):
+            for x in _broadcast_iter_dim( args, prototype, dims_extra ):
 
                 # if the function knows how to write directly to an array,
                 # request that
@@ -1121,9 +1116,7 @@ def broadcast_generate(prototype, args):
     # I checked all the dimensions and aligned everything. I have my
     # to-broadcast dimension counts. Iterate through all the broadcasting
     # output, and gather the results
-    for x in _broadcast_iter_dim( 0,
-                                  None, args, prototype,
-                                  dims_extra ):
+    for x in _broadcast_iter_dim( args, prototype, dims_extra ):
         yield x
 
 
