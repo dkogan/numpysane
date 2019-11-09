@@ -236,14 +236,18 @@ def assertResult_inoutplace( ref, func, *args, **kwargs ):
     Tests both a pre-allocated array and a slice-at-a-time allocate/copy
     mode
 
-    Only one kwarg is known: 'out_inplace_dtype'
+    Only one test-specific kwarg is known: 'out_inplace_dtype'. The rest are
+    passed down to the test function
 
     '''
 
-    assertValueShape( ref, ref.shape, func, *args )
+    out_inplace_dtype = None
+    if 'out_inplace_dtype' in kwargs:
+        out_inplace_dtype = kwargs['out_inplace_dtype']
+        del kwargs['out_inplace_dtype']
 
-    out_inplace_dtype = kwargs.get('out_inplace_dtype')
+    assertValueShape( ref, ref.shape, func, *args, **kwargs )
+
     output = np.empty(ref.shape, dtype=out_inplace_dtype)
-    assertValueShape( ref, ref.shape, func, *args, out=output )
+    assertValueShape( ref, ref.shape, func, *args, out=output, **kwargs)
     confirm_equal(ref, output)
-
