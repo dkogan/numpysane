@@ -8,7 +8,10 @@ from functools import reduce
 from testutils import *
 
 
-def arr(*shape, dtype=float):
+def arr(*shape, **kwargs):
+
+    dtype = kwargs.get('dtype',float)
+
     r'''Return an arange() array of the given shape.'''
     if len(shape) == 0:
         return np.array(3, dtype=dtype)
