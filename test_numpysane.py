@@ -16,6 +16,49 @@ def arr(*shape):
     return np.arange(product).reshape(*shape)
 
 
+def assertValueShape(value_ref, s, f, *args, **kwargs):
+    r'''Makes sure a given call produces a given value and shape.
+
+    It is redundant to specify both, but it makes it clear I'm asking for
+    what I think I'm asking. The value check can be skipped by passing None.
+
+    '''
+    res = f(*args, **kwargs)
+    if 'out' in kwargs:
+        confirm(res is kwargs['out'], msg='returning same matrix as the given "out"')
+    if s is not None:
+        confirm_equal(res.shape, s, msg='shape matches')
+    if value_ref is not None:
+        confirm_equal(value_ref, res, msg='value matches')
+    if 'dtype' in kwargs:
+        confirm_equal(res.dtype, kwargs['dtype'], msg='matching dtype')
+
+def assertResult_inoutplace( ref, func, *args, **kwargs ):
+    r'''makes sure func(a,b) == ref.
+
+    Tests both a pre-allocated array and a slice-at-a-time allocate/copy
+    mode
+
+    Only one test-specific kwarg is known: 'out_inplace_dtype'. The rest are
+    passed down to the test function
+
+    '''
+
+    out_inplace_dtype = None
+    if 'out_inplace_dtype' in kwargs:
+        out_inplace_dtype = kwargs['out_inplace_dtype']
+        del kwargs['out_inplace_dtype']
+
+    assertValueShape( ref, ref.shape, func, *args, **kwargs )
+
+    output = np.empty(ref.shape, dtype=out_inplace_dtype)
+    assertValueShape( ref, ref.shape, func, *args, out=output, **kwargs)
+    confirm_equal(ref, output)
+
+
+
+
+
 def test_broadcasting():
     r'''Checking broadcasting rules.'''
     @nps.broadcast_define( (('n',), ('n',)) )
