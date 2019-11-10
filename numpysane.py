@@ -539,6 +539,7 @@ The functions listed above are a start, but more will be added with time.
 
 import numpy as np
 from functools import reduce
+import itertools
 import types
 import inspect
 from distutils.version import StrictVersion
@@ -677,62 +678,34 @@ def _eval_broadcast_dims( args, prototype ):
 
 
 
-def _broadcast_iter_dim( args, prototype, dims_extra,
-                         # Omit these at the top level
-                         i_dims_extra = 0, idx_slices = None):
-    r'''Recursive generator to iterate through all the broadcasting slices.
-
-    Each recursive call loops through a single dimension
-
-    i_dims_extra is an integer indexing the current extra dimension
-    we're looking at.
-
-    idx_slices is an array of indices for each argument that is
-    filled in by this function. This may vary for each argument
-    because of varying prototypes and varying broadcasting shapes.
-
+def _broadcast_iter_dim( args, prototype, dims_extra ):
+    r'''Generator to iterate through all the broadcasting slices.
     '''
 
-    if idx_slices is None:
-        idx_slices = [[0]*(x.ndim-len(p)) for p,x in zip(prototype,args)]
+    # pad the dimension of each arg with ones. This lets me use the full
+    # dims_extra index on each argument, without worrying about overflow
+    args = [ atleast_dims(args[i], -(len(prototype[i])+len(dims_extra)) ) for i in range(len(args)) ]
 
-    if i_dims_extra < len(dims_extra):
-        # more dimensions remaining. recurse
+    # per-arg dims_extra indexing varies: len-1 dimensions always index at 0. I
+    # make a mask that I apply each time
+    idx_slice_mask = np.ones( (len(args), len(dims_extra)), dtype=int)
+    for i in range(len(args)):
+        idx_slice_mask[i, np.array(args[i].shape,dtype=int)[:len(dims_extra)]==1] = 0
 
-        # idx_slices contains the indices for each argument.
-        # Two notes:
+    for idx_slice in itertools.product( *(range(x) for x in dims_extra) ):
+        # tuple(idx) because of wonky behavior differences:
+        #     >>> a
+        #     array([[0, 1, 2],
+        #            [3, 4, 5]])
         #
-        # 1. Any indices indexing above the first dimension should be
-        #    omitted
-        # 2. Indices into a higher dimension of length 1 should be left at 0
-        for dim in range(dims_extra[i_dims_extra]):
-            for x,p,idx_slice in zip(args,prototype,idx_slices):
-                x_dim = x.ndim - (len(p) + len(dims_extra) - i_dims_extra)
-                if x_dim >= 0 and x.shape[x_dim] > 1:
-                    idx_slice[x_dim] = dim
-
-            for x in _broadcast_iter_dim( args, prototype, dims_extra,
-                                          i_dims_extra+1, idx_slices ):
-                yield x
-        return
-
-    # This is the last dimension. Evaluate this slice.
-
-    # the "if idx else x" business if for 0-dimensional arrays.
-    # tuple(idx) because of wonky behavior differences:
-    #     >>> a
-    #     array([[0, 1, 2],
-    #            [3, 4, 5]])
-    #
-    #     >>> a[tuple((1,1))]
-    #     4
-    #
-    #     >>> a[list((1,1))]
-    #     array([[3, 4, 5],
-    #            [3, 4, 5]])
-    yield tuple( x[tuple(idx)] if idx else x for idx,x in zip(idx_slices, args) )
-
-
+        #     >>> a[tuple((1,1))]
+        #     4
+        #
+        #     >>> a[list((1,1))]
+        #     array([[3, 4, 5],
+        #            [3, 4, 5]])
+        yield tuple( args[i][tuple(idx_slice *
+                                   idx_slice_mask[i])] for i in range(len(args)) )
 
 
 def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
