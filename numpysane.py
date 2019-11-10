@@ -546,11 +546,6 @@ from distutils.version import StrictVersion
 # setup.py assumes the version is a simple string in '' quotes
 __version__ = '0.18'
 
-# object needed for fancy slices. m[:] is exactly the same as m[_colon], but
-# '_colon' is a normal python object, so it can be manipulated in ways that ':'
-# can't
-_colon = slice(None, None, None)
-
 def _product(l):
     r'''Returns product of all values in the given list'''
     return reduce( lambda a,b: a*b, l )
@@ -699,7 +694,7 @@ def _broadcast_iter_dim( args, prototype, dims_extra,
     '''
 
     if idx_slices is None:
-        idx_slices = [[0]*(x.ndim-len(p)) + [_colon]*len(p) for p,x in zip(prototype,args)]
+        idx_slices = [[0]*(x.ndim-len(p)) for p,x in zip(prototype,args)]
 
     if i_dims_extra < len(dims_extra):
         # more dimensions remaining. recurse
@@ -1539,7 +1534,7 @@ def atleast_dims(x, *dims):
     if isinstance(dims, list):
         dims[:] = [ d+num_new_axes if d >= 0 else d for d in dims ]
 
-    return x[ (np.newaxis,)*(num_new_axes) + (_colon,)*x.ndim ]
+    return x[ (np.newaxis,)*(num_new_axes) ]
 
 def mv(x, axis_from, axis_to):
     r'''Moves a given axis to a new position. Similar to numpy.moveaxis().
