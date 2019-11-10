@@ -603,8 +603,19 @@ def _eval_broadcast_dims( args, prototype ):
 
     '''
 
+    # First I initialize dims_extra: the array containing the broadcasted
+    # slices. Each argument calls for some number of extra dimensions, and the
+    # overall array is as large as the biggest one of those
+    Ndims_extra = 0
+    for i_arg in range(len(args)):
+        Ndims_extra_here = len(args[i_arg].shape) - len(prototype[i_arg])
+        if Ndims_extra_here > Ndims_extra:
+            Ndims_extra = Ndims_extra_here
+    dims_extra = [1] * Ndims_extra
+
+
     def parse_dim( name_arg,
-                   shape_prototype, shape_arg, dims_extra, dims_named ):
+                   shape_prototype, shape_arg, dims_named ):
 
         def range_rev(n):
             r'''Returns a range from -1 to -n.
@@ -645,13 +656,11 @@ def _eval_broadcast_dims( args, prototype ):
         # I now know that this argument matches the prototype. I look at the
         # extra dimensions to broadcast, and make sure they match with the
         # dimensions I saw previously
-        ndims_extra_here = len(shape_arg) - len(shape_prototype)
+        Ndims_extra_here = len(shape_arg) - len(shape_prototype)
 
-        # This argument has ndims_extra_here dimensions to broadcast. The
+        # This argument has Ndims_extra_here dimensions to broadcast. The
         # current shape to broadcast must be at least as large, and must match
-        if ndims_extra_here > len(dims_extra):
-            dims_extra[:0] = [1] * (ndims_extra_here - len(dims_extra))
-        for i_dim in range_rev(ndims_extra_here):
+        for i_dim in range_rev(Ndims_extra_here):
             dim_arg = shape_arg[i_dim - len(shape_prototype)]
             if dim_arg != 1:
                 if dims_extra[i_dim] == 1:
@@ -665,14 +674,11 @@ def _eval_broadcast_dims( args, prototype ):
                                dim_arg))
 
 
-    # clear out the accumulators
-    dims_extra = []
-    dims_named = {}
-
+    dims_named = {} # parse_dim() adds to this
     for i_arg in range(len(args)):
         parse_dim( i_arg,
                    prototype[i_arg], args[i_arg].shape,
-                   dims_extra, dims_named )
+                   dims_named )
 
     return dims_extra,dims_named
 
