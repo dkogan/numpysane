@@ -599,7 +599,11 @@ def _eval_broadcast_dims( args, prototype ):
     where
 
       dims_extra is the outer shape of the broadcast
-      dims_named is the values of the named dimensions
+        This is a list: the union of all the leading shapes of all the
+        arguments, after the trailing shapes of the prototype have been stripped
+
+      dims_named is the sizes of the named dimensions
+        This is a dict mapping dimension names to their sizes
 
     '''
 
@@ -631,9 +635,9 @@ def _eval_broadcast_dims( args, prototype ):
 
             # The prototype dimension (named or otherwise) now has a numeric
             # value. Make sure it matches what I have
-            dim_prototype = dims_named[shape_prototype[i_dim]] \
-                            if not isinstance(shape_prototype[i_dim], int) \
-                               else shape_prototype[i_dim]
+            dim_prototype = shape_prototype[i_dim]
+            if not isinstance(dim_prototype, int):
+                dim_prototype = dims_named[dim_prototype]
 
             if dim_prototype != shape_arg[i_dim]:
                 raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
@@ -683,9 +687,7 @@ def _broadcast_iter_dim( args, prototype, dims_extra,
                          i_dims_extra = 0, idx_slices = None):
     r'''Recursive generator to iterate through all the broadcasting slices.
 
-    Each recursive call loops through a single dimension. I can do
-    some of this with itertools.product(), and maybe using that
-    would be a better choice.
+    Each recursive call loops through a single dimension
 
     i_dims_extra is an integer indexing the current extra dimension
     we're looking at.
