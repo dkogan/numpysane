@@ -609,7 +609,7 @@ def _eval_broadcast_dims( args, prototype ):
             r'''Returns a range from -1 to -n.
 
             Useful to index variable-sized lists while aligning their ends.'''
-            return [-i-1 for i in range(n)]
+            return range(-1, -n-1, -1)
 
 
 
