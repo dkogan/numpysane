@@ -632,20 +632,22 @@ def _eval_broadcast_dims( args, prototype ):
             ndims_missing_here = len(shape_prototype) - len(shape_arg)
             shape_arg = (1,) * ndims_missing_here + shape_arg
 
+        # MAKE SURE THE PROTOTYPE DIMENSIONS MATCH (the trailing dimensions)
+        #
         # Loop through the dimensions. Set the dimensionality of any new named
         # argument to whatever the current argument has. Any already-known
         # argument must match
         for i_dim in range_rev(len(shape_prototype)):
-            if not isinstance(shape_prototype[i_dim], int) and \
-               shape_prototype[i_dim] not in dims_named:
-                dims_named[shape_prototype[i_dim]] = shape_arg[i_dim]
+
+            dim_prototype = shape_prototype[i_dim]
+
+            if not isinstance(dim_prototype, int):
+                if dim_prototype not in dims_named:
+                    dims_named[dim_prototype] = shape_arg[i_dim]
+                dim_prototype = dims_named[dim_prototype]
 
             # The prototype dimension (named or otherwise) now has a numeric
             # value. Make sure it matches what I have
-            dim_prototype = shape_prototype[i_dim]
-            if not isinstance(dim_prototype, int):
-                dim_prototype = dims_named[dim_prototype]
-
             if dim_prototype != shape_arg[i_dim]:
                 raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
                     format(name_arg,
@@ -658,6 +660,8 @@ def _eval_broadcast_dims( args, prototype ):
         # dimensions I saw previously
         Ndims_extra_here = len(shape_arg) - len(shape_prototype)
 
+        # MAKE SURE THE BROADCASTED DIMENSIONS MATCH (the leading dimensions)
+        #
         # This argument has Ndims_extra_here dimensions to broadcast. The
         # current shape to broadcast must be at least as large, and must match
         for i_dim in range_rev(Ndims_extra_here):
@@ -970,33 +974,30 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             # output, and gather the results
             output = None
 
-            # reshaped output. I write to this array
-            output_flattened = None
-
             # substitute named variable values into the output prototype
-            prototype_output_local = None
+            prototype_output_expanded = None
             if prototype_output is not None:
-                prototype_output_local = [d if type(d) is int
+                prototype_output_expanded = [d if type(d) is int
                                           else dims_named[d] for d in prototype_output]
 
             # if the output was supposed to go to a particular place, set that
-            kwargs_dtype = {}
-            if 'dtype' in kwargs:
-                kwargs_dtype['dtype'] = kwargs['dtype']
             if out_kwarg and out_kwarg in kwargs:
                 output = kwargs[out_kwarg]
-                if prototype_output_local is not None:
-                    expected_shape = dims_extra + prototype_output_local
+                if prototype_output_expanded is not None:
+                    expected_shape = dims_extra + prototype_output_expanded
                     if output.shape != tuple(expected_shape):
                         raise NumpysaneError("Inconsistent output shape: expected {}, but got {}".format(expected_shape, output.shape))
             # if we know enough to allocate the output, do that
-            elif prototype_output_local is not None:
-                output = np.empty(dims_extra + prototype_output_local,
+            elif prototype_output_expanded is not None:
+                kwargs_dtype = {}
+                if 'dtype' in kwargs:
+                    kwargs_dtype['dtype'] = kwargs['dtype']
+                output = np.empty(dims_extra + prototype_output_expanded,
                                   **kwargs_dtype)
 
+            # reshaped output. I write to this array
             if output is not None:
-                output_flattened = output.reshape( (_product(dims_extra),) +
-                                                   output.shape[len(dims_extra):] )
+                output_flattened = clump(output, n=len(dims_extra))
 
             i_slice = 0
             for x in _broadcast_iter_dim( args, prototype, dims_extra ):
@@ -1018,10 +1019,10 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                 elif not out_kwarg:
                     output_flattened[i_slice, ...] = result
 
-                if prototype_output_local is None:
-                    prototype_output_local = result.shape
-                elif result.shape != tuple(prototype_output_local):
-                    raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_local, result.shape))
+                if prototype_output_expanded is None:
+                    prototype_output_expanded = result.shape
+                elif result.shape != tuple(prototype_output_expanded):
+                    raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded, result.shape))
 
                 i_slice = i_slice+1
 
