@@ -642,6 +642,9 @@ def _eval_broadcast_dims( args, prototype ):
             dim_prototype = shape_prototype[i_dim]
 
             if not isinstance(dim_prototype, int):
+                # This is a named dimension. These can have any value, but ALL
+                # dimensions of the same name must thave the SAME value
+                # EVERYWHERE
                 if dim_prototype not in dims_named:
                     dims_named[dim_prototype] = shape_arg[i_dim]
                 dim_prototype = dims_named[dim_prototype]
