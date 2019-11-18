@@ -12,17 +12,19 @@ m = npsp.module( MODULE_NAME      = "innermodule",
 
 m.function( "inner",
             "Inner-product pywrapped with npsp",
-            (('n',), ('n',)),
-            (),
-            r'''
+
+            argnames         = ("a", "b"),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = (),
+
+            FUNCTION__slice_code = r'''
             output.data[0] = inner(a.data,
                                    b.data,
                                    a.strides[0],
                                    b.strides[0],
                                    a.shape[0]);
             return true;
-            ''',
-            "a", "b")
+            ''')
 
 m.write()
 

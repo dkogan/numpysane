@@ -68,10 +68,10 @@ class module:
     def function(self,
                  FUNCTION_NAME,
                  FUNCTION_DOCSTRING,
+                 argnames,
                  prototype_input,
                  prototype_output,
-                 __FUNCTION__slice_code,
-                 *argnames):
+                 FUNCTION__slice_code):
         r'''Add a function to the python module we're creating
 
         SYNOPSIS
@@ -79,23 +79,24 @@ class module:
         If we're wrapping a simple inner product you can do this:
 
         function( "inner",
-                  "npsp-wrapped inner product",
-                  (('n',), ('n',)),
-                  (),
+                  "Inner-product pywrapped with npsp",
 
-                  r"""
-                  output.data[0] = 0.0;
-                  for(int i=0; i<a.shape[0]; i++)
-                      output.data[0] += \
-                           *( (double*)(i*a.strides[0]+(char*)(a.data))) *
-                           *( (double*)(i*b.strides[0]+(char*)(b.data)));
+                  prototype_input  = (('n',), ('n',)),
+                  prototype_output = (),
+
+                  FUNCTION__slice_code = r"""
+                  output.data[0] = inner(a.data,
+                                         b.data,
+                                         a.strides[0],
+                                         b.strides[0],
+                                         a.shape[0]);
                   return true;
                   """,
 
                   "a", "b'")
 
         Here we generate code to wrap a chunk of C code. The main chunk of
-        user-supplied glue code is passed-in with __FUNCTION__slice_code. This
+        user-supplied glue code is passed-in with FUNCTION__slice_code. This
         function is given all the input and output buffers, and it's the job of
         the glue code to read and write them.
 
@@ -108,6 +109,10 @@ class module:
         - FUNCTION_DOCSTRING
           The docstring for this function
 
+        - argnames
+          The names of the arguments. Must have the same number of elements as
+          prototype_input
+
         - prototype_input
           An iterable defining the shapes of the inputs. Each element describes
           the trailing shape of each argument. Each element of this shape
@@ -116,11 +121,11 @@ class module:
           size is allowed, but the sizes of all dimensions with this name must
           match)
 
-        - prootype_output
+        - prototype_output
           A single shape definition. Similar to prototype_input, but there's
           just one. Named dimensions in prototype_input must match the ones here
 
-        - __FUNCTION__slice_code
+        - FUNCTION__slice_code
 
           C code that will be included verbatim into the python-wrapping code.
           If we're wrapping a function called FUNCTION, this string is the
@@ -146,10 +151,6 @@ class module:
           knowable at runtime because of named dimensions. Return true on
           soccess.
 
-        - *argnames
-          The names of the arguments. Must have the same number of elements as
-          prototype_input
-
         '''
 
         if len(prototype_input) != len(argnames):
@@ -161,7 +162,7 @@ class module:
 static
 bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
 {
-{__FUNCTION__slice_code}
+{FUNCTION__slice}
 }
 '''
 
@@ -169,7 +170,8 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
           _substitute(function_slice_template,
                       FUNCTION_NAME          = FUNCTION_NAME,
                       SLICE_DEFINITIONS      = ''.join([", nps_slice_t " + n for n in argnames]),
-                      __FUNCTION__slice_code = __FUNCTION__slice_code)
+                      FUNCTION__slice        = FUNCTION__slice_code)
+
         # I enumerate each named dimension, starting from -1, and counting DOWN
         named_dims = {}
         for shape in prototype_input + (prototype_output,):
