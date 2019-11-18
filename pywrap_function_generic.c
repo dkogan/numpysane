@@ -34,9 +34,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                      PyArray_Converter_leaveNone, &__py__output__, NULL))
         goto done;
 
-    VALIDATE();
-
-
     // Helper function to evaluate a given list of arguments in respect to a
     // given broadcasting prototype. This function will flag any errors in the
     // dimensionality of the inputs. If no errors are detected, it returns
@@ -54,8 +51,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     // slices. Each argument calls for some number of extra dimensions, and the
     // overall array is as large as the biggest one of those
 
-
-{PROTOTYPE_DIM_DEFS}
+{PROTOTYPE_DIM_DEFS};
 
     const int PROTOTYPE_LEN__output__ = (int)sizeof(PROTOTYPE__output__)/sizeof(PROTOTYPE__output__[0]);
     // the maximum of Ndims_extra_this for all the arguments
@@ -73,8 +69,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     if(Ndims_extra < Ndims_extra_ ## name) Ndims_extra = Ndims_extra_ ## name;
 
     ARGUMENTS(DECLARE_DIM_VARS);
-
-
 
     {
         npy_intp dims_extra[Ndims_extra];
@@ -110,6 +104,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 // output prototype has some unknown named dimension. Handle this later
                 assert(0);
             }
+
+{VALIDATE};
 
         // The shape of the output must be (dims_extra + PROTOTYPE__output__)
         int Ndims_output = Ndims_extra + PROTOTYPE_LEN__output__;

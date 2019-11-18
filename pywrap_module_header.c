@@ -159,10 +159,3 @@ bool parse_dim(// input and output
     }
     return true;
 }
-
-
-static
-bool VALIDATE(void)
-{
-    return true;
-}

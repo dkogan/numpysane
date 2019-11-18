@@ -71,7 +71,8 @@ class module:
                  argnames,
                  prototype_input,
                  prototype_output,
-                 FUNCTION__slice_code):
+                 FUNCTION__slice_code,
+                 VALIDATE_code = ''):
         r'''Add a function to the python module we're creating
 
         SYNOPSIS
@@ -149,7 +150,15 @@ class module:
           "argnames" arguments here. The strides and shape define the memory
           layout of the data in memory for this slice. The 'shape' is only
           knowable at runtime because of named dimensions. Return true on
-          soccess.
+          success.
+
+        - VALIDATE_code
+
+          C code that will be included verbatim into the python-wrapping code.
+          Any special variable-validation code can be specified here.
+          Dimensionality checks against the prototypes are generated
+          automatically, but things like stride or type checking can be done
+          here.
 
         '''
 
@@ -220,7 +229,8 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
             '\n\n' + \
             _substitute(self.function_template,
                         FUNCTION_NAME      = FUNCTION_NAME,
-                        PROTOTYPE_DIM_DEFS = PROTOTYPE_DIM_DEFS)
+                        PROTOTYPE_DIM_DEFS = PROTOTYPE_DIM_DEFS,
+                        VALIDATE           = VALIDATE_code)
         self.functions.append( (FUNCTION_NAME,
                                 _substitute(FUNCTION_DOCSTRING, convert_newlines=True),
                                 text) )
