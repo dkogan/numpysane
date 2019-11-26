@@ -24,7 +24,7 @@ m.function( "inner",
                                    b.strides[0],
                                    a.shape[0]);
             return true;
-            ''')
+''')
 
 m.write()
 
