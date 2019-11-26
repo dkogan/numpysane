@@ -69,6 +69,7 @@ bool parse_dim(// input and output
                npy_intp* dims_extra,
 
                // input
+               const char* arg_name,
                int Ndims_extra,
                int Ndims_extra_this,
                const npy_intp* shape_want,
@@ -113,12 +114,21 @@ bool parse_dim(// input and output
         // value. Make sure it matches what I have
         if(dim_shape_want != shape_got[i_dim_var])
         {
-            // raise NumpysaneError("Argument {} dimension '{}': expected {} but got {}".
-            //     format(name_arg,
-            //            shape_want[i_dim],
-            //            dim_shape_want,
-            //            shape_got[i_dim_var]))
-            assert(0);
+            if(shape_want[i_dim_shape_want] < 0)
+                PyErr_Format(PyExc_RuntimeError,
+                             "Argument '%s': prototype says dimension '%d' (named dimension %d) has length %d, but got %d",
+                             arg_name,
+                             i_dim, shape_want[i_dim_shape_want],
+                             dim_shape_want,
+                             shape_got[i_dim_var]);
+            else
+                PyErr_Format(PyExc_RuntimeError,
+                             "Argument '%s': prototype says dimension '%d' has length %d, but got %d",
+                             arg_name,
+                             i_dim,
+                             dim_shape_want,
+                             shape_got[i_dim_var]);
+
             return false;
         }
     }

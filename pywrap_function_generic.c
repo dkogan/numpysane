@@ -79,14 +79,17 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         for(int i=0; i<Ndims_named; i++)
             dims_named[i] = -1;
 
-#define PARSE_DIMS(name, npy_type, dims_ref)            \
-        parse_dim(dims_named, dims_extra, Ndims_extra,  \
-                                                        \
-                  Ndims_extra_ ## name,                 \
-                  PROTOTYPE_ ## name,                   \
-                  PROTOTYPE_LEN_ ## name,               \
-                  __dims__ ## name,                     \
-                  __ndim__ ## name) ;
+#define PARSE_DIMS(name, npy_type, dims_ref)    \
+        if(!parse_dim(dims_named, dims_extra,   \
+                      #name,                    \
+                      Ndims_extra,              \
+                                                \
+                      Ndims_extra_ ## name,     \
+                      PROTOTYPE_ ## name,       \
+                      PROTOTYPE_LEN_ ## name,   \
+                      __dims__ ## name,         \
+                      __ndim__ ## name))        \
+            goto done;
 
         ARGUMENTS(PARSE_DIMS);
 
