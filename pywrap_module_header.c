@@ -103,19 +103,18 @@ bool parse_dim(// input and output
         {
             if(shape_want[i_dim_shape_want] < 0)
                 PyErr_Format(PyExc_RuntimeError,
-                             "Argument '%s': prototype says dimension '%d' (named dimension %d) has length %d, but got %d",
+                             "Argument '%s': prototype says dimension %d (named dimension %d) has length %d, but got %d",
                              arg_name,
                              i_dim, shape_want[i_dim_shape_want],
                              dim_shape_want,
                              shape_got[i_dim_var]);
             else
                 PyErr_Format(PyExc_RuntimeError,
-                             "Argument '%s': prototype says dimension '%d' has length %d, but got %d",
+                             "Argument '%s': prototype says dimension %d has length %d, but got %d",
                              arg_name,
                              i_dim,
                              dim_shape_want,
                              shape_got[i_dim_var]);
-
             return false;
         }
     }
