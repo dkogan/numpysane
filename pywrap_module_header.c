@@ -29,15 +29,6 @@ do {                                                                    \
         PyErr_SetString(PyExc_RuntimeError, "sigaction-restore failed"); \
 } while(0)
 
-#define QUOTED_LIST_WITH_COMMA(s,n) "'" #s "',"
-
-#define CHECK_CONTIGUOUS(x) do {                                        \
-    if( !PyArray_IS_C_CONTIGUOUS(x) )                                   \
-    {                                                                   \
-        PyErr_SetString(PyExc_RuntimeError, "All inputs must be c-style contiguous arrays (" #x ")"); \
-        return false;                                                   \
-    } } while(0)
-
 
 // just like PyArray_Converter(), but leave None as None
 static
@@ -59,10 +50,6 @@ typedef struct
     const npy_intp* shape;
 } nps_slice_t;
 
-// unrolled:
-//   for( i_arg in range(len(args)))
-//       parse_dim( i_arg, prototype[i_arg], args[i_arg].shape,
-//                  dims_extra );
 static
 bool parse_dim(// input and output
                npy_intp* dims_named,
