@@ -1,4 +1,5 @@
 import sys
+import time
 
 def _substitute(s, convert_newlines=False, **kwargs):
     r'''format() with specific semantics
@@ -242,6 +243,20 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
         Call this after the constructor and all the function() calls
 
         '''
+
+        # Get shellquote from the right place in python2 and python3
+        try:
+            import pipes
+            shellquote = pipes.quote
+        except:
+            # python3 puts this into a different module
+            import shlex
+            shellquote = shlex.quote
+        print("// generated on {} with   {}\n\n". \
+              format(time.strftime("%Y-%m-%d %H:%M:%S"),
+                     ' '.join(shellquote(s) for s in sys.argv)),
+              file=file)
+
         print(self.module_header, file=file)
 
         for f in self.functions:
