@@ -142,13 +142,12 @@ bool parse_dim(// input and output
                 dims_extra[i_dim_extra] = dim_arg;
             else if(dims_extra[i_dim_extra] != dim_arg)
             {
-                // raise NumpysaneError("Argument {} prototype {} extra broadcast dim {} mismatch: previous arg set this to {}, but this arg wants {}".
-                //     format(name_arg,
-                //            shape_shape_want,
-                //            i_dim,
-                //            dims_extra[i_dim_extra],
-                //            dim_arg))
-                assert(0);
+                PyErr_Format(PyExc_RuntimeError,
+                             "Argument '%s' dimension %d (broadcasted dimension %d) mismatch. Previously saw length %d, but here have length %d",
+                             arg_name,
+                             i_dim-Nshape_want, i_dim,
+                             dims_extra[i_dim_extra],
+                             dim_arg);
                 return false;
             }
         }

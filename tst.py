@@ -22,5 +22,14 @@ a = nps.transpose(np.arange(10, dtype=float).reshape(5,2))
 print(nps.inner(a,b))
 print(innermodule.inner(a,b))
 
+# should be ok
+print(innermodule.inner(np.arange(10, dtype=float).reshape(  2,5),
+                        np.arange(15, dtype=float).reshape(3,1,5)))
+
+# should barf
+innermodule.inner(np.arange(10, dtype=float).reshape(2,5),
+                  np.arange(15, dtype=float).reshape(3,5))
+
+
 # should barf
 innermodule.inner(np.arange(5), np.arange(6))
