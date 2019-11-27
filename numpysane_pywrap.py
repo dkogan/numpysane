@@ -1,6 +1,10 @@
 import sys
 import time
 
+_module_header_filename = 'pywrap/pywrap_module_header.c'
+_module_footer_filename = 'pywrap/pywrap_module_footer_generic.c'
+_function_filename      = 'pywrap/pywrap_function_generic.c'
+
 def _substitute(s, convert_newlines=False, **kwargs):
     r'''format() with specific semantics
 
@@ -54,10 +58,10 @@ class module:
 
         '''
 
-        with open( 'pywrap/pywrap_module_header.c', 'r') as f:
+        with open( _module_header_filename, 'r') as f:
             self.module_header = f.read() + "\n" + HEADER + "\n"
 
-        with open( 'pywrap/pywrap_module_footer_generic.c', 'r') as f:
+        with open( _module_footer_filename, 'r') as f:
             self.module_footer = _substitute(f.read(),
                                              MODULE_NAME      = MODULE_NAME,
                                              MODULE_DOCSTRING = MODULE_DOCSTRING,
@@ -251,7 +255,7 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
             ARGUMENTS_LIST.append( '_({}, NPY_DOUBLE, xxx )'.format(argnames[i_arg_input]) )
 
         if not hasattr(self, 'function_template'):
-            with open('pywrap/pywrap_function_generic.c', 'r') as f:
+            with open(_function_filename, 'r') as f:
                 self.function_template = f.read()
 
         text = \
