@@ -37,16 +37,16 @@ VERSION      := POISON
 # In the python api I have to cast a PyCFunctionWithKeywords to a PyCFunction,
 # and the compiler complains. But that's how Python does it! So I tell the
 # compiler to chill
-inner_pywrap.o: CFLAGS += -Wno-cast-function-type -Wno-missing-field-initializers
+pywrap/inner_pywrap.o: CFLAGS += -Wno-cast-function-type -Wno-missing-field-initializers
 
-inner_pywrap.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
+pywrap/inner_pywrap.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
 
-innermodule$(PY_EXT_SUFFIX): inner_pywrap.o inner.o
+pywrap/innermodule$(PY_EXT_SUFFIX): pywrap/inner_pywrap.o pywrap/inner.o
 	$(PY_MRBUILD_LINKER) $(PY_MRBUILD_LDFLAGS) $^ -o $@
 
-DIST_PY3_MODULES := innermodule
+DIST_PY3_MODULES := pywrap/innermodule
 
-all: innermodule$(PY_EXT_SUFFIX)
-EXTRA_CLEAN += innermodule*.so
+all: pywrap/innermodule$(PY_EXT_SUFFIX)
+EXTRA_CLEAN += pywrap/innermodule*.so
 
 include Makefile.common.footer

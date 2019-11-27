@@ -54,10 +54,10 @@ class module:
 
         '''
 
-        with open( 'pywrap_module_header.c', 'r') as f:
+        with open( 'pywrap/pywrap_module_header.c', 'r') as f:
             self.module_header = f.read() + "\n" + HEADER + "\n"
 
-        with open( 'pywrap_module_footer_generic.c', 'r') as f:
+        with open( 'pywrap/pywrap_module_footer_generic.c', 'r') as f:
             self.module_footer = _substitute(f.read(),
                                              MODULE_NAME      = MODULE_NAME,
                                              MODULE_DOCSTRING = MODULE_DOCSTRING,
@@ -251,7 +251,7 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
             ARGUMENTS_LIST.append( '_({}, NPY_DOUBLE, xxx )'.format(argnames[i_arg_input]) )
 
         if not hasattr(self, 'function_template'):
-            with open('pywrap_function_generic.c', 'r') as f:
+            with open('pywrap/pywrap_function_generic.c', 'r') as f:
                 self.function_template = f.read()
 
         text = \
