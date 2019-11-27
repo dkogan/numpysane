@@ -162,8 +162,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             assert(0);
         }
 
-        const npy_intp* strides_slice_output = &PyArray_STRIDES(__py__output__)[ Ndims_extra   ];
-        const npy_intp* dims_slice_output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra   ];
+        const npy_intp* strides_slice_output = &PyArray_STRIDES(__py__output__)[ Ndims_extra ];
+        const npy_intp* dims_slice_output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra ];
 
 #if 0
         // How many elements (not bytes) to advance for each broadcasted dimension.
