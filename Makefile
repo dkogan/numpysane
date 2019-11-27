@@ -39,17 +39,11 @@ VERSION      := POISON
 # compiler to chill
 inner_pywrap.o: CFLAGS += -Wno-cast-function-type -Wno-missing-field-initializers
 
-# Newer pythons include -flto in their build flags. This maybe makes something
-# faster, but it makes debugging not work. The gcc manpage says that -flto
-# fights with -g, so I guess this isn't a bug. I simply remove the -flto here
 inner_pywrap.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
-#inner_pywrap.o: $(addsuffix .h,$(wildcard *.docstring))
 
 innermodule$(PY_EXT_SUFFIX): inner_pywrap.o inner.o
 	$(PY_MRBUILD_LINKER) $(PY_MRBUILD_LDFLAGS) $^ -o $@
 
-# The python libraries (compiled ones and ones written in python) all live in
-# mrcal/
 DIST_PY3_MODULES := innermodule
 
 all: innermodule$(PY_EXT_SUFFIX)
