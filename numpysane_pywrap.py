@@ -291,11 +291,15 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
                      ' '.join(shellquote(s) for s in sys.argv)),
               file=file)
 
+        print('///////// {{{{{{{{{ ' + _module_header_filename, file=file)
         print(self.module_header, file=file)
+        print('///////// }}}}}}}}} ' + _module_header_filename, file=file)
 
         for f in self.functions:
-            print("// ==================== {} ===================".format(f[0]), file=file)
+            print('///////// {{{{{{{{{ ' + _function_filename, file=file)
+            print('///////// for function   ' + f[0], file=file)
             print(f[2], file=file)
+            print('///////// }}}}}}}}} ' + _function_filename, file=file)
             print('\n', file=file)
 
         print('#define FUNCTIONS(_) \\', file=file)
@@ -303,7 +307,9 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
               file=file)
         print("\n")
 
+        print('///////// {{{{{{{{{ ' + _module_header_filename, file=file)
         print(self.module_footer, file=file)
+        print('///////// }}}}}}}}} ' + _module_header_filename, file=file)
 
 
 r'''
