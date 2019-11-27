@@ -238,6 +238,23 @@ def test_broadcasting():
     assertValueShape( None, (10,1,3,),
                            nps.matmult2, arr(1,4), arr(10,4,3) )
 
+    # scalar output shouldn't barf
+    @nps.broadcast_define( ((),), )
+    def f6(x):
+        return 6
+    @nps.broadcast_define( ((),), ())
+    def f7(x):
+        return 7
+    assertValueShape( 6, (),
+                      f6, 5)
+    assertValueShape( 6*np.ones((5,)), (5,),
+                      f6, np.arange(5))
+    assertValueShape( 7, (),
+                      f7, 5)
+    assertValueShape( 7*np.ones((5,)), (5,),
+                      f7, np.arange(5))
+
+
 def test_broadcasting_into_output():
     r'''Checking broadcasting with the output array defined.'''
 

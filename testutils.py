@@ -237,7 +237,11 @@ def assertValueShape(value_ref, s, f, *args, **kwargs):
     if 'out' in kwargs:
         confirm(res is kwargs['out'], msg='returning same matrix as the given "out"')
     if s is not None:
-        confirm_equal(res.shape, s, msg='shape matches')
+        try:
+            shape = res.shape
+        except:
+            shape = ()
+        confirm_equal(shape, s, msg='shape matches')
     if value_ref is not None:
         confirm_equal(value_ref, res, msg='value matches')
     if 'dtype' in kwargs:

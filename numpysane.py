@@ -1013,6 +1013,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                 sliced_args = x + args_passthru
                 result = func( *sliced_args, **kwargs )
 
+                if not isinstance(result, np.ndarray):
+                    result = np.array(result)
+
                 if output is None:
                     output = np.empty( dims_extra + list(result.shape),
                                        dtype = result.dtype)
