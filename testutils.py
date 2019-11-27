@@ -29,6 +29,8 @@ def test_location():
 
 
     filename_this = os.path.split( __file__ )[1]
+    if filename_this.endswith(".pyc"):
+        filename_this = filename_this[:-1]
 
     frame = currentframe().f_back.f_back
 
