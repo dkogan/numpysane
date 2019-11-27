@@ -26,10 +26,18 @@ print(innermodule.inner(a,b))
 print(innermodule.inner(np.arange(10, dtype=float).reshape(  2,5),
                         np.arange(15, dtype=float).reshape(3,1,5)))
 
-# should barf
-innermodule.inner(np.arange(10, dtype=float).reshape(2,5),
-                  np.arange(15, dtype=float).reshape(3,5))
+try:
+    innermodule.inner(np.arange(10, dtype=float).reshape(2,5),
+                      np.arange(15, dtype=float).reshape(3,5))
+    print("should have barfed but didn't!")
+except:
+    # expected barf
+    pass
 
 
-# should barf
-innermodule.inner(np.arange(5), np.arange(6))
+try:
+    innermodule.inner(np.arange(5), np.arange(6))
+    print("should have barfed but didn't!")
+except:
+    # expected barf
+    pass
