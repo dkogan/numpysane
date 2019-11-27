@@ -227,21 +227,20 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 if(i_dim + Ndims_extra >= 0 &&
                    PyArray_DIMS(__py__output__)[i_dim + Ndims_extra] != 1)
                     slice_output += idims_extra[i_dim + Ndims_extra]*PyArray_STRIDES(__py__output__)[i_dim + Ndims_extra];
-
-                // BARF IF FALSE
-
-
-#define ARGLIST_SLICE(name, npy_type, dims_ref)                         \
-                ,                                                       \
-                (nps_slice_t){ .data    = (double*)slice_ ## name,      \
-                               .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
-                               .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] }
-
-                __{FUNCTION_NAME}__slice( (nps_slice_t){ .data    = (double*)slice_output,
-                                                         .strides = strides_slice_output,
-                                                         .dims    = dims_slice_output }
-                                    ARGUMENTS(ARGLIST_SLICE) );
             }
+
+
+#define ARGLIST_SLICE(name, npy_type, dims_ref)                     \
+            ,                                                       \
+            (nps_slice_t){ .data    = (double*)slice_ ## name,      \
+                           .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
+                           .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] }
+
+            __{FUNCTION_NAME}__slice( (nps_slice_t){ .data    = (double*)slice_output,
+                                                     .strides = strides_slice_output,
+                                                     .dims    = dims_slice_output }
+                                ARGUMENTS(ARGLIST_SLICE) );
+                // BARF IF FALSE
 
         } while(next(idims_extra, dims_extra, Ndims_extra));
 #if 0
