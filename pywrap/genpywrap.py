@@ -45,6 +45,7 @@ m.function( "outer",
                   a.strides[0],
                   b.strides[0],
                   a.dims[0]);
+            return true;
 ''')
 
 m.write()
