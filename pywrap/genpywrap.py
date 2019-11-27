@@ -31,5 +31,21 @@ m.function( "inner",
             return true;
 ''')
 
+m.function( "outer",
+            "Outer-product pywrapped with npsp",
+
+            argnames         = ("a", "b"),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = ('n', 'n'),
+
+            FUNCTION__slice_code = r'''
+            outer(output.data,
+                  a.data,
+                  b.data,
+                  a.strides[0],
+                  b.strides[0],
+                  a.dims[0]);
+''')
+
 m.write()
 
