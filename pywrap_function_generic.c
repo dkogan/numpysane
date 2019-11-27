@@ -42,7 +42,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
     // where
 
-    //   dims_extra is the outer shape of the broadcast
+    //   dims_extra is the outer dimensions of the broadcast
     //   dims_named is the values of the named dimensions
 
 
@@ -110,7 +110,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
 {VALIDATE};
 
-        // The shape of the output must be (dims_extra + PROTOTYPE__output__)
+        // The dimensions of the output must be (dims_extra + PROTOTYPE__output__)
         int Ndims_output = Ndims_extra + PROTOTYPE_LEN__output__;
         npy_intp dims_output_want[Ndims_output];
         for(int i=0; i<Ndims_extra; i++)
@@ -119,7 +119,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             dims_output_want[i+Ndims_extra] = PROTOTYPE__output__[i];
         if((PyObject*)__py__output__ != Py_None && __py__output__ != NULL)
         {
-            // An output array was given. I make sure it has the correct shape. I
+            // An output array was given. I make sure it has the correct dimensions. I
             // allow leading dimensions of length 1. I compare from the end,
             // comparing with 1 if either list runs out
             int Ndims_to_compare1 = PyArray_NDIM(__py__output__);
@@ -233,11 +233,11 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 ,                                                       \
                 (nps_slice_t){ .data    = (double*)slice_ ## name,      \
                                .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
-                               .shape   = &__dims__    ## name[ Ndims_extra_ ## name ] }
+                               .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] }
 
                 __{FUNCTION_NAME}__slice( (nps_slice_t){ .data    = (double*)slice_output,
                                                          .strides = strides_slice_output,
-                                                         .shape   = dims_slice_output }
+                                                         .dims    = dims_slice_output }
                                     ARGUMENTS(ARGLIST_SLICE) );
             }
 
@@ -257,15 +257,16 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             while(dim_extra1<dims_extra[1])
             {
                 //bool success =
-                _inner_one_slice( (nps_slice_t){ .data    = slice_output1,
-                            .strides = strides_slice_output,
-                            .shape   = dims_slice_output },
+                _inner_one_slice(
+                    (nps_slice_t){ .data    = slice_output1,
+                                   .strides = strides_slice_output,
+                                   .dims    = dims_slice_output },
                     (nps_slice_t){ .data    = slice_a1,
-                            .strides = strides_slice_a,
-                            .shape   = dims_slice_a },
+                                   .strides = strides_slice_a,
+                                   .dims    = dims_slice_a },
                     (nps_slice_t){ .data    = slice_b1,
-                            .strides = strides_slice_b,
-                            .shape   = dims_slice_b } );
+                                   .strides = strides_slice_b,
+                                   .dims    = dims_slice_b } );
                 //assert(success);
 
                 dim_extra1++;

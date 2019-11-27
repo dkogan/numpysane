@@ -22,7 +22,7 @@ m.function( "inner",
                                    b.data,
                                    a.strides[0],
                                    b.strides[0],
-                                   a.shape[0]);
+                                   a.dims[0]);
             return true;
 ''')
 
