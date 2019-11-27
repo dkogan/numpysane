@@ -103,9 +103,11 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             {
                 if(dims_named[-PROTOTYPE__output__[i]-1] >= 0)
                     PROTOTYPE__output__[i] = dims_named[-PROTOTYPE__output__[i]-1];
-
-                // output prototype has some unknown named dimension. Handle this later
-                assert(0);
+                else
+                {
+                    // output prototype has some unknown named dimension. Handle this later
+                    assert(0);
+                }
             }
 
 {VALIDATE};
