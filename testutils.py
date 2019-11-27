@@ -228,7 +228,12 @@ def assertValueShape(value_ref, s, f, *args, **kwargs):
     what I think I'm asking. The value check can be skipped by passing None.
 
     '''
-    res = f(*args, **kwargs)
+    try:
+        res = f(*args, **kwargs)
+    except Exception as e:
+        print_red("FAILED: Exception \"{}\" calling \"{}\"".format(e,f))
+        return
+
     if 'out' in kwargs:
         confirm(res is kwargs['out'], msg='returning same matrix as the given "out"')
     if s is not None:
