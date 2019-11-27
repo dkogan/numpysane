@@ -21,7 +21,11 @@ np.set_printoptions(linewidth=1e10, suppress=True)
 
 
 def test_location():
-    r'''Reports string describing current location in the test'''
+    r'''Reports string describing current location in the test
+
+    Skips over the backtrace entries that are in the test harness itself
+
+    '''
 
 
     filename_this = os.path.split( __file__ )[1]
