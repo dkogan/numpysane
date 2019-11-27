@@ -28,15 +28,28 @@ testlibmodule.inner(np.arange(10, dtype=float).reshape(  2,5),
 try:
     testlibmodule.inner(np.arange(10, dtype=float).reshape(2,5),
                       np.arange(15, dtype=float).reshape(3,5))
-    print("should have barfed but didn't!")
 except:
     # expected barf
     pass
+else:
+    print("should have barfed but didn't!")
 
 
 try:
     testlibmodule.inner(np.arange(5), np.arange(6))
-    print("should have barfed but didn't!")
 except:
     # expected barf
     pass
+else:
+    print("should have barfed but didn't!")
+
+try:
+    testlibmodule.outer_only3(np.arange(5), np.arange(5))
+except:
+    # expected barf
+    pass
+else:
+    print("should have barfed but didn't!")
+
+# should be ok
+testlibmodule.outer_only3(np.arange(3), np.arange(3))

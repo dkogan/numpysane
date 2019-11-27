@@ -48,5 +48,71 @@ m.function( "outer",
             return true;
 ''')
 
-m.write()
 
+try:
+    m.function( "outer2",
+                "Outer-product pywrapped with npsp",
+
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = ('n', 'fn'),
+
+                FUNCTION__slice_code = '')
+except:
+    # known error
+    pass
+else:
+    raise Exception("Expected error didn't happen")
+
+try:
+    m.function( "outer3",
+                "Outer-product pywrapped with npsp",
+
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = ('n', -1),
+
+                FUNCTION__slice_code = '')
+except:
+    # known error
+    pass
+else:
+    raise Exception("Expected error didn't happen")
+
+try:
+    m.function( "outer4",
+                "Outer-product pywrapped with npsp",
+
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), (-1,)),
+                prototype_output = ('n', 'n'),
+
+                FUNCTION__slice_code = '')
+except:
+    # known error
+    pass
+else:
+    raise Exception("Expected error didn't happen")
+
+
+m.function( "outer_only3",
+            r'''Outer-product pywrapped with npsp.
+Only dimensions of length 3 are allowed
+''',
+
+            argnames         = ("a", "b"),
+            prototype_input  = (('n',), (3,)),
+            prototype_output = ('n', 'n'),
+
+            FUNCTION__slice_code = r'''
+            outer(output.data,
+                  a.data,
+                  b.data,
+                  a.strides[0],
+                  b.strides[0],
+                  a.dims[0]);
+            return true;
+            ''')
+
+
+m.write()
