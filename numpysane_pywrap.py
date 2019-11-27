@@ -316,4 +316,10 @@ error handling: no more asserts
 
 multiple arguments? should everything be broadcasting? kwargs?
 
+multiple output arguments
+
+complex dimensionality. outer() returning triangles? apriltag wrapping
+
+custom exception type for the python and for the generated C
+
 '''
