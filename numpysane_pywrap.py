@@ -5,6 +5,19 @@ _module_header_filename = 'pywrap/pywrap_module_header.c'
 _module_footer_filename = 'pywrap/pywrap_module_footer_generic.c'
 _function_filename      = 'pywrap/pywrap_function_generic.c'
 
+def _quote(s, convert_newlines=False):
+    r'''Quote string for inclusion in C code
+
+    There should be a library for this. Hopefuly this is correct.
+
+    '''
+    s = s.replace('\\', '\\\\')     # Pass all \ through verbatim
+    if convert_newlines:
+       s = s.replace('\n', '\\n')   # All newlines -> \n
+    s = s.replace('"',  '\\"')      # Quote all "
+    return s
+
+
 def _substitute(s, convert_newlines=False, **kwargs):
     r'''format() with specific semantics
 
@@ -16,22 +29,11 @@ def _substitute(s, convert_newlines=False, **kwargs):
       Otherwise they're left alone (useful for C code)
 
     '''
-    def quote(s):
-        r'''Quote string for inclusion in C code
-
-        There should be a library for this. Hopefuly this is correct.
-
-        '''
-        s = s.replace('\\', '\\\\')     # Pass all \ through verbatim
-        if convert_newlines:
-           s = s.replace('\n', '\\n')  # All newlines -> \n
-        s = s.replace('"',  '\\"')      # Quote all "
-        return s
 
     for k in kwargs.keys():
         v = kwargs[k]
         if isinstance(v, str):
-            v = quote(v)
+            v = _quote(v, convert_newlines)
         else:
             v = str(v)
         s = s.replace('{' + k + '}', kwargs[k])
@@ -267,7 +269,7 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
                         PROTOTYPE_DIM_DEFS = PROTOTYPE_DIM_DEFS,
                         VALIDATE           = VALIDATE_code)
         self.functions.append( (FUNCTION_NAME,
-                                _substitute(FUNCTION_DOCSTRING, convert_newlines=True),
+                                _quote(FUNCTION_DOCSTRING, convert_newlines=True),
                                 text) )
 
 
