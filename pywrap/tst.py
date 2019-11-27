@@ -6,25 +6,24 @@ import sys
 
 import testlibmodule
 
-a = np.arange(5, dtype=float)
-b = a+3
+# pairs of functions that should produce identical results
+matching_functions = ( (nps.inner, testlibmodule.inner),
+                       (nps.outer, testlibmodule.outer) )
 
-print(nps.inner(a,b))
-print(testlibmodule.inner(a,b))
+a0 = np.arange(5, dtype=float)
+b  = a0+3
 
-a = np.arange(10, dtype=float).reshape(2,5)
+a1 = np.arange(10, dtype=float).reshape(2,5)
+a2 = nps.transpose(np.arange(10, dtype=float).reshape(5,2))
 
-print(nps.inner(a,b))
-print(testlibmodule.inner(a,b))
-
-a = nps.transpose(np.arange(10, dtype=float).reshape(5,2))
-
-print(nps.inner(a,b))
-print(testlibmodule.inner(a,b))
+for f0,f1 in matching_functions:
+    print(np.linalg.norm(f0(a0,b) - f1(a0,b)))
+    print(np.linalg.norm(f0(a1,b) - f1(a1,b)))
+    print(np.linalg.norm(f0(a2,b) - f1(a2,b)))
 
 # should be ok
-print(testlibmodule.inner(np.arange(10, dtype=float).reshape(  2,5),
-                        np.arange(15, dtype=float).reshape(3,1,5)))
+testlibmodule.inner(np.arange(10, dtype=float).reshape(  2,5),
+                    np.arange(15, dtype=float).reshape(3,1,5))
 
 try:
     testlibmodule.inner(np.arange(10, dtype=float).reshape(2,5),
