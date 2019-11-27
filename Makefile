@@ -45,12 +45,12 @@ pywrap/inner_pywrap.o: CFLAGS += -Wno-cast-function-type -Wno-missing-field-init
 
 pywrap/inner_pywrap.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
 
-pywrap/innermodule$(PY_EXT_SUFFIX): pywrap/inner_pywrap.o pywrap/inner.o
+pywrap/testlibmodule$(PY_EXT_SUFFIX): pywrap/inner_pywrap.o pywrap/testlib.o
 	$(PY_MRBUILD_LINKER) $(PY_MRBUILD_LDFLAGS) $^ -o $@
 
-DIST_PY3_MODULES := pywrap/innermodule
+DIST_PY3_MODULES := pywrap/testlibmodule
 
-all: pywrap/innermodule$(PY_EXT_SUFFIX)
-EXTRA_CLEAN += pywrap/innermodule*.so
+all: pywrap/testlibmodule$(PY_EXT_SUFFIX)
+EXTRA_CLEAN += pywrap/testlibmodule*.so
 
 include Makefile.common.footer

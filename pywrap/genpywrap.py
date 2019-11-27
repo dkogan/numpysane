@@ -11,9 +11,9 @@ import numpysane as nps
 import numpysane_pywrap as npsp
 
 
-m = npsp.module( MODULE_NAME      = "innermodule",
+m = npsp.module( MODULE_NAME      = "testlibmodule",
                  MODULE_DOCSTRING = "Test module",
-                 HEADER           = '#include "inner.h"')
+                 HEADER           = '#include "testlib.h"')
 
 m.function( "inner",
             "Inner-product pywrapped with npsp",
