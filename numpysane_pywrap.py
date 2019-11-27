@@ -184,11 +184,41 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
 
         # I enumerate each named dimension, starting from -1, and counting DOWN
         named_dims = {}
-        for shape in prototype_input + (prototype_output,):
-            for dim in shape:
-                if not isinstance(dim,int) and \
-                   dim not in named_dims:
-                    named_dims[dim] = -1-len(named_dims)
+        for i_arg in range(len(prototype_input)):
+            shape = prototype_input[i_arg]
+            for i_dim in range(len(shape)):
+                dim = shape[i_dim]
+                if isinstance(dim,int):
+                    if dim <= 0:
+                        raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>0. Got '{}'". \
+                                        format(i_dim, argnames[i_arg], dim))
+                elif isinstance(dim, str):
+                    if dim not in named_dims:
+                        named_dims[dim] = -1-len(named_dims)
+                else:
+                    raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>0. Got '{}' (type '{}')". \
+                                    format(i_dim, argnames[i_arg], dim, type(dim)))
+
+        # The output is allowed to have named dimensions, but ONLY those that
+        # appear in the input
+        for i_dim in range(len(prototype_output)):
+            dim = prototype_output[i_dim]
+            if isinstance(dim,int):
+                if dim <= 0:
+                    raise Exception("Dimension {} in the output must be a string (named dimension) or an integer>0. Got '{}'". \
+                                    format(i_dim, dim))
+            elif isinstance(dim, str):
+                if dim not in named_dims:
+                    raise Exception("Dimension {} in the output is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
+                                    format(i_dim, dim))
+            else:
+                raise Exception("Dimension {} in the ouptut must be a string (named dimension) or an integer>0. Got '{}' (type '{}')". \
+                                format(i_dim, dim, type(dim)))
+
+        for dim in prototype_output:
+            if not isinstance(dim,int) and \
+               dim not in named_dims:
+                named_dims[dim] = -1-len(named_dims)
 
         def expand_prototype(shape):
             r'''Produces a shape string for each argument
