@@ -139,8 +139,11 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 int dim_output_want = i_dim_output >= 0 ? dims_output_want            [i_dim_output] : 1;
                 if(dim_var != dim_output_want)
                 {
-                    assert(0);
-                    fprintf(stderr, "given output array has mismatched dimensions\n");
+                    PyErr_Format(PyExc_RuntimeError,
+                                 "Given output array dimension %d mismatch. Expected %d but got %d",
+                                 i_dim,
+                                 dim_output_want, dim_var);
+                    goto done;
                 }
             }
         }
@@ -150,7 +153,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             __py__output__ = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, NPY_DOUBLE);
             if(__py__output__ == NULL)
             {
-                assert(0);
+                // Error already set. I simply exit
+                goto done;
             }
         }
 
