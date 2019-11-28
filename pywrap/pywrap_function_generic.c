@@ -158,15 +158,40 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
         }
 
+        const npy_intp* strides_slice_output = &PyArray_STRIDES(__py__output__)[ Ndims_extra ];
+        const npy_intp* dims_slice_output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra ];
+
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
         {
-            //_inner(); // ...
-            assert(0);
-        }
 
-        const npy_intp* strides_slice_output = &PyArray_STRIDES(__py__output__)[ Ndims_extra ];
-        const npy_intp* dims_slice_output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra ];
+#define DEFINE_SLICE(name, npy_type, dims_ref) char* slice_ ## name = __data__ ## name;
+            ARGUMENTS(DEFINE_SLICE);
+
+            char* slice_output = PyArray_DATA(__py__output__);
+
+#define ARGLIST_SLICE(name, npy_type, dims_ref)                     \
+            ,                                                       \
+            (nps_slice_t){ .data    = (double*)slice_ ## name,      \
+                           .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
+                           .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] }
+
+            if( ! __{FUNCTION_NAME}__slice
+                  (
+                      (nps_slice_t){ .data    = (double*)slice_output,
+                                     .strides = strides_slice_output,
+                                     .dims    = dims_slice_output }
+                                     ARGUMENTS(ARGLIST_SLICE)
+                  )
+                )
+            {
+                PyErr_Format(PyExc_RuntimeError,
+                             "__{FUNCTION_NAME}__slice failed!");
+            }
+            else
+                __py__result__ = (PyObject*)__py__output__;
+            goto done;
+        }
 
 #if 0
         // How many elements (not bytes) to advance for each broadcasted dimension.
@@ -210,8 +235,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         }
         do
         {
-
-#define DEFINE_SLICE(name, npy_type, dims_ref) char* slice_ ## name = __data__ ## name;
             ARGUMENTS(DEFINE_SLICE);
 
             char* slice_output = PyArray_DATA(__py__output__);
@@ -232,18 +255,19 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                     slice_output += idims_extra[i_dim + Ndims_extra]*PyArray_STRIDES(__py__output__)[i_dim + Ndims_extra];
             }
 
-
-#define ARGLIST_SLICE(name, npy_type, dims_ref)                     \
-            ,                                                       \
-            (nps_slice_t){ .data    = (double*)slice_ ## name,      \
-                           .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
-                           .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] }
-
-            __{FUNCTION_NAME}__slice( (nps_slice_t){ .data    = (double*)slice_output,
-                                                     .strides = strides_slice_output,
-                                                     .dims    = dims_slice_output }
-                                ARGUMENTS(ARGLIST_SLICE) );
-                // BARF IF FALSE
+            if( ! __{FUNCTION_NAME}__slice
+                  (
+                      (nps_slice_t){ .data    = (double*)slice_output,
+                                     .strides = strides_slice_output,
+                                     .dims    = dims_slice_output }
+                                     ARGUMENTS(ARGLIST_SLICE)
+                  )
+                )
+            {
+                PyErr_Format(PyExc_RuntimeError,
+                             "__{FUNCTION_NAME}__slice failed!");
+                goto done;
+            }
 
         } while(next(idims_extra, dims_extra, Ndims_extra));
 #if 0
