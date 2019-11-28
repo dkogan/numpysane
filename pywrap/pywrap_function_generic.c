@@ -133,11 +133,11 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                  i_dim >= -Ndims_to_compare;
                  i_dim--)
             {
-                int i_dim_var    = i_dim + PyArray_NDIM(__py__output__);
-                int i_dim_output = i_dim + Ndims_output;
-                int dim_var      = i_dim_var    >= 0 ? PyArray_DIMS(__py__output__)[i_dim_var   ] : 1;
-                int dim_output   = i_dim_output >= 0 ? dims_output_want            [i_dim_output] : 1;
-                if(dim_var != dim_output)
+                int i_dim_var       = i_dim + PyArray_NDIM(__py__output__);
+                int i_dim_output    = i_dim + Ndims_output;
+                int dim_var         = i_dim_var    >= 0 ? PyArray_DIMS(__py__output__)[i_dim_var   ] : 1;
+                int dim_output_want = i_dim_output >= 0 ? dims_output_want            [i_dim_output] : 1;
+                if(dim_var != dim_output_want)
                 {
                     assert(0);
                     fprintf(stderr, "given output array has mismatched dimensions\n");
