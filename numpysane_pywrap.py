@@ -309,9 +309,9 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
               file=file)
         print("\n")
 
-        print('///////// {{{{{{{{{ ' + _module_header_filename, file=file)
+        print('///////// {{{{{{{{{ ' + _module_footer_filename, file=file)
         print(self.module_footer, file=file)
-        print('///////// }}}}}}}}} ' + _module_header_filename, file=file)
+        print('///////// }}}}}}}}} ' + _module_footer_filename, file=file)
 
 
 r'''
