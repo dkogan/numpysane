@@ -182,12 +182,6 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
 }
 '''
 
-        text_function_slice = \
-          _substitute(function_slice_template,
-                      FUNCTION_NAME          = FUNCTION_NAME,
-                      SLICE_DEFINITIONS      = ''.join([", nps_slice_t " + n for n in argnames]),
-                      FUNCTION__slice        = FUNCTION__slice_code)
-
         # I enumerate each named dimension, starting from -1, and counting DOWN
         named_dims = {}
         for i_arg in range(len(prototype_input)):
@@ -261,7 +255,10 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
                 self.function_template = f.read()
 
         text = \
-            text_function_slice + \
+            _substitute(function_slice_template,
+                        FUNCTION_NAME          = FUNCTION_NAME,
+                        SLICE_DEFINITIONS      = ''.join([", nps_slice_t " + n for n in argnames]),
+                        FUNCTION__slice        = FUNCTION__slice_code) + \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
             '\n\n' + \
             _substitute(self.function_template,
