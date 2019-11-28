@@ -286,21 +286,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         }
 #endif
 
-
-
-        // Have slice. Each slice has a set of input/output pointers where:
-        //
-        // - type we may or may not want (could be double* or anything else)
-        //
-        // - dimensionality we want (from the signature), but not necessarily
-        //   the strides we want. We have the strides
-
-        // user needs to provide the inner function to do all the work in this
-        // state
-        //
-        // Need to handle unknown dimensionality for out at the start
-
-
         __py__result__ = (PyObject*)__py__output__;
     }
  done:
