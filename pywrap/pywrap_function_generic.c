@@ -46,7 +46,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     //   dims_named is the values of the named dimensions
 
 
-
     // First I initialize dims_extra: the array containing the broadcasted
     // slices. Each argument calls for some number of extra dimensions, and the
     // overall array is as large as the biggest one of those

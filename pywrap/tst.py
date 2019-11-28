@@ -27,7 +27,7 @@ testlibmodule.inner(np.arange(10, dtype=float).reshape(  2,5),
 
 try:
     testlibmodule.inner(np.arange(10, dtype=float).reshape(2,5),
-                      np.arange(15, dtype=float).reshape(3,5))
+                        np.arange(15, dtype=float).reshape(3,5))
 except:
     # expected barf
     pass
