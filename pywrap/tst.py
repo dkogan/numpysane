@@ -16,40 +16,69 @@ b  = a0+3
 a1 = np.arange(10, dtype=float).reshape(2,5)
 a2 = nps.transpose(np.arange(10, dtype=float).reshape(5,2))
 
-for f0,f1 in matching_functions:
-    print(np.linalg.norm(f0(a0,b) - f1(a0,b)))
-    print(np.linalg.norm(f0(a1,b) - f1(a1,b)))
-    print(np.linalg.norm(f0(a2,b) - f1(a2,b)))
 
+
+
+def check(matching_functions, A, B):
+    N = 1
+    if type(A) is tuple and len(A) > N:
+        N = len(A)
+    if type(B) is tuple and len(B) > N:
+        N = len(B)
+
+    if type(A) is not tuple: A = (A,) * N
+    if type(B) is not tuple: B = (B,) * N
+
+    for f0,f1 in matching_functions:
+        for i in range(N):
+            result0 = f0(A[i], B[i])
+            print(np.linalg.norm(result0 -
+                                 f1(A[i], B[i])))
+
+            out0 = np.zeros(result0.shape, dtype=float)
+            out1 = np.ones (result0.shape, dtype=float)
+            f0(A[i], B[i], out=out0)
+            f1(A[i], B[i], out=out1)
+            print(np.linalg.norm(out0 - out1))
+
+check(matching_functions,
+      (a0,a1,a2), b)
+
+# pass out
 # should be ok
 testlibmodule.inner(np.arange(10, dtype=float).reshape(  2,5),
                     np.arange(15, dtype=float).reshape(3,1,5))
 
-try:
-    testlibmodule.inner(np.arange(10, dtype=float).reshape(2,5),
-                        np.arange(15, dtype=float).reshape(3,5))
-except:
-    # expected barf
-    pass
-else:
-    print("should have barfed but didn't!")
+try:    testlibmodule.inner(np.arange(10, dtype=float).reshape(2,5),
+                            np.arange(15, dtype=float).reshape(3,5))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
 
+try:    testlibmodule.inner(np.arange(5), np.arange(6))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
 
-try:
-    testlibmodule.inner(np.arange(5), np.arange(6))
-except:
-    # expected barf
-    pass
-else:
-    print("should have barfed but didn't!")
-
-try:
-    testlibmodule.outer_only3(np.arange(5), np.arange(5))
-except:
-    # expected barf
-    pass
-else:
-    print("should have barfed but didn't!")
+try:    testlibmodule.outer_only3(np.arange(5), np.arange(5))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
 
 # should be ok
 testlibmodule.outer_only3(np.arange(3), np.arange(3))
+
+testlibmodule.outer(a0,b, out=np.zeros((5,5), dtype=float))
+# wrong dimensions on out. These all should barf
+try:    testlibmodule.outer(a0,b, out=np.zeros((3,3), dtype=float))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
+try:    testlibmodule.outer(a0,b, out=np.zeros((4,5), dtype=float))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
+try:    testlibmodule.outer(a0,b, out=np.zeros((5,), dtype=float))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
+try:    testlibmodule.outer(a0,b, out=np.zeros((), dtype=float))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
+try:    testlibmodule.outer(a0,b, out=np.zeros((5,5,5), dtype=float))
+except: pass # expected barf
+else:   print("should have barfed but didn't!")
