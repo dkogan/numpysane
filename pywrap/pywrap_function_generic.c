@@ -293,6 +293,11 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #define FREE_PYARRAY(name, npy_type, dims_ref) Py_XDECREF(__py__ ## name);
     ARGUMENTS(FREE_PYARRAY);
 
+    if(__py__result__ == NULL)
+        // An error occurred. If an output array was passed-in or created, I
+        // release it
+        Py_XDECREF(__py__output__);
+
     RESET_SIGINT();
     return __py__result__;
 }
