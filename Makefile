@@ -51,6 +51,6 @@ pywrap/testlibmodule$(PY_EXT_SUFFIX): pywrap/testlib_pywrap_GENERATED.o pywrap/t
 DIST_PY3_MODULES := pywrap/testlibmodule
 
 all: pywrap/testlibmodule$(PY_EXT_SUFFIX)
-EXTRA_CLEAN += pywrap/testlibmodule*.so
+EXTRA_CLEAN += pywrap/testlibmodule*.so pywrap/*.o pywrap/*.d
 
 include Makefile.common.footer
