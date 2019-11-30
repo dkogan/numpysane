@@ -59,10 +59,8 @@ bool parse_dim(// input and output
                int Ndims_extra,
                const char* arg_name,
                int Ndims_extra_this,
-               const npy_intp* dims_want,
-               int Ndims_want,
-               const npy_intp* dims_got,
-               int Ndims_got )
+               const npy_intp* dims_want, int Ndims_want,
+               const npy_intp* dims_got,  int Ndims_got )
 {
     // first, I make sure the input is at least as dimension-ful as the
     // prototype. I do this by prepending dummy dimensions of length-1 as

@@ -84,10 +84,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                                 \
                       #name,                    \
                       Ndims_extra_ ## name,     \
-                      PROTOTYPE_ ## name,       \
-                      PROTOTYPE_LEN_ ## name,   \
-                      __dims__ ## name,         \
-                      __ndim__ ## name))        \
+                      PROTOTYPE_ ## name, PROTOTYPE_LEN_ ## name,   \
+                      __dims__   ## name, __ndim__       ## name))  \
             goto done;
 
         ARGUMENTS(PARSE_DIMS);
