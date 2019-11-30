@@ -58,17 +58,17 @@ bool parse_dim(// input and output
                // input
                int Ndims_extra,
                const char* arg_name,
-               int Ndims_extra_this,
+               int Ndims_extra_var,
                const npy_intp* dims_want, int Ndims_want,
-               const npy_intp* dims_got,  int Ndims_got )
+               const npy_intp* dims_var,  int Ndims_var )
 {
     // first, I make sure the input is at least as dimension-ful as the
     // prototype. I do this by prepending dummy dimensions of length-1 as
     // necessary
-    if(Ndims_extra_this < 0)
+    if(Ndims_extra_var < 0)
     {
         assert(0);
-        // shape_arg = (1,) * (-Ndims_extra_this) + shape_arg;
+        // shape_arg = (1,) * (-Ndims_extra_var) + shape_arg;
         return false;
     }
 
@@ -81,38 +81,38 @@ bool parse_dim(// input and output
          i_dim >= -Ndims_want;
          i_dim--)
     {
-        int i_dim_dims_want = i_dim + Ndims_want;
-        int i_dim_var        = i_dim + Ndims_got;
-        int dim_dims_want   = dims_want[i_dim_dims_want];
-        if(dim_dims_want < 0)
+        int i_dim_want = i_dim + Ndims_want;
+        int i_dim_var  = i_dim + Ndims_var;
+        int dim_want   = dims_want[i_dim_want];
+        if(dim_want < 0)
         {
             // This is a named dimension. These can have any value, but
             // ALL dimensions of the same name must thave the SAME value
             // EVERYWHERE
-            if(dims_named[-dim_dims_want-1] < 0)
-                dims_named[-dim_dims_want-1] = dims_got[i_dim_var];
+            if(dims_named[-dim_want-1] < 0)
+                dims_named[-dim_want-1] = dims_var[i_dim_var];
 
-            dim_dims_want = dims_named[-dim_dims_want-1];
+            dim_want = dims_named[-dim_want-1];
         }
 
         // The prototype dimension (named or otherwise) now has a numeric
         // value. Make sure it matches what I have
-        if(dim_dims_want != dims_got[i_dim_var])
+        if(dim_want != dims_var[i_dim_var])
         {
-            if(dims_want[i_dim_dims_want] < 0)
+            if(dims_want[i_dim_want] < 0)
                 PyErr_Format(PyExc_RuntimeError,
                              "Argument '%s': prototype says dimension %d (named dimension %d) has length %d, but got %d",
                              arg_name,
-                             i_dim, dims_want[i_dim_dims_want],
-                             dim_dims_want,
-                             dims_got[i_dim_var]);
+                             i_dim, dims_want[i_dim_want],
+                             dim_want,
+                             dims_var[i_dim_var]);
             else
                 PyErr_Format(PyExc_RuntimeError,
                              "Argument '%s': prototype says dimension %d has length %d, but got %d",
                              arg_name,
                              i_dim,
-                             dim_dims_want,
-                             dims_got[i_dim_var]);
+                             dim_want,
+                             dims_var[i_dim_var]);
             return false;
         }
     }
@@ -123,29 +123,29 @@ bool parse_dim(// input and output
 
     // MAKE SURE THE BROADCASTED DIMENSIONS MATCH (the leading dimensions)
     //
-    // This argument has Ndims_extra_this dimensions to broadcast. The
+    // This argument has Ndims_extra_var dimensions to broadcast. The
     // current dimensions to broadcast must be at least as large, and must
     // match
     for( int i_dim=-1;
-         i_dim >= -Ndims_extra_this;
+         i_dim >= -Ndims_extra_var;
          i_dim--)
     {
-        int i_dim_var   = i_dim - Ndims_want + Ndims_got;
+        int i_dim_var   = i_dim - Ndims_want + Ndims_var;
         int i_dim_extra = i_dim + Ndims_extra;
-        int dim_arg     = dims_got[i_dim_var];
+        int dim_var     = dims_var[i_dim_var];
 
-        if (dim_arg != 1)
+        if (dim_var != 1)
         {
             if( dims_extra[i_dim_extra] == 1)
-                dims_extra[i_dim_extra] = dim_arg;
-            else if(dims_extra[i_dim_extra] != dim_arg)
+                dims_extra[i_dim_extra] = dim_var;
+            else if(dims_extra[i_dim_extra] != dim_var)
             {
                 PyErr_Format(PyExc_RuntimeError,
                              "Argument '%s' dimension %d (broadcasted dimension %d) mismatch. Previously saw length %d, but here have length %d",
                              arg_name,
                              i_dim-Ndims_want, i_dim,
                              dims_extra[i_dim_extra],
-                             dim_arg);
+                             dim_var);
                 return false;
             }
         }
