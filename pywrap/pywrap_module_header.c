@@ -5,7 +5,6 @@
 #include <structmember.h>
 #include <numpy/arrayobject.h>
 #include <signal.h>
-#include <assert.h>
 
 // Python is silly. There's some nuance about signal handling where it sets a
 // SIGINT (ctrl-c) handler to just set a flag, and the python layer then reads
