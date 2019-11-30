@@ -104,8 +104,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                     PROTOTYPE__output__[i] = dims_named[-PROTOTYPE__output__[i]-1];
                 else
                 {
-                    // output prototype has some unknown named dimension. Handle this later
-                    assert(0);
+                    PyErr_Format(PyExc_RuntimeError,
+                                 "Output prototype has some named dimension not encountered in the input. The pywrap generator shouldn't have let this happen");
+                    goto done;
                 }
             }
 
