@@ -35,13 +35,22 @@ def check(matching_functions, A, B):
             print(np.linalg.norm(result0 -
                                  f1(A[i], B[i])))
 
-            out0 = np.zeros(result0.shape, dtype=float)
-            out1 = np.ones (result0.shape, dtype=float)
+            out0 = np.zeros(result0.shape, dtype=np.array(A[i]).dtype)
+            out1 = np.ones (result0.shape, dtype=np.array(A[i]).dtype)
             f0(A[i], B[i], out=out0)
             f1(A[i], B[i], out=out1)
             print(np.linalg.norm(out0 - out1))
 
 check(matching_functions, (a0,a1,a2), b)
+
+check( ((nps.inner, testlibmodule.inner),),
+      tuple([a.astype(int) for a in (a0,a1,a2)]),
+      b.astype(int))
+
+# # should fail
+# check( ((nps.inner, testlibmodule.inner),),
+#       (a0,a1,a2),
+#       b.astype(int))
 
 # too few argument dimensions
 check( ((nps.inner, testlibmodule.inner),),

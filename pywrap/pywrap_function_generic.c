@@ -9,6 +9,7 @@
 #undef ARGLIST_SLICE
 #undef FREE_PYARRAY
 
+
 static
 PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                     PyObject* args,
@@ -51,6 +52,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     // overall array is as large as the biggest one of those
 
 {PROTOTYPE_DIM_DEFS};
+{TYPE_DEFS};
 
     const int PROTOTYPE_LEN__output__ = (int)sizeof(PROTOTYPE__output__)/sizeof(PROTOTYPE__output__[0]);
     // the maximum of Ndims_extra_this for all the arguments
@@ -98,6 +100,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         int Ndims_extra_ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name; \
         if(Ndims_extra < Ndims_extra_ ## name) Ndims_extra = Ndims_extra_ ## name;
 
+
+
         ARGUMENTS(DECLARE_DIM_VARS);
 
 
@@ -138,6 +142,41 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                     goto done;
                 }
             }
+
+        int selected_typenum = NPY_NOTYPE;
+        slice_function_t* slice_function;
+        for( int i=0; i<Nknown_typenums; i++ )
+        {
+#define TYPE_MATCHES(name) && known_typenums[i] == PyArray_DESCR(__py__ ## name)->type_num
+
+            if( (PyObject*)__py__output__ != Py_None && __py__output__ != NULL &&
+                known_typenums[i] != PyArray_DESCR(__py__output__)->type_num )
+                // output type doesn't match
+                continue;
+
+            if(true ARGUMENTS(TYPE_MATCHES))
+            {
+                // all arguments match this type!
+                selected_typenum = known_typenums[i];
+                slice_function   = slice_functions[i];
+                break;
+            }
+        }
+        if(selected_typenum == NPY_NOTYPE)
+        {
+#define INPUT_PERCENT_S(name) "%S,"
+#define INPUT_TYPEOBJ(name)   PyArray_DESCR(__py__ ## name)->typeobj,
+
+            PyErr_Format(PyExc_RuntimeError,
+                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING}), instead I got (inputs,output) of type ("
+                         ARGUMENTS(INPUT_PERCENT_S)
+                         "%S",
+                         ARGUMENTS(INPUT_TYPEOBJ)
+                         ((PyObject*)__py__output__ != Py_None && __py__output__ != NULL) ?
+                           (PyObject*)PyArray_DESCR(__py__output__)->typeobj : (PyObject*)Py_None);
+            goto done;
+
+        }
 
 {VALIDATE};
 
@@ -180,7 +219,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         else
         {
             // No output array available. Make one
-            __py__output__ = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, NPY_DOUBLE);
+            __py__output__ = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum);
             if(__py__output__ == NULL)
             {
                 // Error already set. I simply exit
@@ -225,23 +264,22 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
             char* slice_output = PyArray_DATA(__py__output__);
 
-#define ARGLIST_SLICE(name)                               \
-            ,                                                       \
-            (nps_slice_t){ .data    = (double*)slice_ ## name,      \
+#define ARGLIST_SLICE(name)                                             \
+            ,                                                           \
+            (nps_slice_t){ .data    = (void*)slice_ ## name,            \
                            .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
                            .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] }
 
-            if( ! __{FUNCTION_NAME}__slice
+            if( ! slice_function
                   (
-                      (nps_slice_t){ .data    = (double*)slice_output,
+                      (nps_slice_t){ .data    = (void*)slice_output,
                                      .strides = __strides__output,
                                      .dims    = __dims__output }
                                      ARGUMENTS(ARGLIST_SLICE)
                   )
                 )
             {
-                PyErr_Format(PyExc_RuntimeError,
-                             "__{FUNCTION_NAME}__slice failed!");
+                PyErr_Format(PyExc_RuntimeError, "__{FUNCTION_NAME}__slice failed!");
             }
             else
                 __py__result__ = (PyObject*)__py__output__;
@@ -310,9 +348,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                     slice_output += idims_extra[i_dim + Ndims_extra]*__strides__output[i_dim + Ndims_extra];
             }
 
-            if( ! __{FUNCTION_NAME}__slice
+            if( ! slice_function
                   (
-                      (nps_slice_t){ .data    = (double*)slice_output,
+                      (nps_slice_t){ .data    = (void*)slice_output,
                                      .strides = __strides__output,
                                      .dims    = __dims__output }
                                      ARGUMENTS(ARGLIST_SLICE)

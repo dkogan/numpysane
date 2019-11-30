@@ -22,14 +22,37 @@ m.function( "inner",
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
-            FUNCTION__slice_code = r'''
-            output.data[0] = inner(a.data,
-                                   b.data,
-                                   a.strides[0],
-                                   b.strides[0],
-                                   a.dims[0]);
+            FUNCTION__slice_code = \
+                {float:
+                 r'''
+            ((double*)output.data)[0] =
+              inner_double((double*)a.data,
+                    (double*)b.data,
+                    a.strides[0],
+                    b.strides[0],
+                    a.dims[0]);
             return true;
-''')
+''',
+                 np.int64:
+                 r'''
+            ((int64_t*)output.data)[0] =
+              inner_int64_t((int64_t*)a.data,
+                    (int64_t*)b.data,
+                    a.strides[0],
+                    b.strides[0],
+                    a.dims[0]);
+            return true;
+''',
+                 np.int32:
+                 r'''
+            ((int32_t*)output.data)[0] =
+              inner_int32_t((int32_t*)a.data,
+                    (int32_t*)b.data,
+                    a.strides[0],
+                    b.strides[0],
+                    a.dims[0]);
+            return true;
+'''})
 
 m.function( "outer",
             "Outer-product pywrapped with npsp",
@@ -38,15 +61,17 @@ m.function( "outer",
             prototype_input  = (('n',), ('n',)),
             prototype_output = ('n', 'n'),
 
-            FUNCTION__slice_code = r'''
-            outer(output.data,
-                  a.data,
-                  b.data,
+            FUNCTION__slice_code = \
+                {float:
+                 r'''
+            outer((double*)output.data,
+                  (double*)a.data,
+                  (double*)b.data,
                   a.strides[0],
                   b.strides[0],
                   a.dims[0]);
             return true;
-''')
+'''})
 
 
 try:
@@ -95,7 +120,9 @@ Only dimensions of length 3 are allowed
             prototype_input  = (('n',), (3,)),
             prototype_output = ('n', 'n'),
 
-            FUNCTION__slice_code = r'''
+            FUNCTION__slice_code = \
+                {float:
+                 r'''
             outer(output.data,
                   a.data,
                   b.data,
@@ -103,7 +130,7 @@ Only dimensions of length 3 are allowed
                   b.strides[0],
                   a.dims[0]);
             return true;
-            ''')
+            '''})
 
 
 m.write()

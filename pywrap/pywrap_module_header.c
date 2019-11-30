@@ -44,10 +44,12 @@ int PyArray_Converter_leaveNone(PyObject* obj, PyObject** address)
 
 typedef struct
 {
-    double* data;
+    void*           data;
     const npy_intp* strides;
     const npy_intp* dims;
 } nps_slice_t;
+
+typedef bool (slice_function_t)(nps_slice_t output, nps_slice_t a, nps_slice_t b);
 
 static
 bool parse_dim(// input and output

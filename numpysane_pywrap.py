@@ -1,5 +1,6 @@
 import sys
 import time
+import numpy as np
 
 _module_header_filename = 'pywrap/pywrap_module_header.c'
 _module_footer_filename = 'pywrap/pywrap_module_footer_generic.c'
@@ -135,29 +136,40 @@ class module:
 
         - FUNCTION__slice_code
 
-          C code that will be included verbatim into the python-wrapping code.
-          If we're wrapping a function called FUNCTION, this string is the
-          contents of the wrapper function:
+          This is a dict from numpy type objects to code snippets that form the
+          body of a slice_function_t function. This is C code that will be
+          included verbatim into the python-wrapping code. For instance, if
+          we're wrapping a function called FUNCTION that works on 64-bit
+          floating-point values, here we specify the way we call this function.
 
             typedef struct
             {
-                double* data;
+                void*           data;
                 const npy_intp* strides;
                 const npy_intp* shape;
             } nps_slice_t;
-            bool __FUNCTION__slice( nps_slice_t output,
-                                    nps_slice_t a,
-                                    nps_slice_t b )
+            bool __FUNCTION__float64_slice( nps_slice_t output,
+                                            nps_slice_t a,
+                                            nps_slice_t b )
             {
-               // THE PASSED-IN STRING GOES HERE
+               // THE PASSED-IN STRING FOR THE 'float' KEY ENDS UP HERE
+               ...
+               ...
+               // This string eventually contains a FUNCTION() call
+               FUNCTION(...);
             }
 
           This function is called for each broadcasting slice. The number of
           arguments and their names are generated from the "prototype_input" and
-          "argnames" arguments here. The strides and shape define the memory
-          layout of the data in memory for this slice. The 'shape' is only
-          knowable at runtime because of named dimensions. Return true on
-          success.
+          "argnames" arguments. The strides and shape define the memory layout
+          of the data in memory for this slice. The 'shape' is only knowable at
+          runtime because of named dimensions. The inner slice function returns
+          true on success.
+
+          Currently any number of data types are supported, but ALL of the
+          inputs AND the output MUST share a single, consistent type. No
+          implicit type conversions are performed, but the system does check
+          for, and report type mismatches
 
         - VALIDATE_code
 
@@ -176,10 +188,11 @@ class module:
 
         function_slice_template = r'''
 static
-bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
+bool {SLICE_FUNCTION_NAME}(nps_slice_t output{SLICE_DEFINITIONS})
 {
 {FUNCTION__slice}
 }
+
 '''
 
         # I enumerate each named dimension, starting from -1, and counting DOWN
@@ -245,6 +258,20 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
         PROTOTYPE_DIM_DEFS += "    int Ndims_named = {};\n". \
             format(len(named_dims))
 
+        known_types     = tuple(FUNCTION__slice_code.keys())
+        slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,np.dtype(t).name) for t in known_types]
+        TYPE_DEFS =  '    int Nknown_typenums  = {};\n'.format(len(known_types));
+        TYPE_DEFS += \
+            '    int known_typenums[] = {' + \
+            ','.join(str(np.dtype(t).num) for t in known_types) + \
+            '};\n'
+        TYPE_DEFS += \
+            '   slice_function_t* slice_functions[] = {' + \
+            ','.join(slice_functions) + \
+            '};\n'
+
+        KNOWN_TYPES_LIST_STRING = ','.join(np.dtype(t).name for t in known_types)
+
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(len(argnames)):
@@ -254,17 +281,23 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
             with open(_function_filename, 'r') as f:
                 self.function_template = f.read()
 
-        text = \
-            _substitute(function_slice_template,
-                        FUNCTION_NAME          = FUNCTION_NAME,
-                        SLICE_DEFINITIONS      = ''.join([", nps_slice_t " + n for n in argnames]),
-                        FUNCTION__slice        = FUNCTION__slice_code) + \
+        text = ''
+        for i in range(len(known_types)):
+            text += \
+                _substitute(function_slice_template,
+                            SLICE_FUNCTION_NAME    = slice_functions[i],
+                            SLICE_DEFINITIONS      = ''.join([", nps_slice_t " + n for n in argnames]),
+                            FUNCTION__slice        = FUNCTION__slice_code[known_types[i]])
+
+        text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
             '\n\n' + \
             _substitute(self.function_template,
-                        FUNCTION_NAME      = FUNCTION_NAME,
-                        PROTOTYPE_DIM_DEFS = PROTOTYPE_DIM_DEFS,
-                        VALIDATE           = VALIDATE_code)
+                        FUNCTION_NAME           = FUNCTION_NAME,
+                        PROTOTYPE_DIM_DEFS      = PROTOTYPE_DIM_DEFS,
+                        KNOWN_TYPES_LIST_STRING = KNOWN_TYPES_LIST_STRING,
+                        TYPE_DEFS               = TYPE_DEFS,
+                        VALIDATE                = VALIDATE_code)
         self.functions.append( (FUNCTION_NAME,
                                 _quote(FUNCTION_DOCSTRING, convert_newlines=True),
                                 text) )
