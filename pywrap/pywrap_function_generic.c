@@ -188,8 +188,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
         }
 
-        const npy_intp* strides_slice_output = &PyArray_STRIDES(__py__output__)[ Ndims_extra ];
-        const npy_intp* dims_slice_output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra ];
+        const npy_intp* __strides__output = &PyArray_STRIDES(__py__output__)[ Ndims_extra ];
+        const npy_intp* __dims__output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra ];
 
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
@@ -208,8 +208,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             if( ! __{FUNCTION_NAME}__slice
                   (
                       (nps_slice_t){ .data    = (double*)slice_output,
-                                     .strides = strides_slice_output,
-                                     .dims    = dims_slice_output }
+                                     .strides = __strides__output,
+                                     .dims    = __dims__output }
                                      ARGUMENTS(ARGLIST_SLICE)
                   )
                 )
@@ -287,8 +287,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             if( ! __{FUNCTION_NAME}__slice
                   (
                       (nps_slice_t){ .data    = (double*)slice_output,
-                                     .strides = strides_slice_output,
-                                     .dims    = dims_slice_output }
+                                     .strides = __strides__output,
+                                     .dims    = __dims__output }
                                      ARGUMENTS(ARGLIST_SLICE)
                   )
                 )
@@ -316,8 +316,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 //bool success =
                 _inner_one_slice(
                     (nps_slice_t){ .data    = slice_output1,
-                                   .strides = strides_slice_output,
-                                   .dims    = dims_slice_output },
+                                   .strides = __strides__output,
+                                   .dims    = __dims__output },
                     (nps_slice_t){ .data    = slice_a1,
                                    .strides = strides_slice_a,
                                    .dims    = dims_slice_a },
