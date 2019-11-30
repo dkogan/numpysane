@@ -325,45 +325,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
 
         } while(next(idims_extra, dims_extra, Ndims_extra));
-#if 0
-        double* slice_a0      = __data__a;
-        double* slice_b0      = __data__b;
-        double* slice_output0 = PyArray_DATA(__py__output__);
-        int dim_extra0=0;
-        while(dim_extra0<dims_extra[0])
-        {
-
-            double* slice_a1      = slice_a0;
-            double* slice_b1      = slice_b0;
-            double* slice_output1 = slice_output0;
-            int dim_extra1=0;
-            while(dim_extra1<dims_extra[1])
-            {
-                //bool success =
-                _inner_one_slice(
-                    (nps_slice_t){ .data    = slice_output1,
-                                   .strides = __strides__output,
-                                   .dims    = __dims__output },
-                    (nps_slice_t){ .data    = slice_a1,
-                                   .strides = strides_slice_a,
-                                   .dims    = dims_slice_a },
-                    (nps_slice_t){ .data    = slice_b1,
-                                   .strides = strides_slice_b,
-                                   .dims    = dims_slice_b } );
-                //assert(success);
-
-                dim_extra1++;
-                slice_output1 = &slice_output0[PyArray_STRIDES(__py__output__)[1]/sizeof(double)];
-                slice_a1      = &slice_a1     [stride_extra_elements_a[1]];
-                slice_b1      = &slice_b1     [stride_extra_elements_b[1]];
-            }
-
-            dim_extra0++;
-            slice_output0 = &slice_output0[PyArray_STRIDES(__py__output__)[0]/sizeof(double)];
-            slice_a0      = &slice_a0     [stride_extra_elements_a[0]];
-            slice_b0      = &slice_b0     [stride_extra_elements_b[0]];
-        }
-#endif
 
         __py__result__ = (PyObject*)__py__output__;
     }
