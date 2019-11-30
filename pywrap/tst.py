@@ -41,10 +41,28 @@ def check(matching_functions, A, B):
             f1(A[i], B[i], out=out1)
             print(np.linalg.norm(out0 - out1))
 
-check(matching_functions,
-      (a0,a1,a2), b)
+check(matching_functions, (a0,a1,a2), b)
 
-# pass out
+# too few argument dimensions
+check( ((nps.inner, testlibmodule.inner),),
+
+       6.,
+
+       (5.,
+        np.array(5, dtype=float),
+        np.array((5,), dtype=float),
+        ),)
+
+# too few output dimensions
+out = np.zeros((), dtype=float)
+testlibmodule.inner( nps.atleast_dims(np.array(6.,dtype=float), -5),
+                     nps.atleast_dims(np.array(5.,dtype=float), -2),
+                     out=out)
+print(out - 30)
+sys.exit()
+
+
+
 # should be ok
 testlibmodule.inner(np.arange(10, dtype=float).reshape(  2,5),
                     np.arange(15, dtype=float).reshape(3,1,5))
