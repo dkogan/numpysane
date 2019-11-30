@@ -62,16 +62,6 @@ bool parse_dim(// input and output
                const npy_intp* dims_want, int Ndims_want,
                const npy_intp* dims_var,  int Ndims_var )
 {
-    // first, I make sure the input is at least as dimension-ful as the
-    // prototype. I do this by prepending dummy dimensions of length-1 as
-    // necessary
-    if(Ndims_extra_var < 0)
-    {
-        assert(0);
-        // shape_arg = (1,) * (-Ndims_extra_var) + shape_arg;
-        return false;
-    }
-
     // MAKE SURE THE PROTOTYPE DIMENSIONS MATCH (the trailing dimensions)
     //
     // Loop through the dimensions. Set the dimensionality of any new named
@@ -82,22 +72,27 @@ bool parse_dim(// input and output
          i_dim--)
     {
         int i_dim_want = i_dim + Ndims_want;
-        int i_dim_var  = i_dim + Ndims_var;
         int dim_want   = dims_want[i_dim_want];
+
+        int i_dim_var = i_dim + Ndims_var;
+        // I assume i_dim_var>=0 because the caller prepended dimensions of
+        // length-1 as needed
+        int dim_var   = dims_var[i_dim_var];
+
         if(dim_want < 0)
         {
             // This is a named dimension. These can have any value, but
             // ALL dimensions of the same name must thave the SAME value
             // EVERYWHERE
             if(dims_named[-dim_want-1] < 0)
-                dims_named[-dim_want-1] = dims_var[i_dim_var];
+                dims_named[-dim_want-1] = dim_var;
 
             dim_want = dims_named[-dim_want-1];
         }
 
         // The prototype dimension (named or otherwise) now has a numeric
         // value. Make sure it matches what I have
-        if(dim_want != dims_var[i_dim_var])
+        if(dim_want != dim_var)
         {
             if(dims_want[i_dim_want] < 0)
                 PyErr_Format(PyExc_RuntimeError,
@@ -105,14 +100,14 @@ bool parse_dim(// input and output
                              arg_name,
                              i_dim, dims_want[i_dim_want],
                              dim_want,
-                             dims_var[i_dim_var]);
+                             dim_var);
             else
                 PyErr_Format(PyExc_RuntimeError,
                              "Argument '%s': prototype says dimension %d has length %d, but got %d",
                              arg_name,
                              i_dim,
                              dim_want,
-                             dims_var[i_dim_var]);
+                             dim_var);
             return false;
         }
     }
@@ -130,9 +125,12 @@ bool parse_dim(// input and output
          i_dim >= -Ndims_extra_var;
          i_dim--)
     {
-        int i_dim_var   = i_dim - Ndims_want + Ndims_var;
+        int i_dim_var = i_dim - Ndims_want + Ndims_var;
+        // I assume i_dim_var>=0 because the caller prepended dimensions of
+        // length-1 as needed
+        int dim_var   = dims_var[i_dim_var];
+
         int i_dim_extra = i_dim + Ndims_extra;
-        int dim_var     = dims_var[i_dim_var];
 
         if (dim_var != 1)
         {

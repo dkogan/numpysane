@@ -56,20 +56,53 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     // the maximum of Ndims_extra_this for all the arguments
     int Ndims_extra = 0;
 
-#define DECLARE_DIM_VARS(name, npy_type, dims_ref)                     \
-    const int       __ndim__    ## name = PyArray_NDIM   (__py__ ## name); \
-    const npy_intp* __dims__    ## name = PyArray_DIMS   (__py__ ## name); \
-    void*           __data__    ## name = PyArray_DATA   (__py__ ## name); \
-    const npy_intp* __strides__ ## name = PyArray_STRIDES(__py__ ## name); \
-                                                                        \
-    const int PROTOTYPE_LEN_ ## name = (int)sizeof(PROTOTYPE_ ## name)/sizeof(PROTOTYPE_ ## name[0]); \
-                                                                        \
-    int Ndims_extra_ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name;             \
-    if(Ndims_extra < Ndims_extra_ ## name) Ndims_extra = Ndims_extra_ ## name;
 
-    ARGUMENTS(DECLARE_DIM_VARS);
+    // It's possible for my arguments (and the output) to have fewer dimensions
+    // than required by the prototype, and still pass all the dimensionality
+    // checks, assuming implied leading dimensions of length 1. For instance I
+    // could receive a scalar where a ('n',) dimension is expected, or a ('n',)
+    // vector where an ('m','n') array is expected. I thus make a local (and
+    // padded) copy of the strides and dims arrays, and use those where needed.
+    // Most of the time these will just be copies of the input. The dimension
+    // counts and argument counts will be relatively small, so this is only a
+    // tiny bit wasteful
 
     {
+
+#define DECLARE_DIM_VARS(name, npy_type, dims_ref)                      \
+        const int PROTOTYPE_LEN_ ## name = (int)sizeof(PROTOTYPE_ ## name)/sizeof(PROTOTYPE_ ## name[0]); \
+        int          __ndim__    ## name = PyArray_NDIM(__py__ ## name); \
+        if( __ndim__ ## name < PROTOTYPE_LEN_ ## name )                 \
+            /* Too few input dimensions. Add dummy dimension of length-1 */ \
+            __ndim__ ## name = PROTOTYPE_LEN_ ## name;                  \
+        npy_intp __dims__   ## name[__ndim__ ## name];                  \
+        npy_intp __strides__## name[__ndim__ ## name];                  \
+        {                                                               \
+            const npy_intp* dims_orig    = PyArray_DIMS   (__py__ ## name); \
+            const npy_intp* strides_orig = PyArray_STRIDES(__py__ ## name); \
+            npy_intp        ndim_orig    = PyArray_NDIM   (__py__ ## name); \
+            int i_dim = -1;                                             \
+            for(; i_dim >= -ndim_orig; i_dim--)                         \
+            {                                                           \
+                __dims__   ## name[i_dim + __ndim__ ## name] = dims_orig   [i_dim + ndim_orig]; \
+                __strides__## name[i_dim + __ndim__ ## name] = strides_orig[i_dim + ndim_orig]; \
+            }                                                           \
+            for(; i_dim >= -__ndim__ ## name; i_dim--)                  \
+            {                                                           \
+                __dims__    ## name[i_dim + __ndim__ ## name] = 1;      \
+                __strides__ ## name[i_dim + __ndim__ ## name] = 0;      \
+            }                                                           \
+        }                                                               \
+        void* __data__    ## name = PyArray_DATA   (__py__ ## name);    \
+                                                                        \
+                                                                        \
+        /* guaranteed >= 0 because of the padding */                    \
+        int Ndims_extra_ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name; \
+        if(Ndims_extra < Ndims_extra_ ## name) Ndims_extra = Ndims_extra_ ## name;
+
+        ARGUMENTS(DECLARE_DIM_VARS);
+
+
         npy_intp dims_extra[Ndims_extra];
         for(int i=0; i<Ndims_extra; i++)
             dims_extra[i] = 1;
@@ -163,7 +196,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
         {
-
 #define DEFINE_SLICE(name, npy_type, dims_ref) char* slice_ ## name = __data__ ## name;
             ARGUMENTS(DEFINE_SLICE);
 
@@ -203,13 +235,13 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
             idim = idim_extra + Ndims_extra_a - Ndims_extra;
             if(idim>=0 && __dims__a[idim] != 1)
-                stride_extra_elements_a[idim_extra] = PyArray_STRIDES(_py_a)[idim] / sizeof(double);
+                stride_extra_elements_a[idim_extra] = __strides__a[idim] / sizeof(double);
             else
                 stride_extra_elements_a[idim_extra] = 0;
 
             idim = idim_extra + Ndims_extra_b - Ndims_extra;
             if(idim>=0 && __dims__b[idim] != 1)
-                stride_extra_elements_b[idim_extra] = PyArray_STRIDES(_py_b)[idim] / sizeof(double);
+                stride_extra_elements_b[idim_extra] = __strides__b[idim] / sizeof(double);
             else
                 stride_extra_elements_b[idim_extra] = 0;
         }
@@ -245,7 +277,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #define ADVANCE_SLICE(name, npy_type, dims_ref)                         \
                 if(i_dim + Ndims_extra_ ## name >= 0 &&                 \
                    __dims__ ## name[i_dim + Ndims_extra_ ## name] != 1) \
-                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*PyArray_STRIDES(__py__ ## name)[i_dim + Ndims_extra_ ## name];
+                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra_ ## name];
 
                 ARGUMENTS(ADVANCE_SLICE);
 
