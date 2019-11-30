@@ -17,16 +17,16 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     PyObject*      __py__result__ = NULL;
     PyArrayObject* __py__output__ = NULL;
 
-#define ARG_DEFINE(name, npy_type, dims_ref) PyArrayObject* __py__ ## name = NULL;
+#define ARG_DEFINE(name, dims_ref) PyArrayObject* __py__ ## name = NULL;
     ARGUMENTS(ARG_DEFINE);
 
     SET_SIGINT();
 
-#define NAMELIST(name, npy_type, dims_ref) #name ,
+#define NAMELIST(name, dims_ref) #name ,
     char* keywords[] = { ARGUMENTS(NAMELIST) "out",
                          NULL };
-#define PARSECODE(name, npy_type, dims_ref) "O&"
-#define PARSEARG( name, npy_type, dims_ref) PyArray_Converter_leaveNone, &__py__ ## name,
+#define PARSECODE(name, dims_ref) "O&"
+#define PARSEARG(name, dims_ref) PyArray_Converter_leaveNone, &__py__ ## name,
     if(!PyArg_ParseTupleAndKeywords( args, kwargs,
                                      ARGUMENTS(PARSECODE) "|O&",
                                      keywords,
@@ -67,7 +67,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // Most of the time these will just be copies of the input. The dimension
         // counts and argument counts will be relatively small, so this is only a
         // tiny bit wasteful
-#define DECLARE_DIM_VARS(name, npy_type, dims_ref)                      \
+#define DECLARE_DIM_VARS(name, dims_ref)                      \
         const int PROTOTYPE_LEN_ ## name = (int)sizeof(PROTOTYPE_ ## name)/sizeof(PROTOTYPE_ ## name[0]); \
         int          __ndim__    ## name = PyArray_NDIM(__py__ ## name); \
         if( __ndim__ ## name < PROTOTYPE_LEN_ ## name )                 \
@@ -109,7 +109,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         for(int i=0; i<Ndims_named; i++)
             dims_named[i] = -1;
 
-#define PARSE_DIMS(name, npy_type, dims_ref)    \
+#define PARSE_DIMS(name, dims_ref)    \
         if(!parse_dim(dims_named, dims_extra,   \
                       Ndims_extra,              \
                                                 \
@@ -220,12 +220,12 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
         {
-#define DEFINE_SLICE(name, npy_type, dims_ref) char* slice_ ## name = __data__ ## name;
+#define DEFINE_SLICE(name, dims_ref) char* slice_ ## name = __data__ ## name;
             ARGUMENTS(DEFINE_SLICE);
 
             char* slice_output = PyArray_DATA(__py__output__);
 
-#define ARGLIST_SLICE(name, npy_type, dims_ref)                     \
+#define ARGLIST_SLICE(name, dims_ref)                               \
             ,                                                       \
             (nps_slice_t){ .data    = (double*)slice_ ## name,      \
                            .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
@@ -298,7 +298,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                  i_dim--)
             {
 
-#define ADVANCE_SLICE(name, npy_type, dims_ref)                         \
+#define ADVANCE_SLICE(name, dims_ref)                         \
                 if(i_dim + Ndims_extra_ ## name >= 0 &&                 \
                    __dims__ ## name[i_dim + Ndims_extra_ ## name] != 1) \
                     slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra_ ## name];
@@ -330,7 +330,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     }
  done:
 
-#define FREE_PYARRAY(name, npy_type, dims_ref) Py_XDECREF(__py__ ## name);
+#define FREE_PYARRAY(name, dims_ref) Py_XDECREF(__py__ ## name);
     ARGUMENTS(FREE_PYARRAY);
 
     if(__py__result__ == NULL)

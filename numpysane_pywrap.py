@@ -248,7 +248,7 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(len(argnames)):
-            ARGUMENTS_LIST.append( '_({}, NPY_DOUBLE, xxx )'.format(argnames[i_arg_input]) )
+            ARGUMENTS_LIST.append( '_({}, xxx )'.format(argnames[i_arg_input]) )
 
         if not hasattr(self, 'function_template'):
             with open(_function_filename, 'r') as f:
