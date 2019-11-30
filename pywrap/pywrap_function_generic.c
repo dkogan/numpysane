@@ -57,18 +57,16 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     int Ndims_extra = 0;
 
 
-    // It's possible for my arguments (and the output) to have fewer dimensions
-    // than required by the prototype, and still pass all the dimensionality
-    // checks, assuming implied leading dimensions of length 1. For instance I
-    // could receive a scalar where a ('n',) dimension is expected, or a ('n',)
-    // vector where an ('m','n') array is expected. I thus make a local (and
-    // padded) copy of the strides and dims arrays, and use those where needed.
-    // Most of the time these will just be copies of the input. The dimension
-    // counts and argument counts will be relatively small, so this is only a
-    // tiny bit wasteful
-
     {
-
+        // It's possible for my arguments (and the output) to have fewer dimensions
+        // than required by the prototype, and still pass all the dimensionality
+        // checks, assuming implied leading dimensions of length 1. For instance I
+        // could receive a scalar where a ('n',) dimension is expected, or a ('n',)
+        // vector where an ('m','n') array is expected. I thus make a local (and
+        // padded) copy of the strides and dims arrays, and use those where needed.
+        // Most of the time these will just be copies of the input. The dimension
+        // counts and argument counts will be relatively small, so this is only a
+        // tiny bit wasteful
 #define DECLARE_DIM_VARS(name, npy_type, dims_ref)                      \
         const int PROTOTYPE_LEN_ ## name = (int)sizeof(PROTOTYPE_ ## name)/sizeof(PROTOTYPE_ ## name[0]); \
         int          __ndim__    ## name = PyArray_NDIM(__py__ ## name); \
