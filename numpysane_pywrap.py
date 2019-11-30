@@ -285,7 +285,9 @@ bool __{FUNCTION_NAME}__slice(nps_slice_t output{SLICE_DEFINITIONS})
             # python3 puts this into a different module
             import shlex
             shellquote = shlex.quote
-        print("// generated on {} with   {}\n\n". \
+        print("// THIS IS A GENERATED FILE. CHANGES WILL BE OVERWRITTEN",
+              file=file)
+        print("// Generated on {} with   {}\n\n". \
               format(time.strftime("%Y-%m-%d %H:%M:%S"),
                      ' '.join(shellquote(s) for s in sys.argv)),
               file=file)

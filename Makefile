@@ -41,11 +41,11 @@ VERSION      := POISON
 # In the python api I have to cast a PyCFunctionWithKeywords to a PyCFunction,
 # and the compiler complains. But that's how Python does it! So I tell the
 # compiler to chill
-pywrap/testlib_pywrap.o: CFLAGS += -Wno-cast-function-type -Wno-missing-field-initializers
+pywrap/testlib_pywrap_GENERATED.o: CFLAGS += -Wno-cast-function-type -Wno-missing-field-initializers
 
-pywrap/testlib_pywrap.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
+pywrap/testlib_pywrap_GENERATED.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
 
-pywrap/testlibmodule$(PY_EXT_SUFFIX): pywrap/testlib_pywrap.o pywrap/testlib.o
+pywrap/testlibmodule$(PY_EXT_SUFFIX): pywrap/testlib_pywrap_GENERATED.o pywrap/testlib.o
 	$(PY_MRBUILD_LINKER) $(PY_MRBUILD_LDFLAGS) $^ -o $@
 
 DIST_PY3_MODULES := pywrap/testlibmodule
