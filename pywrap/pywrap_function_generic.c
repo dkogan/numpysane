@@ -188,8 +188,34 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
         }
 
-        const npy_intp* __strides__output = &PyArray_STRIDES(__py__output__)[ Ndims_extra ];
-        const npy_intp* __dims__output    = &PyArray_DIMS   (__py__output__)[ Ndims_extra ];
+        // similarly to how I treated the inputs above, I handle the
+        // dimensionality of the output. I make sure that output arrays with too
+        // few dimensions (but enough elements) work properly. This effectively
+        // does nothing useful if we created a new output array (we used exactly
+        // the "right" shape), but it's required for passed-in output arrays
+        // with funny dimensions
+        int __ndim__output = PyArray_NDIM(__py__output__);
+        if( __ndim__output < PROTOTYPE_LEN__output__ )
+            /* Too few output dimensions. Add dummy dimension of length-1 */
+            __ndim__output = PROTOTYPE_LEN__output__;
+        npy_intp __dims__output[__ndim__output];
+        npy_intp __strides__output[__ndim__output];
+        {
+            const npy_intp* dims_orig    = PyArray_DIMS   (__py__output__);
+            const npy_intp* strides_orig = PyArray_STRIDES(__py__output__);
+            npy_intp        ndim_orig    = PyArray_NDIM   (__py__output__);
+            int i_dim = -1;
+            for(; i_dim >= -ndim_orig; i_dim--)
+            {
+                __dims__output[i_dim + __ndim__output] = dims_orig   [i_dim + ndim_orig];
+                __strides__output[i_dim + __ndim__output] = strides_orig[i_dim + ndim_orig];
+            }
+            for(; i_dim >= -__ndim__output; i_dim--)
+            {
+                __dims__output[i_dim + __ndim__output] = 1;
+                __strides__output[i_dim + __ndim__output] = 0;
+            }
+        }
 
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
@@ -280,8 +306,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 ARGUMENTS(ADVANCE_SLICE);
 
                 if(i_dim + Ndims_extra >= 0 &&
-                   PyArray_DIMS(__py__output__)[i_dim + Ndims_extra] != 1)
-                    slice_output += idims_extra[i_dim + Ndims_extra]*PyArray_STRIDES(__py__output__)[i_dim + Ndims_extra];
+                   __dims__output[i_dim + Ndims_extra] != 1)
+                    slice_output += idims_extra[i_dim + Ndims_extra]*__strides__output[i_dim + Ndims_extra];
             }
 
             if( ! __{FUNCTION_NAME}__slice
