@@ -80,9 +80,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
 #define PARSE_DIMS(name, npy_type, dims_ref)    \
         if(!parse_dim(dims_named, dims_extra,   \
-                      #name,                    \
                       Ndims_extra,              \
                                                 \
+                      #name,                    \
                       Ndims_extra_ ## name,     \
                       PROTOTYPE_ ## name,       \
                       PROTOTYPE_LEN_ ## name,   \

@@ -56,8 +56,8 @@ bool parse_dim(// input and output
                npy_intp* dims_extra,
 
                // input
-               const char* arg_name,
                int Ndims_extra,
+               const char* arg_name,
                int Ndims_extra_this,
                const npy_intp* dims_want,
                int Ndims_want,
