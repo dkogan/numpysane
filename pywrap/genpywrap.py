@@ -58,11 +58,8 @@ try:
                 prototype_output = ('n', 'fn'),
 
                 FUNCTION__slice_code = '')
-except:
-    # known error
-    pass
-else:
-    raise Exception("Expected error didn't happen")
+except: pass # known error
+else:   raise Exception("Expected error didn't happen")
 
 try:
     m.function( "outer3",
@@ -73,11 +70,8 @@ try:
                 prototype_output = ('n', -1),
 
                 FUNCTION__slice_code = '')
-except:
-    # known error
-    pass
-else:
-    raise Exception("Expected error didn't happen")
+except: pass # known error
+else:   raise Exception("Expected error didn't happen")
 
 try:
     m.function( "outer4",
@@ -88,11 +82,8 @@ try:
                 prototype_output = ('n', 'n'),
 
                 FUNCTION__slice_code = '')
-except:
-    # known error
-    pass
-else:
-    raise Exception("Expected error didn't happen")
+except: pass # known error
+else:   raise Exception("Expected error didn't happen")
 
 
 m.function( "outer_only3",
