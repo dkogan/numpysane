@@ -8,11 +8,22 @@ import os
 # Debian or by using the eager_resources tag in setup(). This allows files to
 # remain files, and to appear in a "normal" directory, where this script can
 # grab them and use them
-_pywrap_path = os.path.dirname( __file__ ) + '/pywrap-templates'
+#
+# Aand I try two different directories, in case I'm running in-place
 
-_module_header_filename = _pywrap_path + '/pywrap_module_header.c'
-_module_footer_filename = _pywrap_path + '/pywrap_module_footer_generic.c'
-_function_filename      = _pywrap_path + '/pywrap_function_generic.c'
+_pywrap_path = ( os.path.dirname( __file__ ) + '/pywrap-templates',
+                 sys.prefix + '/share/python-numpysane/pywrap-templates' )
+
+for p in _pywrap_path:
+    _module_header_filename = p + '/pywrap_module_header.c'
+    _module_footer_filename = p + '/pywrap_module_footer_generic.c'
+    _function_filename      = p + '/pywrap_function_generic.c'
+
+    if os.path.exists(_module_header_filename):
+        break
+else:
+    raise Exception("Couldn't find pywrap templates! Looked in {}".format(_pywrap_path))
+
 
 def _quote(s, convert_newlines=False):
     r'''Quote string for inclusion in C code

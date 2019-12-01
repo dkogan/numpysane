@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
-from setuptools import setup
+# using distutils not setuptools because setuptools puts dist_files in the root
+# of the host prefix, not the target prefix. Life is too short to fight this
+# nonsense
+from distutils.core import setup
 import re
 import glob
 
@@ -29,7 +32,7 @@ functionality in a more reasonable way""",
 
       license      = 'LGPL-3+',
       py_modules   = ['numpysane', 'numpysane_pywrap'],
-      data_files = [ ('pywrap-templates', pywrap_templates)],
+      data_files = [ ('share/python-numpysane/pywrap-templates', pywrap_templates)],
 
       # Tell setuputils to not deal with the egg nonsense. numpysane_pywrap.py
       # assumes this
