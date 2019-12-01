@@ -15,6 +15,10 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                     PyObject* args,
                                     PyObject* kwargs)
 {
+#define SLICE_ARG(name) , nps_slice_t name
+    typedef bool (slice_function_t)(nps_slice_t output ARGUMENTS(SLICE_ARG));
+
+
     PyObject*      __py__result__ = NULL;
     PyArrayObject* __py__output__ = NULL;
 
@@ -144,6 +148,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
 
         int selected_typenum = NPY_NOTYPE;
+
         slice_function_t* slice_function;
         for( int i=0; i<Nknown_typenums; i++ )
         {
