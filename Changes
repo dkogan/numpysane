@@ -1,0 +1,6 @@
+numpysane (0.19)
+    
+  * Added mag() convenience function. mag(x) = sqrt(norm2(x))
+  * Initial support for C-level broadcasting
+
+ -- Dima Kogan <dima@secretsauce.net>  Thu, 28 Nov 2019 18:50:02 -0800
