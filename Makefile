@@ -23,7 +23,4 @@ dist_upload:
 	python3 setup.py sdist upload
 .PHONY: dist_upload
 
-clean:
-	rm -f README.org README
-.PHONY: clean
-
+EXTRA_CLEAN += README.org README
