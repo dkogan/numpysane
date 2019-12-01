@@ -109,7 +109,41 @@ exact behavior of the functions they're calling, and trial and error is required
 to make the system do what one wants.
 
 *** Solution
-This module contains functionality to make any arbitrary function broadcastable.
+This module contains functionality to make any arbitrary function broadcastable,
+in either C or Python.
+
+**** Broadcasting rules
+A detailed description of broadcasting rules is available in the numpy
+documentation: http://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+
+In short:
+
+- The most significant dimension in a numpy array is the LAST one, so the
+  prototype of an input argument must exactly match a given input's trailing
+  shape. So a prototype shape of (a,b,c) accepts an argument shape of (......,
+  a,b,c), with as many or as few leading dimensions as desired.
+- The extra leading dimensions must be compatible across all the inputs. This
+  means that each leading dimension must either
+  - equal to 1
+  - be missing (thus assumed to equal 1)
+  - equal to some positive integer >1, consistent across all arguments
+- The output is collected into an array that's sized as a superset of the
+  above-prototype shape of each argument
+
+More involved example: A function with input prototype ( (3,), ('n',3), ('n',),
+('m',) ) given inputs of shape
+
+    (1,5,    3)
+    (2,1,  8,3)
+    (        8)
+    (  5,    9)
+
+will return an output array of shape (2,5, ...), where ... is the shape of each
+output slice. Note again that the prototype dictates the TRAILING shape of the
+inputs.
+
+**** Broadcasting in python
+
 This is invoked as a decorator, applied to the arbitrary user function. An
 example:
 
@@ -140,34 +174,6 @@ vectors of length 'n' each (same 'n' for the two inputs). This new
     >>> inner_product(a,b)
     array([ 305, 1250])
 
-A detailed description of broadcasting rules is available in the numpy
-documentation: http://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
-
-In short:
-
-- The most significant dimension in a numpy array is the LAST one, so the
-  prototype of an input argument must exactly match a given input's trailing
-  shape. So a prototype shape of (a,b,c) accepts an argument shape of (......,
-  a,b,c), with as many or as few leading dimensions as desired.
-- The extra leading dimensions must be compatible across all the inputs. This
-  means that each leading dimension must either
-  - equal to 1
-  - be missing (thus assumed to equal 1)
-  - equal to some positive integer >1, consistent across all arguments
-- The output is collected into an array that's sized as a superset of the
-  above-prototype shape of each argument
-
-More involved example: A function with input prototype ( (3,), ('n',3), ('n',),
-('m',) ) given inputs of shape
-
-    (1,5,    3)
-    (2,1,  8,3)
-    (        8)
-    (  5,    9)
-
-will return an output array of shape (2,5, ...), where ... is the shape of each
-output slice. Note again that the prototype dictates the TRAILING shape of the
-inputs.
 
 Another related function in this module broadcast_generate(). It's similar to
 broadcast_define(), but instead of adding broadcasting-awareness to an existing
@@ -178,24 +184,52 @@ Stock numpy has some rudimentary support for all this with its vectorize()
 function, but it assumes only scalar inputs and outputs, which severaly limits
 its usefulness.
 
+**** Broadcasting in C
+
+A C-level flavor of broadcast_define() is available. It wraps C code in C loops.
+This is an analogue of PDL::PP (http://pdl.perl.org/PDLdocs/PP.html). Here the
+numpysane_pywrap module is used to produce C code that is compiled and linked
+into a python extension module. This takes more effort than python-level
+broadcasting, but the results have much less overhead, and run much faster.
+Please see the sample
+(https://github.com/dkogan/numpysane/blob/master/pywrap-sample/README).
+
+This is relatively new, so please let me know if you try it, and stuff does or
+does not work.
+
 *** New planned functionality
 
-In addition to this basic broadcasting support, I'm planning the following:
+The C broadcasting is functional, but a few more features are on the roadmap:
 
-- A C-level broadcast_define(). This would be the analogue of PDL::PP
-  (http://pdl.perl.org/PDLdocs/PP.html). This flavor of broadcast_define() would
-  be invoked by the build system to wrap C functions. It would implement
-  broadcasting awareness in C code it generates, which should work more
-  effectively for performance-sensitive inner loops. Currently broadcasting
-  loops are all implemented in python, and this can get noticeably slow for
-  large broadcasts.
+- It should be possible for some inputs/output to contain different data types
 
-- Automatic parallelization for broadcasted slices. Since each broadcasting loop
-  is independent, this is a very natural place to add parallelism.
+- And sometimes one would want to produce more than one output array for each
+  call, possibly with different types
 
-- Dimensions should support a symbolic declaration. For instance, one could want
-  a function to accept an input of shape (n) and another of shape (n*n). There's
-  no way to declare this currently, but there should be.
+- The prototype specification is not flexible enough. Maybe there's some
+  relationship between named dimensions that is known. If so, this should be
+  specify-able
+
+- Parallelization for broadcasted slices. Since each broadcasting loop is
+  independent, this is a very natural place to add parallelism. This is fairly
+  simple with OpenMP.
+
+
+What do I do if the inner library assumes contiguous, but the input is strided?
+The validation function should barf.
+
+multiple arguments? should everything be broadcasting? kwargs?
+
+complex dimensionality. outer() returning triangles? apriltag wrapping.
+currently unknown named dimensions in the output are illegal. loosen this?
+
+custom exception type for the python and for the generated C
+
+Add #line tags for debugging
+
+function has #if 0 blocks that should be removed
+
+
 
 ** Strangeness in core routines
 *** Problem

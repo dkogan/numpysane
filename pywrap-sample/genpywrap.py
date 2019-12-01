@@ -1,5 +1,13 @@
 #!/usr/bin/python3
 
+r'''A demo script to generate broadcast-aware python wrapping to testlib
+
+testlib is a tiny demo library that can compute inner and outer products. Here
+we wrap each available function. For each one we provide a code snipped that
+takes raw data arrays for each slice, and invokes the testlib library for each
+one
+
+'''
 import sys
 import os
 
@@ -74,6 +82,8 @@ m.function( "outer",
 '''})
 
 
+# Tests. Try to wrap functions using illegal output prototypes. The wrapper code
+# should barf
 try:
     m.function( "outer2",
                 "Outer-product pywrapped with npsp",
@@ -109,28 +119,6 @@ try:
                 FUNCTION__slice_code = '')
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
-
-
-m.function( "outer_only3",
-            r'''Outer-product pywrapped with npsp.
-Only dimensions of length 3 are allowed
-''',
-
-            argnames         = ("a", "b"),
-            prototype_input  = (('n',), (3,)),
-            prototype_output = ('n', 'n'),
-
-            FUNCTION__slice_code = \
-                {float:
-                 r'''
-            outer(output.data,
-                  a.data,
-                  b.data,
-                  a.strides[0],
-                  b.strides[0],
-                  a.dims[0]);
-            return true;
-            '''})
 
 
 m.write()

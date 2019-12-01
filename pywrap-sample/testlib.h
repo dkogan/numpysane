@@ -1,5 +1,10 @@
 #pragma once
 
+// Header for a demo C library being wrapped by numpysane_pywrap. This library
+// can compute inner and outer products with arbitrary strides. The inner
+// product is implemented with 32-bit integers, 64-bit integers and 64-bit
+// floats
+
 #include <stdint.h>
 
 #define DECLARE_INNER_T(T)                      \

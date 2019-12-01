@@ -4,7 +4,9 @@ PYTHON_VERSION_FOR_EXTENSIONS := 3
 # rules
 include Makefile.common.header
 
-
+# I build a python extension module called "testlibmodule" from the C library
+# (testlib) and from the numpysane_pywrap wrapper. The wrapper is generated with
+# a demo script genpywrap.py
 all: testlibmodule$(PY_EXT_SUFFIX)
 testlibmodule$(PY_EXT_SUFFIX): testlib_pywrap_GENERATED.o testlib.o
 	$(PY_MRBUILD_LINKER) $(PY_MRBUILD_LDFLAGS) $^ -o $@
