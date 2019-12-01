@@ -352,26 +352,3 @@ bool {SLICE_FUNCTION_NAME}(nps_slice_t output{SLICE_DEFINITIONS})
         print('///////// {{{{{{{{{ ' + _module_footer_filename, file=file)
         print(self.module_footer,                               file=file)
         print('///////// }}}}}}}}} ' + _module_footer_filename, file=file)
-
-
-r'''
-
-different types (function docstring hardcodes double too)
-
-contiguities
-
-relationships between dimension sizes
-
-VALIDATE
-
-error handling: no more asserts
-
-multiple arguments? should everything be broadcasting? kwargs?
-
-multiple output arguments
-
-complex dimensionality. outer() returning triangles? apriltag wrapping
-
-custom exception type for the python and for the generated C
-
-'''
