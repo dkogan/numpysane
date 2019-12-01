@@ -12,3 +12,4 @@ build/
 *.i
 *.s
 *.so
+*/*GENERATED.c
