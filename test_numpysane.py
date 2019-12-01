@@ -822,19 +822,18 @@ def test_matmult():
     # checking the null-dimensionality logic
     A = arr(2,3)
     assertResult_inoutplace( nps.inner(nps.transpose(A), np.arange(2)),
-                                  nps.matmult2,
-                                  np.arange(2), A )
+                             nps.matmult2,
+                             np.arange(2), A )
 
     A = arr(3)
     assertResult_inoutplace( A*2,
-                                  nps.matmult2,
-                                  np.array([2]), A )
+                             nps.matmult2,
+                             np.array([2]), A )
 
     A = arr(3)
     assertResult_inoutplace( A*2,
-                                  nps.matmult2,
-                                  np.array(2), A )
-
+                             nps.matmult2,
+                             np.array(2), A )
 
 
 
