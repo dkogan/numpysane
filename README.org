@@ -199,7 +199,7 @@ numpysane_pywrap module is used to produce C code that is compiled and linked
 into a python extension module. This takes more effort than python-level
 broadcasting, but the results have much less overhead, and run much faster.
 Please see the sample
-(https://github.com/dkogan/numpysane/blob/master/pywrap-sample/README).
+(https://github.com/dkogan/numpysane/blob/master/pywrap-sample).
 
 This is relatively new, so please let me know if you try it, and stuff does or
 does not work.

@@ -192,7 +192,7 @@ numpysane_pywrap module is used to produce C code that is compiled and linked
 into a python extension module. This takes more effort than python-level
 broadcasting, but the results have much less overhead, and run much faster.
 Please see the sample
-(https://github.com/dkogan/numpysane/blob/master/pywrap-sample/README).
+(https://github.com/dkogan/numpysane/blob/master/pywrap-sample).
 
 This is relatively new, so please let me know if you try it, and stuff does or
 does not work.
@@ -213,23 +213,6 @@ The C broadcasting is functional, but a few more features are on the roadmap:
 - Parallelization for broadcasted slices. Since each broadcasting loop is
   independent, this is a very natural place to add parallelism. This is fairly
   simple with OpenMP.
-
-
-What do I do if the inner library assumes contiguous, but the input is strided?
-The validation function should barf.
-
-multiple arguments? should everything be broadcasting? kwargs?
-
-complex dimensionality. outer() returning triangles? apriltag wrapping.
-currently unknown named dimensions in the output are illegal. loosen this?
-
-custom exception type for the python and for the generated C
-
-Add #line tags for debugging
-
-function has #if 0 blocks that should be removed
-
-
 
 ** Strangeness in core routines
 *** Problem
