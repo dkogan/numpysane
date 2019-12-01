@@ -1,3 +1,10 @@
+numpysane (0.20)
+
+  * nps.matmult(..., out=out) produces in-place results when one of the
+    arguments is 1D
+
+ -- Dima Kogan <dkogan@debian.org>  Sat, 30 Nov 2019 18:20:49 -0800
+
 numpysane (0.19)
     
   * Added mag() convenience function. mag(x) = sqrt(norm2(x))
