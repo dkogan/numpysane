@@ -1,10 +1,18 @@
 import sys
 import time
 import numpy as np
+import os
 
-_module_header_filename = 'pywrap/pywrap_module_header.c'
-_module_footer_filename = 'pywrap/pywrap_module_footer_generic.c'
-_function_filename      = 'pywrap/pywrap_function_generic.c'
+# Technically I'm supported to use some "resource extractor" something to
+# unbreak setuptools. But I'm instead assuming that this was installed via
+# Debian or by using the eager_resources tag in setup(). This allows files to
+# remain files, and to appear in a "normal" directory, where this script can
+# grab them and use them
+_pywrap_path = os.path.dirname( __file__ ) + '/pywrap-templates'
+
+_module_header_filename = _pywrap_path + '/pywrap_module_header.c'
+_module_footer_filename = _pywrap_path + '/pywrap_module_footer_generic.c'
+_function_filename      = _pywrap_path + '/pywrap_function_generic.c'
 
 def _quote(s, convert_newlines=False):
     r'''Quote string for inclusion in C code
