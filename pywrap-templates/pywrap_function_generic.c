@@ -1,15 +1,3 @@
-#undef ARG_DEFINE
-#undef NAMELIST
-#undef PARSECODE
-#undef PARSEARG
-#undef DECLARE_DIM_VARS
-#undef PARSE_DIMS
-#undef DEFINE_SLICE
-#undef ADVANCE_SLICE
-#undef ARGLIST_SLICE
-#undef FREE_PYARRAY
-
-
 static
 PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                     PyObject* args,
@@ -385,4 +373,18 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     return __py__result__;
 }
 
+#undef ARG_DEFINE
+#undef NAMELIST
+#undef PARSECODE
+#undef PARSEARG
+#undef DECLARE_DIM_VARS
+#undef PARSE_DIMS
+#undef SLICE_ARG
+#undef TYPE_MATCHES
+#undef INPUT_PERCENT_S
+#undef INPUT_TYPEOBJ
+#undef DEFINE_SLICE
+#undef ARGLIST_SLICE
+#undef ADVANCE_SLICE
+#undef FREE_PYARRAY
 #undef ARGUMENTS
