@@ -1052,17 +1052,28 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             return output
 
 
+        # Make sure all dimensions are >=0 and that named output dimensions are
+        # known from the input
+        known_named_dims = set()
+        for dims_input in prototype:
+            for dim in dims_input:
+                if type(dim) is not int:
+                    known_named_dims.add(dim)
+                else:
+                    if dim < 0:
+                        raise NumpysaneError("Prototype dimensions must be > 0. Got '{}'". \
+                                             format(dim))
         if prototype_output is not None:
-            known_named_dims = set()
-            for dims_input in prototype:
-                for dim in dims_input:
-                    if type(dim) is not int:
-                        known_named_dims.add(dim)
             for dim in prototype_output:
                 if type(dim) is not int:
                     if dim not in known_named_dims:
                         raise NumpysaneError("Output prototype has named dimension '{}' not seen in the input prototypes". \
                                              format(dim))
+                else:
+                    if dim < 0:
+                        raise NumpysaneError("Prototype dimensions must be > 0. Got '{}'". \
+                                             format(dim))
+
 
         func_out = _clone_function( broadcast_loop, func.__name__ )
         func_out.__doc__  = inspect.getdoc(func)
