@@ -997,8 +997,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             # substitute named variable values into the output prototype
             prototype_output_expanded = None
             if prototype_output is not None:
-                prototype_output_expanded = [d if type(d) is int
-                                          else dims_named[d] for d in prototype_output]
+                prototype_output_expanded = \
+                    [d if type(d) is int else dims_named[d] \
+                     for d in prototype_output]
 
             # if the output was supposed to go to a particular place, set that
             if out_kwarg and out_kwarg in kwargs:
