@@ -1059,6 +1059,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         for dims_input in prototype:
             for dim in dims_input:
                 if type(dim) is not int:
+                    if type(dim) is not str:
+                        raise NumpysaneError("Prototype dimensions must be integers > 0 or strings. Got '{}' of type '{}'". \
+                                             format(dim, type(dim)))
                     known_named_dims.add(dim)
                 else:
                     if dim < 0:
@@ -1067,6 +1070,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         if prototype_output is not None:
             for dim in prototype_output:
                 if type(dim) is not int:
+                    if type(dim) is not str:
+                        raise NumpysaneError("Output dimensions must be integers > 0 or strings. Got '{}' of type '{}'". \
+                                             format(dim, type(dim)))
                     if dim not in known_named_dims:
                         raise NumpysaneError("Output prototype has named dimension '{}' not seen in the input prototypes". \
                                              format(dim))

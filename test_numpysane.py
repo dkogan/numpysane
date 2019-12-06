@@ -21,24 +21,36 @@ def arr(*shape, **kwargs):
 
 def test_broadcasting():
 
-    # first check invalid broadcasting defines
-    def define_f_broken0():
-        @nps.broadcast_define( (('n',), ('n',)), (-1,) )
+    def define_f_broken1():
+        @nps.broadcast_define( (('n',), ('n',())), ('m') )
         def f_broken(a, b):
             return a.dot(b)
-    confirm_raises( define_f_broken0, msg="output dims must >=0" )
+    confirm_raises( define_f_broken1, msg="input dims must be integers or strings" )
 
-    def define_f_broken1():
+    def define_f_broken2():
         @nps.broadcast_define( (('n',), ('n',-1)), () )
         def f_broken(a, b):
             return a.dot(b)
-    confirm_raises( define_f_broken1, msg="input dims must >=0" )
+    confirm_raises( define_f_broken2, msg="input dims must >=0" )
 
-    def define_f_broken2():
+    # first check invalid broadcasting defines
+    def define_f_broken3():
+        @nps.broadcast_define( (('n',), ('n',)), (-1,) )
+        def f_broken(a, b):
+            return a.dot(b)
+    confirm_raises( define_f_broken3, msg="output dims must >=0" )
+
+    def define_f_broken4():
+        @nps.broadcast_define( (('n',), ('n',)), ('m', ()) )
+        def f_broken(a, b):
+            return a.dot(b)
+    confirm_raises( define_f_broken4, msg="output dims must be integers or strings" )
+
+    def define_f_broken5():
         @nps.broadcast_define( (('n',), ('n',)), ('m') )
         def f_broken(a, b):
             return a.dot(b)
-    confirm_raises( define_f_broken2, msg="output dims must all be known" )
+    confirm_raises( define_f_broken5, msg="output dims must all be known" )
 
 
     r'''Checking broadcasting rules.'''
