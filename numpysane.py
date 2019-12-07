@@ -984,22 +984,27 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             dims_extra,dims_named = \
                 _eval_broadcast_dims( args, prototype)
 
-            # if no broadcasting involved, just call the function
-            if not dims_extra:
-                sliced_args = args + args_passthru
-                return func( *sliced_args, **kwargs )
-
-            # I checked all the dimensions and aligned everything. I have my
-            # to-broadcast dimension counts. Iterate through all the broadcasting
-            # output, and gather the results
-            output = None
-
             # substitute named variable values into the output prototype
             prototype_output_expanded = None
             if prototype_output is not None:
                 prototype_output_expanded = \
                     [d if type(d) is int else dims_named[d] \
                      for d in prototype_output]
+
+            # if no broadcasting involved, just call the function
+            if not dims_extra:
+                sliced_args = args + args_passthru
+                result = func( *sliced_args, **kwargs )
+                if prototype_output_expanded is not None and \
+                   np.array(result).shape != tuple(prototype_output_expanded):
+                    raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded,
+                                                                                                           np.array(result).shape))
+                return result
+
+            # I checked all the dimensions and aligned everything. I have my
+            # to-broadcast dimension counts. Iterate through all the broadcasting
+            # output, and gather the results
+            output = None
 
             # if the output was supposed to go to a particular place, set that
             if out_kwarg and out_kwarg in kwargs:

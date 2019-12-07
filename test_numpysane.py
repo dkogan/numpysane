@@ -287,6 +287,14 @@ def test_broadcasting():
     assertValueShape( 7*np.ones((5,)), (5,),
                       f7, np.arange(5))
 
+    # make sure the output dimensionality is checked
+    @nps.broadcast_define( (('n',), ('n',)), ('n',) )
+    def f8(a, b):
+        return a.dot(b)
+    confirm_raises( lambda: f8(arr(5), arr(  5)) )
+    confirm_raises( lambda: f8(arr(5), arr(2,5)) )
+
+
 
 def test_broadcasting_into_output():
     r'''Checking broadcasting with the output array defined.'''
