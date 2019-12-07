@@ -21,6 +21,7 @@ def arr(*shape, **kwargs):
 
 def test_broadcasting():
 
+    # first check invalid broadcasting defines
     def define_f_broken1():
         @nps.broadcast_define( (('n',), ('n',())), ('m') )
         def f_broken(a, b):
@@ -33,7 +34,6 @@ def test_broadcasting():
             return a.dot(b)
     confirm_raises( define_f_broken2, msg="input dims must >=0" )
 
-    # first check invalid broadcasting defines
     def define_f_broken3():
         @nps.broadcast_define( (('n',), ('n',)), (-1,) )
         def f_broken(a, b):
