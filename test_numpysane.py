@@ -291,8 +291,8 @@ def test_broadcasting():
     @nps.broadcast_define( (('n',), ('n',)), ('n',) )
     def f8(a, b):
         return a.dot(b)
-    confirm_raises( lambda: f8(arr(5), arr(  5)) )
-    confirm_raises( lambda: f8(arr(5), arr(2,5)) )
+    confirm_raises( lambda: f8(arr(5), arr(  5)), msg='output dimensionality check' )
+    confirm_raises( lambda: f8(arr(5), arr(2,5)), msg='output dimensionality check' )
 
 
 
