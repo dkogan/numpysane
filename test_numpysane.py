@@ -58,6 +58,31 @@ def test_broadcasting():
             return a.dot(b)
     confirm_raises( define_f_broken6, msg="output dims must be a tuple" )
 
+    def define_f_broken7():
+        @nps.broadcast_define( (('n',), ('n',)), ('n',), ('n',) )
+        def f_broken(a, b):
+            return a.dot(b)
+    confirm_raises( define_f_broken7, msg="multiple outputs must be specified as a tuple of tuples" )
+
+    def define_f_broken8():
+        @nps.broadcast_define( (('n',), ('n',)), (('n',), 'n') )
+        def f_broken(a, b):
+            return a.dot(b)
+    confirm_raises( define_f_broken8, msg="output dims must be a tuple" )
+
+    def define_f_broken8():
+        @nps.broadcast_define( (('n',), ('n',)), (('n',), 'n') )
+        def f_broken(a, b):
+            return a.dot(b)
+    confirm_raises( define_f_broken8, msg="output dims must be a tuple" )
+
+    def define_f_good9():
+        @nps.broadcast_define( (('n',), ('n',)), (('n',), ('n',)) )
+        def f_broken(a, b):
+            return a.dot(b)
+        return True
+    confirm( define_f_good9, msg="Multiple outputs can be defined" )
+
 
     r'''Checking broadcasting rules.'''
     @nps.broadcast_define( (('n',), ('n',)) )
@@ -300,171 +325,415 @@ def test_broadcasting():
     confirm_raises( lambda: f8(arr(5), arr(  5)), msg='output dimensionality check' )
     confirm_raises( lambda: f8(arr(5), arr(2,5)), msg='output dimensionality check' )
 
+    # make sure the output COUNTS are checked (if I expect 2 outputs, but get
+    # only 1, that's an error
+    @nps.broadcast_define( (('n',), ('n',)) )
+    def f9(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm_raises( lambda: f9(arr(5), arr(  5)), msg='output count check' )
+    confirm_raises( lambda: f9(arr(5), arr(2,5)), msg='output count check' )
+    @nps.broadcast_define( (('n',), ('n',)), ('n',) )
+    def f10(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm_raises( lambda: f10(arr(5), arr(  5)), msg='output count check' )
+    confirm_raises( lambda: f10(arr(5), arr(2,5)), msg='output count check' )
+    @nps.broadcast_define( (('n',), ('n',)), ('n', 'n') )
+    def f11(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm_raises( lambda: f11(arr(5), arr(  5)), msg='output count check' )
+    confirm_raises( lambda: f11(arr(5), arr(2,5)), msg='output count check' )
+    @nps.broadcast_define( (('n',), ('n',)), (('n', 'n'),) )
+    def f11(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm_raises( lambda: f11(arr(5), arr(  5)), msg='output count check' )
+    confirm_raises( lambda: f11(arr(5), arr(2,5)), msg='output count check' )
+    @nps.broadcast_define( (('n',), ('n',)), (('n', 'n'),('n',)) )
+    def f12(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm_raises( lambda: f12(arr(5), arr(  5)), msg='output count check' )
+    confirm_raises( lambda: f12(arr(5), arr(2,5)), msg='output count check' )
+    @nps.broadcast_define( (('n',), ('n',)), (('n',),('n', 'n')) )
+    def f13(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm_raises( lambda: f13(arr(5), arr(  5)), msg='output dimensionality check' )
+    confirm_raises( lambda: f13(arr(5), arr(2,5)), msg='output dimensionality check' )
+    @nps.broadcast_define( (('n',), ('n',)), ((),('n', 'n',)) )
+    def f13(a, b):
+        return a.dot(b),nps.outer(a,b)
+    confirm( f13(arr(5), arr(  5)) is not None, msg='output count check' )
+    confirm( f13(arr(5), arr(2,5)) is not None, msg='output count check' )
+
+    # check output dimensionality with an 'out' kwarg
+    @nps.broadcast_define( (('n',), ('n',)), ((),('n', 'n')),
+                           out_kwarg = 'out')
+    def f14(a, b, out=None):
+        if out is None:
+            return a.dot(b),nps.outer(a,b)
+        if not isinstance(out,tuple) or len(out) != 2:
+            raise Exception("'out' must be a tuple")
+        nps.inner(a,b,out=out[0])
+        nps.outer(a,b,out=out[1])
+        return out
+
+    confirm( f14(arr(5), arr(  5)) is not None,
+             msg='output dimensionality check with out_kwarg' )
+
+
+    # Basic out_kwarg tests. More thorough ones later, in
+    # test_broadcasting_into_output())
+    a5   = arr(   5,         dtype=float)
+    a25  = arr(2, 5,         dtype=float)
+    o    = np.zeros((),      dtype=float)
+    o2   = np.zeros((2,),    dtype=float)
+    o5   = np.zeros((5,),    dtype=float)
+    o55  = np.zeros((5,5),   dtype=float)
+    o25  = np.zeros((2,5),   dtype=float)
+    o255 = np.zeros((2,5,5), dtype=float)
+
+    # no broadcasting
+    confirm_raises( lambda: f14(a5, a5, out=o),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=o2),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o,)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o55,)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o55,o)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o,o2)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o,o5)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o2,o55)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a5, out=(o,o55,o)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm( f14(a5, a5, out=(o,o55)) is not None,
+             msg='output dimensionality check with out_kwarg' )
+    confirm_equal(o,   a5.dot(a5),      msg='in-place broadcasting computed the right value')
+    confirm_equal(o55, np.outer(a5,a5), msg='in-place broadcasting computed the right value')
+
+    # two broadcasted slices
+    confirm_raises( lambda: f14(a5, a25, out=o),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=o2),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o,)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o55,)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o55,o)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o,o2)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o,o5)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o2,o55)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o,o55,o)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o,o55)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o2,o55)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm_raises( lambda: f14(a5, a25, out=(o,o255)),
+                                msg='output dimensionality check with out_kwarg' )
+    confirm( f14(a5, a25, out=(o2,o255)) is not None,
+             msg='output dimensionality check with out_kwarg' )
+    confirm_equal(o2,   nps.inner(a5,a25), msg='in-place broadcasting computed the right value')
+    confirm_equal(o255, nps.outer(a5,a25), msg='in-place broadcasting computed the right value')
 
 
 def test_broadcasting_into_output():
     r'''Checking broadcasting with the output array defined.'''
 
-    # I think about all 2^4 = 16 combinations:
+    # I think about all 2^5 = 32 combinations:
     #
-    # broadcast_define(): yes/no prototype_output, out_kwarg
+    # broadcast_define(): yes/no prototype_output, out_kwarg, single/multiple outputs
     # broadcasted call:   yes/no dtype, output
 
-    prototype = (('n',), ('n',))
+    prototype_input = (('n',), ('n',))
     in1, in2 = arr(3), arr(2,4,3)
-    out_ref = np.array([[ 5, 14, 23, 32],
-                        [41, 50, 59, 68]])
-    outshape_ref = (2,4)
+    out_inner_ref = np.array([[ 5, 14, 23, 32],
+                              [41, 50, 59, 68]])
+    out_outer_ref = np.array([[[[ 0.,  0.,  0.],
+                                [ 0.,  1.,  2.],
+                                [ 0.,  2.,  4.]],
+                               [[ 0.,  0.,  0.],
+                                [ 3.,  4.,  5.],
+                                [ 6.,  8., 10.]],
+                               [[ 0.,  0.,  0.],
+                                [ 6.,  7.,  8.],
+                                [12., 14., 16.]],
+                               [[ 0.,  0.,  0.],
+                                [ 9., 10., 11.],
+                                [18., 20., 22.]]],
+                              [[[ 0.,  0.,  0.],
+                                [12., 13., 14.],
+                                [24., 26., 28.]],
+                               [[ 0.,  0.,  0.],
+                                [15., 16., 17.],
+                                [30., 32., 34.]],
+                               [[ 0.,  0.,  0.],
+                                [18., 19., 20.],
+                                [36., 38., 40.]],
+                               [[ 0.,  0.,  0.],
+                                [21., 22., 23.],
+                                [42., 44., 46.]]]])
 
-    def f(a, b, out=None, dtype=None):
+    def f_inner(a, b, out=None, dtype=None):
         r'''Basic inner product.'''
-
         if out is None:
             if dtype is None:
                 return a.dot(b)
             else:
                 return a.dot(b).astype(dtype)
-
-        if f.do_dtype_check:
+        if f_inner.do_dtype_check:
             if dtype is not None:
                 confirm_equal( out.dtype, dtype )
-
-        if f.do_base_check:
-            if f.base is not None:
-                confirm_is(out.base, f.base)
-                f.base_check_count = f.base_check_count+1
+        if f_inner.do_base_check:
+            if f_inner.base is not None:
+                confirm_is(out.base, f_inner.base)
+                f_inner.base_check_count = f_inner.base_check_count+1
             else:
-                f.base_check_count = 0
-
-            f.base = out.base
-
-        if f.do_dim_check:
+                f_inner.base_check_count = 0
+            f_inner.base = out.base
+        if f_inner.do_dim_check:
             if out.shape != ():
-                raise nps.NumpysaneError("mismatched lists")
-
+                raise nps.NumpysaneError("mismatched lists: {} and {}". \
+                                         format(out.shape, ()))
         out.setfield(a.dot(b), out.dtype)
         return out
 
-    # First we look at the case where broadcast_define() has no out_kwarg.
-    # Then the output cannot be specified at all. If prototype_output
-    # exists, then it is either used to create the output array, or to
-    # validate the dimensions of output slices obtained from elsewhere. The
-    # dtype is simply passed through to the inner function, is free to use
-    # it, to not use it, or to crash in response (the f() function above
-    # will take it; created arrays will be of that type; passed-in arrays
-    # will create an error for a wrong type)
-    f1 = nps.broadcast_define(prototype)                        (f)
-    f2 = nps.broadcast_define(prototype, prototype_output=()   )(f)
-    f3 = nps.broadcast_define(prototype, prototype_output=(1,) )(f)
+    def f_inner_outer(a, b, out=None, dtype=None):
+        r'''Basic inner AND outer product.'''
+        if out is None:
+            if dtype is None:
+                return a.dot(b),np.outer(a,b)
+            else:
+                return a.dot(b).astype(dtype),np.outer(a,b).astype(dtype)
+        if f_inner_outer.do_dtype_check:
+            if dtype is not None:
+                confirm_equal( out[0].dtype, dtype )
+                confirm_equal( out[1].dtype, dtype )
+        if f_inner_outer.do_base_check:
+            if f_inner_outer.base is not None:
+                confirm_is(out[0].base, f_inner_outer.base[0])
+                confirm_is(out[1].base, f_inner_outer.base[1])
+                f_inner_outer.base_check_count = f_inner_outer.base_check_count+1
+            else:
+                f_inner_outer.base_check_count = 0
+            f_inner_outer.base = [o.base for o in out]
+        if f_inner_outer.do_dim_check:
+            if len(out) != 2:      raise nps.NumpysaneError("mismatched Noutput")
+            if out[0].shape != (): raise nps.NumpysaneError("mismatched dimensions in output 0")
+            if out[1].shape != (a.shape[0],b.shape[0]): raise nps.NumpysaneError("mismatched dimensions in output 1")
+        out[0].setfield(a.dot(b),      out[0].dtype)
+        out[1].setfield(np.outer(a,b), out[1].dtype)
+        return out
 
-    f.do_base_check  = False
-    f.do_dtype_check = False
-    f.do_dim_check   = True
-    assertValueShape( out_ref, outshape_ref, f1, in1, in2)
-    assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=float)
-    assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=int)
-    assertValueShape( out_ref, outshape_ref, f2, in1, in2)
-    confirm_raises     ( lambda: f3(in1, in2) )
+
+    for f, out_ref, prototype_output, prototype_output_bad in \
+        ((f_inner,      out_inner_ref, (), (1,)),
+         (f_inner_outer, (out_inner_ref, out_outer_ref),
+          ((),(3,3)), ((),(3,3),(1,))),
+         ):
 
 
-    # OK then. Let's now pass in an out_kwarg. Here we do not yet
-    # pre-allocate an output. Thus if we don't pass in a prototype_output
-    # either, the first slice will dictate the output shape, and we'll have
-    # 7 inner calls into an output array (6 base comparisons). If we DO pass
-    # in a prototype_output, then we will allocate immediately, and we'll
-    # see 8 inner calls into an output array (7 base comparisons)
-    f1 = nps.broadcast_define(prototype, out_kwarg="out")                        (f)
-    f2 = nps.broadcast_define(prototype, out_kwarg="out", prototype_output=()   )(f)
-    f3 = nps.broadcast_define(prototype, out_kwarg="out", prototype_output=(1,) )(f)
-
-    f.do_base_check  = True
-    f.do_dtype_check = True
-    f.do_dim_check   = True
-
-    f.base = None
-    assertValueShape( out_ref, outshape_ref, f1, in1, in2)
-    confirm_equal( 6, f.base_check_count )
-    f.base = None
-    assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=float)
-    confirm_equal( 6, f.base_check_count )
-    f.base = None
-    assertValueShape( out_ref, outshape_ref, f1, in1, in2, dtype=int)
-    confirm_equal( 6, f.base_check_count )
-
-    f.base = None
-    assertValueShape( out_ref, outshape_ref, f2, in1, in2)
-    confirm_equal( 7, f.base_check_count )
-    f.base = None
-    assertValueShape( out_ref, outshape_ref, f2, in1, in2, dtype=float)
-    confirm_equal( 7, f.base_check_count )
-    f.base = None
-    assertValueShape( out_ref, outshape_ref, f2, in1, in2, dtype=int)
-    confirm_equal( 7, f.base_check_count )
-
-    # Here the inner function will get an improperly-sized array to fill in.
-    # broadcast_define() itself won't see any issues with this, but the
-    # inner function is free to detect the error
-    f.do_dim_check = False
-    f.base = None
-    assertValueShape( None, None, f3, in1, in2)
-    f.do_dim_check = True
-    f.base = None
-    confirm_raises( lambda: f3(in1, in2) )
+        def confirm_call_out_values(f, *args, **kwargs):
+            try:
+                out = f(*args, **kwargs)
+                if not isinstance(out_ref, tuple):
+                    confirm_equal(out,       out_ref,       "Output matches")
+                    confirm_equal(out.shape, out_ref.shape, "Output shape matches")
+                else:
+                    for i in range(len(out_ref)):
+                        confirm_equal(out[i],       out_ref[i],       "Output matches")
+                        confirm_equal(out[i].shape, out_ref[i].shape, "Output shape matches")
+            except:
+                confirm(False, msg='broadcasted function call')
 
 
 
-    # Now pre-allocate the full output array ourselves. Any prototype_output
-    # we pass in is used for validation. Any dtype passed in does nothing,
-    # but assertValueShape() will flag discrepancies. We use the same
-    # f1,f2,f3 as above
+        multiple_outputs = False
+        try:
+            if isinstance(prototype_output[0], tuple):
+                multiple_outputs = True
+        except:
+            pass
+        def confirm_call_out_values(f, *args, **kwargs):
+            try:
+                out = f(*args, **kwargs)
+                if not isinstance(out_ref, tuple):
+                    confirm_equal(out,       out_ref,       "Output matches")
+                    confirm_equal(out.shape, out_ref.shape, "Output shape matches")
+                else:
+                    for i in range(len(out_ref)):
+                        confirm_equal(out[i],       out_ref[i],       "Output matches")
+                        confirm_equal(out[i].shape, out_ref[i].shape, "Output shape matches")
+            except:
+                confirm(False, msg='broadcasted function call')
 
-    f.do_base_check  = True
-    f.do_dtype_check = False
-    f.do_dim_check   = True
+        # First we look at the case where broadcast_define() has no out_kwarg.
+        # Then the output cannot be specified at all. If prototype_output
+        # exists, then it is either used to create the output array, or to
+        # validate the dimensions of output slices obtained from elsewhere. The
+        # dtype is simply passed through to the inner function, is free to use
+        # it, to not use it, or to crash in response (the f() function above
+        # will take it; created arrays will be of that type; passed-in arrays
+        # will create an error for a wrong type)
+        f1 = nps.broadcast_define(prototype_input)                      (f)
+        f2 = nps.broadcast_define(prototype_input,
+                                  prototype_output=prototype_output)    (f)
+        f3 = nps.broadcast_define(prototype_input,
+                                  prototype_output=prototype_output_bad)(f)
 
-    # correct shape, varying dtypes
-    out0 = np.empty( outshape_ref, dtype=float )
-    out1 = np.empty( outshape_ref, dtype=int )
+        f.do_base_check  = False
+        f.do_dtype_check = False
+        f.do_dim_check   = True
 
-    # shape has too many dimensions
-    out2 = np.empty( outshape_ref + (1,), dtype=int )
-    out3 = np.empty( outshape_ref + (2,), dtype=int )
-    out4 = np.empty( (1,) + outshape_ref, dtype=int )
-    out5 = np.empty( (2,) + outshape_ref, dtype=int )
+        if not multiple_outputs:
+            confirm_call_out_values(f1, in1, in2)
+            confirm_call_out_values(f1, in1, in2, dtype=float)
+            confirm_call_out_values(f1, in1, in2, dtype=int)
+        else:
+            confirm_raises(lambda: f1(in1, in2))
+            confirm_raises(lambda: f1(in1, in2, dtype=float))
+            confirm_raises(lambda: f1(in1, in2, dtype=int))
+        confirm_call_out_values(f2, in1, in2)
+        confirm_raises     ( lambda: f3(in1, in2) )
 
-    # shape has the correct number of dimensions, but they aren't right
-    out6 = np.empty( (1,) + outshape_ref[1:], dtype=int )
-    out7 = np.empty( outshape_ref[:1] + (1,), dtype=int )
 
+        # OK then. Let's now pass in an out_kwarg. Here we do not yet
+        # pre-allocate an output. Thus if we don't pass in a prototype_output
+        # either, the first slice will dictate the output shape, and we'll have
+        # 7 inner calls into an output array (6 base comparisons). If we DO pass
+        # in a prototype_output, then we will allocate immediately, and we'll
+        # see 8 inner calls into an output array (7 base comparisons)
+        f1 = nps.broadcast_define(prototype_input, out_kwarg="out")     (f)
+        f2 = nps.broadcast_define(prototype_input, out_kwarg="out",
+                                  prototype_output=prototype_output)    (f)
+        f3 = nps.broadcast_define(prototype_input, out_kwarg="out",
+                                  prototype_output=prototype_output_bad)(f)
 
-    # f1 and f2 should work exactly the same, since prototype_output is just
-    # a validating parameter
-    for f12 in f1,f2:
+        f.do_base_check  = True
+        f.do_dtype_check = True
+        f.do_dim_check   = True
+
+        if not multiple_outputs:
+            f.base = None
+            confirm_call_out_values(f1, in1, in2)
+            confirm_equal( 6, f.base_check_count )
+            f.base = None
+            confirm_call_out_values(f1, in1, in2, dtype=float)
+            confirm_equal( 6, f.base_check_count )
+            f.base = None
+            confirm_call_out_values(f1, in1, in2, dtype=int)
+            confirm_equal( 6, f.base_check_count )
+
         f.base = None
-        assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out0)
+        confirm_call_out_values(f2, in1, in2)
         confirm_equal( 7, f.base_check_count )
         f.base = None
-        assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out0, dtype=float)
-        confirm_equal( 7, f.base_check_count )
-
-        f.base = None
-        assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out1)
+        confirm_call_out_values(f2, in1, in2, dtype=float)
         confirm_equal( 7, f.base_check_count )
         f.base = None
-        assertValueShape( out_ref, outshape_ref, f12, in1, in2, out=out1, dtype=int)
+        confirm_call_out_values(f2, in1, in2, dtype=int)
         confirm_equal( 7, f.base_check_count )
 
-    # any improperly-sized output matrices WILL be flagged if
-    # prototype_output is given, and will likely be flagged if it isn't
-    # also, although there are cases where this wouldn't happen. I simply
-    # expect all of these to fail
-    for out_misshaped in out2,out3,out4,out5,out6,out7:
+        # Here the inner function will get an improperly-sized array to fill in.
+        # broadcast_define() itself won't see any issues with this, but the
+        # inner function is free to detect the error
         f.do_dim_check = False
         f.base = None
-        confirm_raises( lambda: f2(in1, in2, out=out_misshaped) )
+        try:
+            f3(in1, in2)
+            confirm(True, msg='broadcasted function call')
+        except:
+            confirm(False, msg='broadcasted function call')
         f.do_dim_check = True
         f.base = None
-        confirm_raises( lambda: f1(in1, in2, out=out_misshaped) )
+        confirm_raises( lambda: f3(in1, in2) )
+
+
+        # Now pre-allocate the full output array ourselves. Any prototype_output
+        # we pass in is used for validation. Any dtype passed in does nothing,
+        # but assertValueShape() will flag discrepancies. We use the same
+        # f1,f2,f3 as above
+
+        f.do_base_check  = True
+        f.do_dtype_check = False
+        f.do_dim_check   = True
+
+        out_ref_mounted = out_ref if multiple_outputs else (out_ref,)
+
+        # correct shape, varying dtypes
+        out0 = tuple( np.empty( o.shape, dtype=float ) for o in out_ref_mounted)
+        out1 = tuple( np.empty( o.shape, dtype=int ) for o in out_ref_mounted)
+
+        # shape has too many dimensions
+        out2 = tuple( np.empty( o.shape + (1,), dtype=int ) for o in out_ref_mounted)
+        out3 = tuple( np.empty( o.shape + (2,), dtype=int ) for o in out_ref_mounted)
+        out4 = tuple( np.empty( (1,) + o.shape, dtype=int ) for o in out_ref_mounted)
+        out5 = tuple( np.empty( (2,) + o.shape, dtype=int ) for o in out_ref_mounted)
+
+        # shape has the correct number of dimensions, but they aren't right
+        out6 = tuple( np.empty( (1,) + o.shape[1:], dtype=int ) for o in out_ref_mounted)
+        out7 = tuple( np.empty( o.shape[:1] + (1,), dtype=int ) for o in out_ref_mounted)
+
+        if not multiple_outputs:
+            out0 = out0[0]
+            out1 = out1[0]
+            out2 = out2[0]
+            out3 = out3[0]
+            out4 = out4[0]
+            out5 = out5[0]
+            out6 = out6[0]
+            out7 = out7[0]
+
+        # f1 and f2 should work exactly the same, since prototype_output is just
+        # a validating parameter
+        if not multiple_outputs:
+            f.base = None
+            assertValueShape( out_ref, out_ref.shape, f1, in1, in2, out=out0)
+            confirm_equal( 7, f.base_check_count )
+            f.base = None
+            assertValueShape( out_ref, out_ref.shape, f1, in1, in2, out=out0, dtype=float)
+            confirm_equal( 7, f.base_check_count )
+
+            f.base = None
+            assertValueShape( out_ref, out_ref.shape, f1, in1, in2, out=out1)
+            confirm_equal( 7, f.base_check_count )
+            f.base = None
+            assertValueShape( out_ref, out_ref.shape, f1, in1, in2, out=out1, dtype=int)
+            confirm_equal( 7, f.base_check_count )
+
+        f.base = None
+        confirm_call_out_values( f2, in1, in2, out=out0)
+        confirm_equal( 7, f.base_check_count )
+        f.base = None
+        confirm_call_out_values( f2, in1, in2, out=out0, dtype=float)
+        confirm_equal( 7, f.base_check_count )
+
+        f.base = None
+        confirm_call_out_values( f2, in1, in2, out=out1)
+        confirm_equal( 7, f.base_check_count )
+        f.base = None
+        confirm_call_out_values( f2, in1, in2, out=out1, dtype=int)
+        confirm_equal( 7, f.base_check_count )
+
+        # any improperly-sized output matrices WILL be flagged if
+        # prototype_output is given, and will likely be flagged if it isn't
+        # also, although there are cases where this wouldn't happen. I simply
+        # expect all of these to fail
+        for out_misshaped in out2,out3,out4,out5,out6,out7:
+            f.do_dim_check = False
+            f.base = None
+            confirm_raises( lambda: f2(in1, in2, out=out_misshaped) )
+            f.do_dim_check = True
+            f.base = None
+            confirm_raises( lambda: f1(in1, in2, out=out_misshaped) )
 
 def test_concatenation():
     r'''Checking the various concatenation functions.'''

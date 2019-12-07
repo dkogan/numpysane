@@ -142,6 +142,11 @@ will return an output array of shape (2,5, ...), where ... is the shape of each
 output slice. Note again that the prototype dictates the TRAILING shape of the
 inputs.
 
+The output of the inner function can be a numpy array or a tuple of numpy
+arrays. The output specification in the prototype can contain a shape tuple (for
+the one-and-only output), or a tuple of shape tuples (for multiple outputs,
+returned as tuples).
+
 **** Broadcasting in python
 
 This is invoked as a decorator, applied to the arbitrary user function. An
@@ -788,9 +793,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
       - All dimensions !=1 must be identical
       - Missing dimensions are implicitly set to 1
 
-    - The output has a shape where
+    - The output(s) have a shape where
       - The trailing dimensions are whatever the function being broadcasted
-        outputs
+        returns
       - The leading dimensions come from the extra dimensions in the inputs
 
     Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
@@ -871,14 +876,14 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                  unset='grid', square=1)
 
     The examples above all create a separate output array for each broadcasted
-    slice, and copy the contents from each such slice into the large output
+    slice, and copy the contents from each such slice into the larger output
     array that contains all the results. This is inefficient, and it is possible
-    to pre-allocate an array to forgo these extra allocations and copies. There
-    are several settings to control this. If the function being broadcasted can
-    write its output to a given array instead of creating a new one, most of the
-    inefficiency goes away. broadcast_define() supports the case where this
-    function takes this array in a kwarg: the name of this kwarg can be given to
-    broadcast_define() like so:
+    to pre-allocate an array to forgo these extra allocation and copy
+    operations. There are several settings to control this. If the function
+    being broadcasted can write its output to a given array instead of creating
+    a new one, most of the inefficiency goes away. broadcast_define() supports
+    the case where this function takes this array in a kwarg: the name of this
+    kwarg can be given to broadcast_define() like so:
 
         @nps.broadcast_define( ....., out_kwarg = "out" )
         def func( ....., out):
@@ -900,7 +905,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             out.setfield(a.dot(b), out.dtype)
             return out
 
-        out = np.empty((2,4), float)
+        out = np.empty((2,4), np.float)
         inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), out=out)
 
     In this example, the caller knows that it's calling an inner_product
@@ -961,6 +966,13 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     modes of operation. If the inner function does not support filling in an
     output array, none of these efficiency improvements are possible.
 
+    It is possible for a function to return more than one output, and this is
+    supported by broadcast_define(). This case works exactly like the one-output
+    case, except the output prototype is REQUIRED, and this output prototype
+    contains multiple tuples, one for each output. The inner function must
+    return the outputs in a tuple, and each individual output will be
+    broadcasted as expected.
+
     broadcast_define() is analogous to thread_define() in PDL.
 
     '''
@@ -984,76 +996,180 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             dims_extra,dims_named = \
                 _eval_broadcast_dims( args, prototype)
 
+            # If None, the single output is either returned, or stored into
+            # out_kwarg. If an integer, then a tuple is returned (or stored into
+            # out_kwarg). If Noutputs==1 then we return a TUPLE of length 1
+            Noutputs = None
+
             # substitute named variable values into the output prototype
             prototype_output_expanded = None
             if prototype_output is not None:
-                prototype_output_expanded = \
-                    [d if type(d) is int else dims_named[d] \
-                     for d in prototype_output]
-
-            # if no broadcasting involved, just call the function
-            if not dims_extra:
-                sliced_args = args + args_passthru
-                result = func( *sliced_args, **kwargs )
-                if prototype_output_expanded is not None and \
-                   np.array(result).shape != tuple(prototype_output_expanded):
-                    raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded,
-                                                                                                           np.array(result).shape))
-                return result
+                # If a single prototype_output is given, wrap it in a tuple to indicate
+                # that we only have one output
+                if all( type(o) is int or type(o) is str for o in prototype_output ):
+                    prototype_output_expanded = \
+                        [d if type(d) is int else dims_named[d] \
+                         for d in prototype_output]
+                else:
+                    Noutputs = len(prototype_output)
+                    prototype_output_expanded = \
+                        [ [d if type(d) is int else dims_named[d] \
+                           for d in _prototype_output] for \
+                          _prototype_output in prototype_output ]
 
             # I checked all the dimensions and aligned everything. I have my
             # to-broadcast dimension counts. Iterate through all the broadcasting
             # output, and gather the results
             output = None
-
-            # if the output was supposed to go to a particular place, set that
-            if out_kwarg and out_kwarg in kwargs:
-                output = kwargs[out_kwarg]
-                if prototype_output_expanded is not None:
-                    expected_shape = dims_extra + prototype_output_expanded
-                    if output.shape != tuple(expected_shape):
-                        raise NumpysaneError("Inconsistent output shape: expected {}, but got {}".format(expected_shape, output.shape))
-            # if we know enough to allocate the output, do that
-            elif prototype_output_expanded is not None:
-                kwargs_dtype = {}
-                if 'dtype' in kwargs:
-                    kwargs_dtype['dtype'] = kwargs['dtype']
-                output = np.empty(dims_extra + prototype_output_expanded,
-                                  **kwargs_dtype)
-
-            # reshaped output. I write to this array
-            if output is not None:
-                output_flattened = clump(output, n=len(dims_extra))
-
             i_slice = 0
-            for x in _broadcast_iter_dim( args, prototype, dims_extra ):
 
-                # if the function knows how to write directly to an array,
-                # request that
-                if output is not None and out_kwarg:
-                    kwargs[out_kwarg] = output_flattened[i_slice, ...]
+            if Noutputs is None:
+                # We expect a SINGLE output
 
-                sliced_args = x + args_passthru
-                result = func( *sliced_args, **kwargs )
+                # if no broadcasting involved, just call the function
+                if not dims_extra:
+                    sliced_args = args + args_passthru
+                    result = func( *sliced_args, **kwargs )
+                    if isinstance(result, tuple):
+                        raise NumpysaneError("Only a single output expected, but a tuple was returned!")
+                    if prototype_output_expanded is not None and \
+                       np.array(result).shape != tuple(prototype_output_expanded):
+                        raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded,
+                                                                                                               np.array(result).shape))
+                    return result
 
-                if not isinstance(result, np.ndarray):
-                    result = np.array(result)
+                # if the output was supposed to go to a particular place, set that
+                if out_kwarg and out_kwarg in kwargs:
+                    output = kwargs[out_kwarg]
+                    if prototype_output_expanded is not None:
+                        expected_shape = dims_extra + prototype_output_expanded
+                        if output.shape != tuple(expected_shape):
+                            raise NumpysaneError("Inconsistent output shape: expected {}, but got {}".format(expected_shape, output.shape))
+                # if we know enough to allocate the output, do that
+                elif prototype_output_expanded is not None:
+                    kwargs_dtype = {}
+                    if 'dtype' in kwargs:
+                        kwargs_dtype['dtype'] = kwargs['dtype']
+                    output = np.empty(dims_extra + prototype_output_expanded,
+                                      **kwargs_dtype)
 
-                if output is None:
-                    output = np.empty( dims_extra + list(result.shape),
-                                       dtype = result.dtype)
-                    output_flattened = output.reshape( (_product(dims_extra),) + result.shape)
+                # reshaped output. I write to this array
+                if output is not None:
+                    output_flattened = clump(output, n=len(dims_extra))
 
-                    output_flattened[i_slice, ...] = result
-                elif not out_kwarg:
-                    output_flattened[i_slice, ...] = result
+                for x in _broadcast_iter_dim( args, prototype, dims_extra ):
 
-                if prototype_output_expanded is None:
-                    prototype_output_expanded = result.shape
-                elif result.shape != tuple(prototype_output_expanded):
-                    raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded, result.shape))
+                    # if the function knows how to write directly to an array,
+                    # request that
+                    if output is not None and out_kwarg is not None:
+                        kwargs[out_kwarg] = output_flattened[i_slice, ...]
 
-                i_slice = i_slice+1
+                    sliced_args = x + args_passthru
+                    result = func( *sliced_args, **kwargs )
+                    if isinstance(result, tuple):
+                        raise NumpysaneError("Only a single output expected, but a tuple was returned!")
+
+                    if not isinstance(result, np.ndarray):
+                        result = np.array(result)
+
+                    if output is None:
+                        output = np.empty( dims_extra + list(result.shape),
+                                           dtype = result.dtype)
+                        output_flattened = output.reshape( (_product(dims_extra),) + result.shape)
+                        output_flattened[i_slice, ...] = result
+
+                    elif not out_kwarg:
+                        output_flattened[i_slice, ...] = result
+
+                    if prototype_output_expanded is None:
+                        prototype_output_expanded = result.shape
+                    else:
+                        if result.shape != tuple(prototype_output_expanded):
+                            raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded, result.shape))
+                    i_slice = i_slice+1
+
+            else:
+                # We expect MULTIPLE outputs: a tuple of length Noutputs
+
+                # if no broadcasting involved, just call the function
+                if not dims_extra:
+                    sliced_args = args + args_passthru
+                    result = func( *sliced_args, **kwargs )
+
+                    if not isinstance(result, tuple):
+                        raise NumpysaneError("A tuple of {} outputs is expected, but an object of type {} was returned". \
+                                             format(Noutputs, type(result)))
+                    if len(result) != Noutputs:
+                        raise NumpysaneError("A tuple of {} outputs is expected, but a length-{} tuple was returned". \
+                                             format(Noutputs, len(result)))
+                    if prototype_output_expanded is not None:
+                        for i in range(Noutputs):
+                            if np.array(result[i]).shape != tuple(prototype_output_expanded[i]):
+                                raise NumpysaneError("Inconsistent output {} shape: expected {}, but got {}". \
+                                                     format(i,
+                                                            prototype_output_expanded[i],
+                                                            np.array(result[i]).shape))
+                    return result
+
+
+                # if the output was supposed to go to a particular place, set that
+                if out_kwarg and out_kwarg in kwargs:
+                    output = kwargs[out_kwarg]
+                    if prototype_output_expanded is not None:
+                        for i in range(Noutputs):
+                            expected_shape = dims_extra + prototype_output_expanded[i]
+                            if output[i].shape != tuple(expected_shape):
+                                raise NumpysaneError("Inconsistent output shape for output {}: expected {}, but got {}". \
+                                                     format(i, expected_shape, output[i].shape))
+                # if we know enough to allocate the output, do that
+                elif prototype_output_expanded is not None:
+                    kwargs_dtype = {}
+                    if 'dtype' in kwargs:
+                        kwargs_dtype['dtype'] = kwargs['dtype']
+                    output = [np.empty(dims_extra + prototype_output_expanded[i],
+                                       **kwargs_dtype) for i in range(Noutputs)]
+
+                # reshaped output. I write to this array
+                if output is not None:
+                    output_flattened = [clump(output[i], n=len(dims_extra)) for i in range(Noutputs)]
+
+                for x in _broadcast_iter_dim( args, prototype, dims_extra ):
+
+                    # if the function knows how to write directly to an array,
+                    # request that
+                    if output is not None and out_kwarg is not None:
+                        kwargs[out_kwarg] = tuple(o[i_slice, ...] for o in output_flattened)
+
+                    sliced_args = x + args_passthru
+                    result = func( *sliced_args, **kwargs )
+                    if not isinstance(result, tuple):
+                        raise NumpysaneError("A tuple of {} outputs is expected, but an object of type {} was returned". \
+                                             format(Noutputs, type(result)))
+                    if len(result) != Noutputs:
+                        raise NumpysaneError("A tuple of {} outputs is expected, but a length-{} tuple was returned". \
+                                             format(Noutputs, len(result)))
+
+                    result = [x if isinstance(x, np.ndarray) else np.array(x) for x in result]
+
+                    if output is None:
+                        output = [np.empty( dims_extra + list(result[i].shape),
+                                            dtype = result[i].dtype) for i in range(Noutputs)]
+                        output_flattened = [output[i].reshape( (_product(dims_extra),) + result[i].shape) for i in range(Noutputs)]
+                        for i in range(Noutputs):
+                            output_flattened[i][i_slice, ...] = result[i]
+
+                    elif not out_kwarg:
+                        for i in range(Noutputs):
+                            output_flattened[i][i_slice, ...] = result[i]
+
+                    if prototype_output_expanded is None:
+                        prototype_output_expanded = [result[i].shape for i in range(Noutputs)]
+                    else:
+                        for i in range(Noutputs):
+                            if result[i].shape != tuple(prototype_output_expanded[i]):
+                                raise NumpysaneError("Inconsistent slice output {} shape: expected {}, but got {}". \
+                                                     format(i, prototype_output_expanded[i], result[i].shape))
+                    i_slice = i_slice+1
 
             return output
 
@@ -1082,22 +1198,33 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                                              format(dim))
 
         if prototype_output is not None:
-            for dim in prototype_output:
-                if type(dim) is not int:
-                    if type(dim) is not str:
-                        raise NumpysaneError("Output dimensions must be integers > 0 or strings. Got '{}' of type '{}'". \
-                                             format(dim, type(dim)))
-                    if dim not in known_named_dims:
-                        raise NumpysaneError("Output prototype has named dimension '{}' not seen in the input prototypes". \
-                                             format(dim))
-                else:
-                    if dim < 0:
-                        raise NumpysaneError("Prototype dimensions must be > 0. Got '{}'". \
-                                             format(dim))
 
             if not isinstance(prototype_output, tuple):
                 raise NumpysaneError("Output prototype dims must be given as a tuple")
 
+            # If a single prototype_output is given, wrap it in a tuple to indicate
+            # that we only have one output
+            if all( type(o) is int or type(o) is str for o in prototype_output ):
+                prototype_outputs = (prototype_output, )
+            else:
+                prototype_outputs = prototype_output
+                if not all( isinstance(p,tuple) for p in prototype_outputs ):
+                    raise NumpysaneError("Output dimensions must be integers > 0 or strings. Each output must be a tuple. Some given output aren't tuples: {}". \
+                                         format(prototype_outputs))
+
+            for dims_output in prototype_outputs:
+                for dim in dims_output:
+                    if type(dim) is not int:
+                        if type(dim) is not str:
+                            raise NumpysaneError("Output dimensions must be integers > 0 or strings. Got '{}' of type '{}'". \
+                                                 format(dim, type(dim)))
+                        if dim not in known_named_dims:
+                            raise NumpysaneError("Output prototype has named dimension '{}' not seen in the input prototypes". \
+                                                 format(dim))
+                    else:
+                        if dim < 0:
+                            raise NumpysaneError("Prototype dimensions must be > 0. Got '{}'". \
+                                                 format(dim))
 
         func_out = _clone_function( broadcast_loop, func.__name__ )
         func_out.__doc__  = inspect.getdoc(func)
