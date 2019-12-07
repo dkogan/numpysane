@@ -1058,10 +1058,18 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             return output
 
 
+
+        if out_kwarg is not None and not isinstance(out_kwarg, str):
+            raise NumpysaneError("out_kwarg must be a string")
+
         # Make sure all dimensions are >=0 and that named output dimensions are
         # known from the input
         known_named_dims = set()
+        if not isinstance(prototype, tuple):
+            raise NumpysaneError("Input prototype must be given as a tuple")
         for dims_input in prototype:
+            if not isinstance(dims_input, tuple):
+                raise NumpysaneError("Input prototype dims must be given as a tuple")
             for dim in dims_input:
                 if type(dim) is not int:
                     if type(dim) is not str:
@@ -1072,6 +1080,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                     if dim < 0:
                         raise NumpysaneError("Prototype dimensions must be > 0. Got '{}'". \
                                              format(dim))
+
         if prototype_output is not None:
             for dim in prototype_output:
                 if type(dim) is not int:
@@ -1085,6 +1094,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                     if dim < 0:
                         raise NumpysaneError("Prototype dimensions must be > 0. Got '{}'". \
                                              format(dim))
+
+            if not isinstance(prototype_output, tuple):
+                raise NumpysaneError("Output prototype dims must be given as a tuple")
 
 
         func_out = _clone_function( broadcast_loop, func.__name__ )

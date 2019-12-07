@@ -52,6 +52,12 @@ def test_broadcasting():
             return a.dot(b)
     confirm_raises( define_f_broken5, msg="output dims must all be known" )
 
+    def define_f_broken6():
+        @nps.broadcast_define( (('n',), ('n',)), 'n' )
+        def f_broken(a, b):
+            return a.dot(b)
+    confirm_raises( define_f_broken6, msg="output dims must be a tuple" )
+
 
     r'''Checking broadcasting rules.'''
     @nps.broadcast_define( (('n',), ('n',)) )
