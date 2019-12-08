@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Header for a demo C library being wrapped by numpysane_pywrap. This library
-// can compute inner and outer products with arbitrary strides. The inner
-// product is implemented with 32-bit integers, 64-bit integers and 64-bit
-// floats. The outer product is defined with floats only
+// Test C library being wrapped by numpysane_pywrap. This library can compute
+// inner and outer products
 
+// Inner product supports arbitrary strides, and 3 data types
 #define DEFINE_INNER_T(T)                                               \
 T inner_ ## T(const T* a,                                               \
               const T* b,                                               \
@@ -23,6 +22,7 @@ DEFINE_INNER_T(int32_t)
 DEFINE_INNER_T(int64_t)
 DEFINE_INNER_T(double)
 
+// Outer product supports arbitrary strides, and only the "double" data type
 void outer(double* out,
            int stride_out_incol,
            int stride_out_inrow,
@@ -38,4 +38,22 @@ void outer(double* out,
             *( (double*)(j*stride_out_incol + i*stride_out_inrow + (char*)(out))) =
                 *( (double*)(j*stride_a+(char*)(a))) *
                 *( (double*)(i*stride_b+(char*)(b)));
+}
+
+// inner and outer product together. Only contiguous data is supported. "double"
+// only
+double innerouter(double* out,
+
+                  const double* a,
+                  const double* b,
+                  int n)
+{
+    outer(out,
+          n*sizeof(double), sizeof(double),
+          a, b,
+          sizeof(double), sizeof(double),
+          n);
+    return inner_double(a, b,
+                        sizeof(double), sizeof(double),
+                        n);
 }
