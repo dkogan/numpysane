@@ -36,6 +36,6 @@ void outer(double* out,
     for(int j=0; j<n; j++)
         for(int i=0; i<n; i++)
             *( (double*)(j*stride_out_incol + i*stride_out_inrow + (char*)(out))) =
-                *( (double*)(i*stride_a+(char*)(a))) *
-                *( (double*)(j*stride_b+(char*)(b)));
+                *( (double*)(j*stride_a+(char*)(a))) *
+                *( (double*)(i*stride_b+(char*)(b)));
 }
