@@ -250,6 +250,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 __strides__output[i_dim + __ndim__output] = 0;
             }
         }
+        int Ndims_extra_output = __ndim__output - PROTOTYPE_LEN__output__;
 
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
@@ -346,8 +347,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             if( ! slice_function
                   (
                       (nps_slice_t){ .data    = (void*)slice_output,
-                                     .strides = __strides__output,
-                                     .dims    = __dims__output }
+                                     .strides = &__strides__output[Ndims_extra_output],
+                                     .dims    = &__dims__output   [Ndims_extra_output] }
                                      ARGUMENTS(ARGLIST_SLICE)
                   )
                 )
