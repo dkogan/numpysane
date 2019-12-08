@@ -1,25 +1,8 @@
 #!/usr/bin/python3
 
-r'''
+r'''Test the broadcasting in C
 
-
-
-TEST TEST TEST
-
-
-
-
-
-
-
-A demo script to test the python wrapping produced with genpywrap.py
-
-testlib is a tiny demo library that can compute inner and outer products. We
-wrapped each available function by running genpywrap.py, and we ran "make" to
-build the C wrapper code into a python extension module. This script runs the
-wrapped-in-C inner and outer product, and compares the results against existing
-implementations in numpysane.
-
+Uses the "innerouter" guinea pig C library
 '''
 
 import sys
