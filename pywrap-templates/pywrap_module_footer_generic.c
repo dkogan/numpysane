@@ -13,8 +13,7 @@ static PyMethodDef methods[] =
 
 PyMODINIT_FUNC init{MODULE_NAME}(void)
 {
-    PyObject* module =
-        Py_InitModule3("{MODULE_NAME}", methods, "{MODULE_DOCSTRING}");
+    Py_InitModule3("{MODULE_NAME}", methods, "{MODULE_DOCSTRING}");
     import_array();
 }
 

@@ -157,6 +157,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         }
         if(selected_typenum == NPY_NOTYPE)
         {
+#if PY_MAJOR_VERSION == 3
+
 #define INPUT_PERCENT_S(name) "%S,"
 #define INPUT_TYPEOBJ(name)   PyArray_DESCR(__py__ ## name)->typeobj,
 
@@ -167,6 +169,13 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                          ARGUMENTS(INPUT_TYPEOBJ)
                          ((PyObject*)__py__output__ != Py_None && __py__output__ != NULL) ?
                            (PyObject*)PyArray_DESCR(__py__output__)->typeobj : (PyObject*)Py_None);
+
+#else
+            ////////// python2 doesn't support %S
+            PyErr_Format(PyExc_RuntimeError,
+                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING})");
+#endif
+
             goto done;
 
         }

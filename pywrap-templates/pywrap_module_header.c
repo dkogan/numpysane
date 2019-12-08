@@ -97,7 +97,7 @@ bool parse_dim(// input and output
                 PyErr_Format(PyExc_RuntimeError,
                              "Argument '%s': prototype says dimension %d (named dimension %d) has length %d, but got %d",
                              arg_name,
-                             i_dim, dims_want[i_dim_want],
+                             i_dim, (int)dims_want[i_dim_want],
                              dim_want,
                              dim_var);
             else
@@ -141,7 +141,7 @@ bool parse_dim(// input and output
                              "Argument '%s' dimension %d (broadcasted dimension %d) mismatch. Previously saw length %d, but here have length %d",
                              arg_name,
                              i_dim-Ndims_want, i_dim,
-                             dims_extra[i_dim_extra],
+                             (int)dims_extra[i_dim_extra],
                              dim_var);
                 return false;
             }
