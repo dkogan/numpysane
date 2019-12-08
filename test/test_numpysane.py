@@ -1,5 +1,11 @@
 #!/usr/bin/python2
 
+import sys
+import os
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path[:0] = dir_path + '/..',
+
 import numpy as np
 import numpysane as nps
 from functools import reduce

@@ -10,7 +10,7 @@ check: check2 check3
 check2: test2
 check3: test3
 test2 test3:
-	python$(patsubst test%,%,$@) test_numpysane.py
+	python$(patsubst test%,%,$@) test/test_numpysane.py
 .PHONY: check check2 check3 test test2 test3
 
 # make distribution tarball
