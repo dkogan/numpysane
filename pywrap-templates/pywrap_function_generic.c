@@ -174,49 +174,51 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 {VALIDATE};
 
         // The dimensions of the output must be (dims_extra + PROTOTYPE__output__)
-        int Ndims_output = Ndims_extra + PROTOTYPE_LEN__output__;
-        npy_intp dims_output_want[Ndims_output];
-        for(int i=0; i<Ndims_extra; i++)
-            dims_output_want[i] = dims_extra[i];
-        for(int i=0; i<PROTOTYPE_LEN__output__; i++)
-            dims_output_want[i+Ndims_extra] = PROTOTYPE__output__[i];
-        if((PyObject*)__py__output__ != Py_None && __py__output__ != NULL)
         {
-            // An output array was given. I make sure it has the correct dimensions. I
-            // allow leading dimensions of length 1. I compare from the end,
-            // comparing with 1 if either list runs out
-            int Ndims_to_compare1 = PyArray_NDIM(__py__output__);
-            int Ndims_to_compare2 = Ndims_output;
-            int Ndims_to_compare = Ndims_to_compare1;
-            if(Ndims_to_compare < Ndims_to_compare2)
-                Ndims_to_compare = Ndims_to_compare2;
-
-            for( int i_dim=-1;
-                 i_dim >= -Ndims_to_compare;
-                 i_dim--)
+            int Ndims_output = Ndims_extra + PROTOTYPE_LEN__output__;
+            npy_intp dims_output_want[Ndims_output];
+            for(int i=0; i<Ndims_extra; i++)
+                dims_output_want[i] = dims_extra[i];
+            for(int i=0; i<PROTOTYPE_LEN__output__; i++)
+                dims_output_want[i+Ndims_extra] = PROTOTYPE__output__[i];
+            if((PyObject*)__py__output__ != Py_None && __py__output__ != NULL)
             {
-                int i_dim_var       = i_dim + PyArray_NDIM(__py__output__);
-                int i_dim_output    = i_dim + Ndims_output;
-                int dim_var         = i_dim_var    >= 0 ? PyArray_DIMS(__py__output__)[i_dim_var   ] : 1;
-                int dim_output_want = i_dim_output >= 0 ? dims_output_want            [i_dim_output] : 1;
-                if(dim_var != dim_output_want)
+                // An output array was given. I make sure it has the correct dimensions. I
+                // allow leading dimensions of length 1. I compare from the end,
+                // comparing with 1 if either list runs out
+                int Ndims_to_compare1 = PyArray_NDIM(__py__output__);
+                int Ndims_to_compare2 = Ndims_output;
+                int Ndims_to_compare = Ndims_to_compare1;
+                if(Ndims_to_compare < Ndims_to_compare2)
+                    Ndims_to_compare = Ndims_to_compare2;
+
+                for( int i_dim=-1;
+                     i_dim >= -Ndims_to_compare;
+                     i_dim--)
                 {
-                    PyErr_Format(PyExc_RuntimeError,
-                                 "Given output array dimension %d mismatch. Expected %d but got %d",
-                                 i_dim,
-                                 dim_output_want, dim_var);
-                    goto done;
+                    int i_dim_var       = i_dim + PyArray_NDIM(__py__output__);
+                    int i_dim_output    = i_dim + Ndims_output;
+                    int dim_var         = i_dim_var    >= 0 ? PyArray_DIMS(__py__output__)[i_dim_var   ] : 1;
+                    int dim_output_want = i_dim_output >= 0 ? dims_output_want            [i_dim_output] : 1;
+                    if(dim_var != dim_output_want)
+                    {
+                        PyErr_Format(PyExc_RuntimeError,
+                                     "Given output array dimension %d mismatch. Expected %d but got %d",
+                                     i_dim,
+                                     dim_output_want, dim_var);
+                        goto done;
+                    }
                 }
             }
-        }
-        else
-        {
-            // No output array available. Make one
-            __py__output__ = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum);
-            if(__py__output__ == NULL)
+            else
             {
-                // Error already set. I simply exit
-                goto done;
+                // No output array available. Make one
+                __py__output__ = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum);
+                if(__py__output__ == NULL)
+                {
+                    // Error already set. I simply exit
+                    goto done;
+                }
             }
         }
 
