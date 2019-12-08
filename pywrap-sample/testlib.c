@@ -1,10 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-// Header for a demo C library being wrapped by numpysane_pywrap. This library
-// can compute inner and outer products with arbitrary strides. The inner
-// product is implemented with 32-bit integers, 64-bit integers and 64-bit
-// floats
+// A demo C library being wrapped by numpysane_pywrap. This library can compute
+// inner and outer products with arbitrary strides. The inner product is
+// implemented with 32-bit integers, 64-bit integers and 64-bit floats
 
 
 #define DEFINE_INNER_T(T)                                               \
