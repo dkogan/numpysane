@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-r'''A demo script to generate broadcast-aware python wrapping to testlib
+r'''generate broadcast-aware python wrapping to innerouter
 
-testlib is a tiny demo library that can compute inner and outer products. Here
-we wrap each available function. For each one we provide a code snipped that
-takes raw data arrays for each slice, and invokes the testlib library for each
-one
+The test suite runs this script to python-wrap the innerouter C library, then
+the test suite builds this python extension module, and then the test suite
+validates this module's behavior
 
 '''
 import sys
@@ -19,9 +18,9 @@ import numpysane as nps
 import numpysane_pywrap as npsp
 
 
-m = npsp.module( MODULE_NAME      = "testlibmodule",
-                 MODULE_DOCSTRING = "Test module",
-                 HEADER           = '#include "testlib.h"')
+m = npsp.module( MODULE_NAME      = "innerouter",
+                 MODULE_DOCSTRING = "Inner and outer products module",
+                 HEADER           = '#include "innerouter.h"')
 
 m.function( "inner",
             "Inner-product pywrapped with npsp",
@@ -73,6 +72,8 @@ m.function( "outer",
                 {float:
                  r'''
             outer((double*)output.data,
+                  output.strides[0],
+                  output.strides[1],
                   (double*)a.data,
                   (double*)b.data,
                   a.strides[0],
@@ -80,5 +81,45 @@ m.function( "outer",
                   a.dims[0]);
             return true;
 '''})
+
+
+# Tests. Try to wrap functions using illegal output prototypes. The wrapper code
+# should barf
+try:
+    m.function( "outer2",
+                "Outer-product pywrapped with npsp",
+
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = ('n', 'fn'),
+
+                FUNCTION__slice_code = '')
+except: pass # known error
+else:   raise Exception("Expected error didn't happen")
+
+try:
+    m.function( "outer3",
+                "Outer-product pywrapped with npsp",
+
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = ('n', -1),
+
+                FUNCTION__slice_code = '')
+except: pass # known error
+else:   raise Exception("Expected error didn't happen")
+
+try:
+    m.function( "outer4",
+                "Outer-product pywrapped with npsp",
+
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), (-1,)),
+                prototype_output = ('n', 'n'),
+
+                FUNCTION__slice_code = '')
+except: pass # known error
+else:   raise Exception("Expected error didn't happen")
+
 
 m.write()
