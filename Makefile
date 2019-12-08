@@ -15,6 +15,7 @@ test/innerouter$(PY_EXT_SUFFIX): test/innerouter_pywrap_GENERATED.o test/innerou
 test/innerouter_pywrap_GENERATED.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
 
 CC ?= gcc
+CFLAGS += -g
 %.o:%.c
 	$(CC) -Wall -Wextra $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
