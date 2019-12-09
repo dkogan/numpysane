@@ -55,7 +55,7 @@ test-c-broadcasting: test/innerouter$(PY_EXT_SUFFIX)
 .PHONY: check check2 check3 test test2 test3 test-c-broadcasting
 
 # make distribution tarball
-dist:
+dist: README
 	python3 setup.py sdist
 .PHONY: dist
 

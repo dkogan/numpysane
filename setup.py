@@ -32,10 +32,4 @@ functionality in a more reasonable way""",
 
       license      = 'LGPL-3+',
       py_modules   = ['numpysane', 'numpysane_pywrap'],
-      data_files = [ ('share/python-numpysane/pywrap-templates', pywrap_templates)],
-
-      # Tell setuputils to not deal with the egg nonsense. numpysane_pywrap.py
-      # assumes this
-      eager_resources = pywrap_templates,
-      test_suite   = 'test/test-numpysane.py',
-      install_requires = 'numpy')
+      data_files = [ ('share/python-numpysane/pywrap-templates', pywrap_templates)])
