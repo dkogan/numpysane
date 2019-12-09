@@ -47,8 +47,8 @@ test:  test2  test3
 check: check2 check3
 check2: test2
 check3: test3
-test2 test3: test/test_numpysane.py test-c-broadcasting
-	python$(patsubst test%,%,$@) test/test_numpysane.py
+test2 test3: test/test-numpysane.py test-c-broadcasting
+	python$(patsubst test%,%,$@) test/test-numpysane.py
 test-c-broadcasting: test/innerouter$(PY_EXT_SUFFIX)
 	python${PYTHON_VERSION_FOR_EXTENSIONS} test/test-c-broadcasting.py
 

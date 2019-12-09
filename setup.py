@@ -37,5 +37,5 @@ functionality in a more reasonable way""",
       # Tell setuputils to not deal with the egg nonsense. numpysane_pywrap.py
       # assumes this
       eager_resources = pywrap_templates,
-      test_suite   = 'test_numpysane',
+      test_suite   = 'test/test-numpysane.py',
       install_requires = 'numpy')
