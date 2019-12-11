@@ -19,7 +19,7 @@ CFLAGS += -g
 %.o:%.c
 	$(CC) -Wall -Wextra $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-test/innerouter_pywrap_GENERATED.c: test/genpywrap.py $(wildcard pywrap-templates/*.c)
+test/innerouter_pywrap_GENERATED.c: test/genpywrap.py numpysane_pywrap.py $(wildcard pywrap-templates/*.c)
 	./$< > $@
 
 # In the python api I have to cast a PyCFunctionWithKeywords to a PyCFunction,
