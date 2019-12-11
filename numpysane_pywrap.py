@@ -379,6 +379,13 @@ bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
                          {Noutputs});
             goto done;
         }
+        if( PySequence_Size(__py__output__arg) != {Noutputs} )
+        {
+            PyErr_Format(PyExc_RuntimeError,
+                         "Given output expected to be a sequence of length %d, but a sequence of length %d was given",
+                         {Noutputs}, PySequence_Size(__py__output__arg));
+            goto done;
+        }
 
 #define PULL_OUT_OUTPUT_ARRAYS(name)                                                                         \
         __py__ ## name = (PyArrayObject*)PySequence_GetItem(__py__output__arg, i++);                         \

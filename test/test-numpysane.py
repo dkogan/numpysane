@@ -76,12 +76,6 @@ def test_broadcasting():
             return a.dot(b)
     confirm_raises( define_f_broken8, msg="output dims must be a tuple" )
 
-    def define_f_broken8():
-        @nps.broadcast_define( (('n',), ('n',)), (('n',), 'n') )
-        def f_broken(a, b):
-            return a.dot(b)
-    confirm_raises( define_f_broken8, msg="output dims must be a tuple" )
-
     def define_f_good9():
         @nps.broadcast_define( (('n',), ('n',)), (('n',), ('n',)) )
         def f_broken(a, b):

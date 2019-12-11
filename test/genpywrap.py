@@ -106,144 +106,103 @@ m.function( "innerouter",
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('n', 'fn'),
-
-                FUNCTION__slice_code = '')
+                FUNCTION__slice_code = dict(float=''))
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('n', -1),
-
-                FUNCTION__slice_code = '')
+                FUNCTION__slice_code = dict(float=''))
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), (-1,)),
                 prototype_output = ('n', 'n'),
-
-                FUNCTION__slice_code = '')
+                FUNCTION__slice_code = dict(float=''))
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
+# first check invalid broadcasting defines
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',())),
+                prototype_output = ('m'),
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: input dims must be integers or strings")
+
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',-1)),
+                prototype_output = (),
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: input dims must >=0")
+
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = (-1,),
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: output dims must >=0")
+
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = ('m', ()),
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: output dims must be integers or strings")
+
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = ('m'),
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: output dims must all be known")
+
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = 'n',
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
+
+try:
+    m.function( "outer_broken",
+                "Outer-product pywrapped with npsp",
+                argnames         = ("a", "b"),
+                prototype_input  = (('n',), 'n'),
+                prototype_output = 'n',
+                FUNCTION__slice_code = dict(float=''))
+except: pass # known error
+else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
+
 
 m.write()
-
-
-
-
-
-
-
-
-
-# # first check invalid broadcasting defines
-# try:
-#     m.function( "outer_broken",
-#                 "Outer-product pywrapped with npsp",
-
-#                 argnames         = ("a", "b"),
-#                 prototype_input  = (('n',), ('n',())),
-#                 prototype_output = ('m'),
-
-#                 FUNCTION__slice_code = '')
-# except: pass # known error
-# else:   raise Exception("Expected error didn't happen: input dims must be integers or strings")
-
-# try:
-#     m.function( "outer_broken",
-#                 "Outer-product pywrapped with npsp",
-
-#                 argnames         = ("a", "b"),
-#                 prototype_input  = (('n',), ('n',-1)),
-#                 prototype_output = (),
-
-#                 FUNCTION__slice_code = '')
-# except: pass # known error
-# else:   raise Exception("Expected error didn't happen: input dims must >=0")
-
-# try:
-#     m.function( "outer_broken",
-#                 "Outer-product pywrapped with npsp",
-
-#                 argnames         = ("a", "b"),
-#                 prototype_input  = (('n',), ('n',)),
-#                 prototype_output = (-1,),
-
-#                 FUNCTION__slice_code = '')
-# except: pass # known error
-# else:   raise Exception("Expected error didn't happen: output dims must >=0")
-
-# try:
-#     m.function( "outer_broken",
-#                 "Outer-product pywrapped with npsp",
-
-#                 argnames         = ("a", "b"),
-#                 prototype_input  = (('n',), ('n',)),
-#                 prototype_output = ('m', ()),
-
-#                 FUNCTION__slice_code = '')
-# except: pass # known error
-# else:   raise Exception("Expected error didn't happen: output dims must be integers or strings")
-
-# try:
-#     m.function( "outer_broken",
-#                 "Outer-product pywrapped with npsp",
-
-#                 argnames         = ("a", "b"),
-#                 prototype_input  = (('n',), ('n',)),
-#                 prototype_output = ('m'),
-
-#                 FUNCTION__slice_code = '')
-# except: pass # known error
-# else:   raise Exception("Expected error didn't happen: output dims must all be known")
-
-# try:
-#     m.function( "outer_broken",
-#                 "Outer-product pywrapped with npsp",
-
-#                 argnames         = ("a", "b"),
-#                 prototype_input  = (('n',), ('n',)),
-#                 prototype_output = 'n',
-
-#                 FUNCTION__slice_code = '')
-# except: pass # known error
-# else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
-
-    # def define_f_broken7():
-    #     @nps.broadcast_define( (('n',), ('n',)), ('n',), ('n',) )
-    #     def f_broken(a, b):
-    #         return a.dot(b)
-    # confirm_raises( define_f_broken7, msg="multiple outputs must be specified as a tuple of tuples" )
-
-    # def define_f_broken8():
-    #     @nps.broadcast_define( (('n',), ('n',)), (('n',), 'n') )
-    #     def f_broken(a, b):
-    #         return a.dot(b)
-    # confirm_raises( define_f_broken8, msg="output dims must be a tuple" )
-
-    # def define_f_broken8():
-    #     @nps.broadcast_define( (('n',), ('n',)), (('n',), 'n') )
-    #     def f_broken(a, b):
-    #         return a.dot(b)
-    # confirm_raises( define_f_broken8, msg="output dims must be a tuple" )
-
-    # def define_f_good9():
-    #     @nps.broadcast_define( (('n',), ('n',)), (('n',), ('n',)) )
-    #     def f_broken(a, b):
-    #         return a.dot(b)
-    #     return True
-    # confirm( define_f_good9, msg="Multiple outputs can be defined" )
