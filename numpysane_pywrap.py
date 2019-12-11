@@ -352,7 +352,7 @@ bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
         else:
             # Multiple outputs. Unpack, make sure we have pre-made arrays
             UNPACK_OUTPUTS = r'''
-    bool populate_output_tuple__i = -1;
+    int populate_output_tuple__i = -1;
     if(__py__output__arg == Py_None) __py__output__arg = NULL;
     if(__py__output__arg == NULL)
     {
@@ -376,22 +376,22 @@ bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
         {
             PyErr_Format(PyExc_RuntimeError,
                          "Given output expected to be a sequence of length %d, but a non-sequence was given",
-                         Noutputs);
+                         {Noutputs});
             goto done;
         }
 
 #define PULL_OUT_OUTPUT_ARRAYS(name)                                                                         \
-        __py__ ## name = PySequence_GetItem(__py__output__arg, i++);                                         \
+        __py__ ## name = (PyArrayObject*)PySequence_GetItem(__py__output__arg, i++);                         \
         if(__py__ ## name == NULL || !PyArray_Check(__py__ ## name))                                         \
         {                                                                                                    \
-            PyErr_SetString(PyExc_RuntimeError,                                                                 \
+            PyErr_SetString(PyExc_RuntimeError,                                                              \
                             "Given output array MUST contain pre-allocated arrays. " #name " is not an array"); \
             goto done;                                                                                       \
         }
         int i=0;
         OUTPUTS(PULL_OUT_OUTPUT_ARRAYS)
     }
-'''
+'''.replace('{Noutputs}', str(Noutputs))
 
         KNOWN_TYPES_LIST_STRING = ','.join(np.dtype(t).name for t in known_types)
 

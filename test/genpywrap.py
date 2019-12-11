@@ -82,26 +82,23 @@ m.function( "outer",
             return true;
 '''})
 
-# m.function( "innerouter",
-#             "Inner and outer products pywrapped with npsp",
+m.function( "innerouter",
+            "Inner and outer products pywrapped with npsp",
 
-#             argnames         = ("a", "b"),
-#             prototype_input  = (('n',), ('n',)),
-#             prototype_output = ((), ('n', 'n')),
+            argnames         = ("a", "b"),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = ((), ('n', 'n')),
 
-#             FUNCTION__slice_code = \
-#                 {float:
-#                  r'''
-#             outer((double*)output.data,
-#                   output.strides[0],
-#                   output.strides[1],
-#                   (double*)a.data,
-#                   (double*)b.data,
-#                   a.strides[0],
-#                   b.strides[0],
-#                   a.dims[0]);
-#             return true;
-# '''})
+            FUNCTION__slice_code = \
+                {float:
+                 r'''
+            *(double*)output0.data =
+                 innerouter((double*)output1.data,
+                     (double*)a.data,
+                     (double*)b.data,
+                     a.dims[0]);
+            return true;
+'''})
 
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code
