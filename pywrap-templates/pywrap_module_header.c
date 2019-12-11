@@ -28,20 +28,6 @@ do {                                                                    \
         PyErr_SetString(PyExc_RuntimeError, "sigaction-restore failed"); \
 } while(0)
 
-
-// just like PyArray_Converter(), but leave None as None
-static
-int PyArray_Converter_leaveNone(PyObject* obj, PyObject** address)
-{
-    if(obj == Py_None)
-    {
-        *address = Py_None;
-        Py_INCREF(Py_None);
-        return 1;
-    }
-    return PyArray_Converter(obj,address);
-}
-
 typedef struct
 {
     void*           data;

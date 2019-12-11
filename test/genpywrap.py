@@ -143,7 +143,7 @@ except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
 
-
+m.write()
 
 
 

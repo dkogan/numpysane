@@ -207,50 +207,72 @@ class module:
 
         function_slice_template = r'''
 static
-bool {SLICE_FUNCTION_NAME}(nps_slice_t output{SLICE_DEFINITIONS})
+bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
 {
 {FUNCTION__slice}
 }
 
 '''
-
         # I enumerate each named dimension, starting from -1, and counting DOWN
         named_dims = {}
+        if not isinstance(prototype_input, tuple):
+            raise NumpysaneError("Input prototype must be given as a tuple")
         for i_arg in range(len(prototype_input)):
-            shape = prototype_input[i_arg]
-            for i_dim in range(len(shape)):
-                dim = shape[i_dim]
+            dims_input = prototype_input[i_arg]
+            if not isinstance(dims_input, tuple):
+                raise NumpysaneError("Input prototype dims must be given as a tuple")
+            for i_dim in range(len(dims_input)):
+                dim = dims_input[i_dim]
                 if isinstance(dim,int):
-                    if dim <= 0:
-                        raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>0. Got '{}'". \
+                    if dim < 0:
+                        raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}'". \
                                         format(i_dim, argnames[i_arg], dim))
                 elif isinstance(dim, str):
                     if dim not in named_dims:
                         named_dims[dim] = -1-len(named_dims)
                 else:
-                    raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>0. Got '{}' (type '{}')". \
+                    raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
                                     format(i_dim, argnames[i_arg], dim, type(dim)))
 
         # The output is allowed to have named dimensions, but ONLY those that
-        # appear in the input
-        for i_dim in range(len(prototype_output)):
-            dim = prototype_output[i_dim]
-            if isinstance(dim,int):
-                if dim <= 0:
-                    raise Exception("Dimension {} in the output must be a string (named dimension) or an integer>0. Got '{}'". \
-                                    format(i_dim, dim))
-            elif isinstance(dim, str):
-                if dim not in named_dims:
-                    raise Exception("Dimension {} in the output is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
-                                    format(i_dim, dim))
-            else:
-                raise Exception("Dimension {} in the ouptut must be a string (named dimension) or an integer>0. Got '{}' (type '{}')". \
-                                format(i_dim, dim, type(dim)))
+        # appear in the input. The output may be a single tuple (describing the
+        # one output) or it can be a tuple of tuples (describing multiple
+        # outputs)
+        if not isinstance(prototype_output, tuple):
+            raise NumpysaneError("Output prototype dims must be given as a tuple")
 
-        for dim in prototype_output:
-            if not isinstance(dim,int) and \
-               dim not in named_dims:
-                named_dims[dim] = -1-len(named_dims)
+        # If a single prototype_output is given, wrap it in a tuple to indicate
+        # that we only have one output
+
+        # If None, the single output is returned. If an integer, then a tuple is
+        # returned. If Noutputs==1 then we return a TUPLE of length 1
+        Noutputs = None
+        if all( type(o) is int or type(o) is str for o in prototype_output ):
+            prototype_outputs = (prototype_output, )
+        else:
+            prototype_outputs = prototype_output
+            if not all( isinstance(p,tuple) for p in prototype_outputs ):
+                raise NumpysaneError("Output dimensions must be integers > 0 or strings. Each output must be a tuple. Some given output aren't tuples: {}". \
+                                     format(prototype_outputs))
+            Noutputs = len(prototype_outputs)
+
+        for i_output in range(len(prototype_outputs)):
+            dims_output = prototype_outputs[i_output]
+            for i_dim in range(len(dims_output)):
+                dim = dims_output[i_dim]
+                if isinstance(dim,int):
+                    if dim < 0:
+                        raise Exception("Output {} dimension {} must be a string (named dimension) or an integer>=0. Got '{}'". \
+                                        format(i_output, i_dim, dim))
+                elif isinstance(dim, str):
+                    if dim not in named_dims:
+                        raise Exception("Output {} dimension {} is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
+                                        format(i_output, i_dim, dim))
+                else:
+                    raise Exception("Dimension {} in the output must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
+                                    format(i_dim, dim, type(dim)))
+
+
 
         def expand_prototype(shape):
             r'''Produces a shape string for each argument
@@ -270,10 +292,19 @@ bool {SLICE_FUNCTION_NAME}(nps_slice_t output{SLICE_DEFINITIONS})
                 format(argnames[i_arg_input],
                        len(prototype_input[i_arg_input]),
                        expand_prototype(prototype_input[i_arg_input]));
-        PROTOTYPE_DIM_DEFS += "    /* Not const. updating the named dimensions in-place */\n"
-        PROTOTYPE_DIM_DEFS += "    npy_intp PROTOTYPE__output__[{}] = {{{}}};\n". \
-            format(len(prototype_output),
-                   expand_prototype(prototype_output));
+        if Noutputs is None:
+            PROTOTYPE_DIM_DEFS += "    const npy_intp PROTOTYPE_{}[{}] = {{{}}};\n". \
+                format("output",
+                       len(prototype_output),
+                       expand_prototype(prototype_output));
+        else:
+            for i_output in range(Noutputs):
+                PROTOTYPE_DIM_DEFS += "    const npy_intp PROTOTYPE_{}{}[{}] = {{{}}};\n". \
+                    format("output",
+                           i_output,
+                           len(prototype_outputs[i_output]),
+                           expand_prototype(prototype_outputs[i_output]));
+
         PROTOTYPE_DIM_DEFS += "    int Ndims_named = {};\n". \
             format(len(named_dims))
 
@@ -289,33 +320,122 @@ bool {SLICE_FUNCTION_NAME}(nps_slice_t output{SLICE_DEFINITIONS})
             ','.join(slice_functions) + \
             '};\n'
 
-        KNOWN_TYPES_LIST_STRING = ','.join(np.dtype(t).name for t in known_types)
+        # Output handling. We unpack each output array into a separate variable.
+        # And if we have multiple outputs, we make sure that each one is
+        # passed as a pre-allocated array
+        #
+        # At the start __py__output__arg has no reference
+        if Noutputs is None:
+            # Just one output. The argument IS the output array
+            UNPACK_OUTPUTS = r'''
+    int populate_output_tuple__i = -1;
+    if(__py__output__arg == Py_None) __py__output__arg = NULL;
+    if(__py__output__arg == NULL)
+    {
+        // One output, not given. Leave everything at NULL (it already is).
+        // Will be allocated later
+    }
+    else
+    {
+        // Argument given. Treat it as an array
+        Py_INCREF(__py__output__arg);
+        if(!PyArray_Check(__py__output__arg))
+        {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "Could not interpret given argument as a numpy array");
+            goto done;
+        }
+        __py__output = (PyArrayObject*)__py__output__arg;
+        Py_INCREF(__py__output);
+    }
+'''
+        else:
+            # Multiple outputs. Unpack, make sure we have pre-made arrays
+            UNPACK_OUTPUTS = r'''
+    bool populate_output_tuple__i = -1;
+    if(__py__output__arg == Py_None) __py__output__arg = NULL;
+    if(__py__output__arg == NULL)
+    {
+        __py__output__arg = PyTuple_New({Noutputs});
+        if(__py__output__arg == NULL)
+        {
+            PyErr_Format(PyExc_RuntimeError,
+                         "Could not allocate output tuple of length %d", {Noutputs});
+            goto done;
+        }
 
+        // I made a tuple, but I don't yet have arrays to populate it with. I'll make
+        // those later, and I'll fill the tuple later
+        populate_output_tuple__i = 0;
+    }
+    else
+    {
+        Py_INCREF(__py__output__arg);
+
+        if( !PySequence_Check(__py__output__arg) )
+        {
+            PyErr_Format(PyExc_RuntimeError,
+                         "Given output expected to be a sequence of length %d, but a non-sequence was given",
+                         Noutputs);
+            goto done;
+        }
+
+#define PULL_OUT_OUTPUT_ARRAYS(name)                                                                         \
+        __py__ ## name = PySequence_GetItem(__py__output__arg, i++);                                         \
+        if(__py__ ## name == NULL || !PyArray_Check(__py__ ## name))                                         \
+        {                                                                                                    \
+            PyErr_SetString(PyExc_RuntimeError,                                                                 \
+                            "Given output array MUST contain pre-allocated arrays. " #name " is not an array"); \
+            goto done;                                                                                       \
+        }
+        int i=0;
+        OUTPUTS(PULL_OUT_OUTPUT_ARRAYS)
+    }
+'''
+
+        KNOWN_TYPES_LIST_STRING = ','.join(np.dtype(t).name for t in known_types)
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(len(argnames)):
             ARGUMENTS_LIST.append( '_({})'.format(argnames[i_arg_input]) )
 
+        OUTPUTS_LIST = ['#define OUTPUTS(_)']
+        if Noutputs is None:
+            OUTPUTS_LIST.append( '_({})'.format("output") )
+        else:
+            for i_output in range(Noutputs):
+                OUTPUTS_LIST.append( '_({}{})'.format("output", i_output) )
+
         if not hasattr(self, 'function_template'):
             with open(_function_filename, 'r') as f:
                 self.function_template = f.read()
+
+        if Noutputs is None:
+            slice_args    = ("output",)+argnames
+        else:
+            slice_args    = tuple("output{}".format(i) for i in range(Noutputs))+argnames
+        slice_arglist = ["nps_slice_t " + n for n in slice_args] + ['int dummy __attribute__((unused))']
+        SLICE_DEFINITIONS = ','.join(slice_arglist)
 
         text = ''
         for i in range(len(known_types)):
             text += \
                 _substitute(function_slice_template,
                             SLICE_FUNCTION_NAME    = slice_functions[i],
-                            SLICE_DEFINITIONS      = ''.join([", nps_slice_t " + n for n in argnames]),
+                            SLICE_DEFINITIONS      = SLICE_DEFINITIONS,
                             FUNCTION__slice        = FUNCTION__slice_code[known_types[i]])
 
         text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
+            '\n\n' + \
+            ' \\\n  '.join(OUTPUTS_LIST) + \
             '\n\n' + \
             _substitute(self.function_template,
                         FUNCTION_NAME           = FUNCTION_NAME,
                         PROTOTYPE_DIM_DEFS      = PROTOTYPE_DIM_DEFS,
                         KNOWN_TYPES_LIST_STRING = KNOWN_TYPES_LIST_STRING,
                         TYPE_DEFS               = TYPE_DEFS,
+                        UNPACK_OUTPUTS          = UNPACK_OUTPUTS,
                         VALIDATE                = VALIDATE_code)
         self.functions.append( (FUNCTION_NAME,
                                 _quote(FUNCTION_DOCSTRING, convert_newlines=True),
