@@ -110,7 +110,6 @@ confirm_does_not_raise(lambda: innerouter.inner(np.arange(10, dtype=float).resha
 confirm_raises( lambda: innerouter.inner(np.arange(10, dtype=float).reshape(2,5),
                                          np.arange(15, dtype=float).reshape(3,5)) )
 confirm_raises( lambda: innerouter.inner(np.arange(5), np.arange(6)) )
-confirm_raises( lambda: innerouter.outer_only3(np.arange(5), np.arange(5)) )
 
 confirm_does_not_raise( lambda: innerouter.outer(a0,b, out=np.zeros((5,5), dtype=float)),
                         msg = "Basic in-place broadcasting")
