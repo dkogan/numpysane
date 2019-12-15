@@ -482,6 +482,14 @@ def test_broadcasting():
     confirm_equal(o2,   nps.inner(a5,a25), msg='in-place broadcasting computed the right value')
     confirm_equal(o255, nps.outer(a5,a25), msg='in-place broadcasting computed the right value')
 
+    # Non-contiguous data should work with inner and outer, but not innerouter
+    # (that's what the underlying C library does/does not support)
+    a25_noncontiguous = arr(5, 2, dtype=float).T
+    o255_noncontiguous = nps.transpose(np.zeros((2,5,5), dtype=float))
+    confirm_does_not_raise(lambda: innerouter.inner     (a25_noncontiguous, a5))
+    confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5))
+    confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5, out=o255_noncontiguous))
+    confirm_raises        (lambda: innerouter.innerouter(a25_noncontiguous, a5))
 
 
 test_inner()
