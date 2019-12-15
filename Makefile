@@ -30,7 +30,7 @@ test/innerouter_pywrap_GENERATED.o: CFLAGS += -Wno-cast-function-type
 CFLAGS += -Wno-missing-field-initializers
 
 clean:
-	rm -rf test/*.[do] test/*.so test/*.so.* test/innerouter_pywrap_GENERATED.c README.org README
+	rm -rf test/*.[do] test/*.o test/*.so test/*.so.* test/innerouter_pywrap_GENERATED.c README.org README
 .PHONY: clean
 
 
