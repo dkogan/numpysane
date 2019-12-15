@@ -78,12 +78,10 @@ check( (("inner", nps.inner, innerouter.inner),),
       tuple([a.astype(int) for a in (a0,a1,a2)]),
       b.astype(int))
 
-try:
-    check( (("inner", nps.inner, innerouter.inner),),
-           (a0,a1,a2),
-           b.astype(int))
-except: pass # expected barf. Types don't match
-else:   print("should have barfed but didn't!")
+confirm_raises( lambda: check( (("inner", nps.inner, innerouter.inner),),
+                               (a0,a1,a2),
+                               b.astype(int)),
+                msg = "types must match" )
 
 # Too few input dimensions (passing a scalar where a vector is expected). This
 # should be ok. It can be viewed as a length-1 vector
@@ -105,38 +103,25 @@ confirm_equal(6*5, out)
 
 
 # Broadcasting. Should be ok. No barf.
-try:
-    innerouter.inner(np.arange(10, dtype=float).reshape(  2,5),
-                     np.arange(15, dtype=float).reshape(3,1,5))
-    confirm(True, msg='Aligned dimensions')
-except:
-    confirm(False, msg='Aligned dimensions')
+confirm_does_not_raise(lambda: innerouter.inner(np.arange(10, dtype=float).reshape(  2,5),
+                                                np.arange(15, dtype=float).reshape(3,1,5)),
+                       msg='Aligned dimensions')
 
 confirm_raises( lambda: innerouter.inner(np.arange(10, dtype=float).reshape(2,5),
                                          np.arange(15, dtype=float).reshape(3,5)) )
 confirm_raises( lambda: innerouter.inner(np.arange(5), np.arange(6)) )
 confirm_raises( lambda: innerouter.outer_only3(np.arange(5), np.arange(5)) )
 
-try:
-    innerouter.outer(a0,b, out=np.zeros((5,5), dtype=float))
-    confirm(True, msg = "Basic in-place broadcasting")
-except:
-    confirm(False, msg = "Basic in-place broadcasting")
+confirm_does_not_raise( lambda: innerouter.outer(a0,b, out=np.zeros((5,5), dtype=float)),
+                        msg = "Basic in-place broadcasting")
 confirm_raises(lambda: innerouter.outer(a0,b, out=np.zeros((5,5), dtype=int)),
                msg = "Output type must match")
 confirm_raises(lambda: innerouter.outer(a0.astype(int),b.astype(int), out=np.zeros((5,5), dtype=float)),
                msg = "Output type must match")
-try:
-    innerouter.outer(a0.astype(float),b.astype(float), out=np.zeros((5,5), dtype=float))
-    confirm(True, msg = "Output type must match")
-except:
-    confirm(False, msg = "Output type must match")
-try:
-    innerouter.inner(a0.astype(int),b.astype(int), out=np.zeros((), dtype=int))
-    confirm(True, msg = "Output type must match")
-except:
-    confirm(False, msg = "Output type must match")
-
+confirm_does_not_raise( lambda: innerouter.outer(a0.astype(float),b.astype(float), out=np.zeros((5,5), dtype=float)),
+                        msg = "Output type must match")
+confirm_does_not_raise( lambda: innerouter.inner(a0.astype(int),b.astype(int), out=np.zeros((), dtype=int)),
+                        msg = "Output type must match")
 confirm_raises( lambda: innerouter.outer(a0,b, out=np.zeros((3,3), dtype=float)),
                 msg = "Wrong dimensions on out" )
 confirm_raises( lambda: innerouter.outer(a0,b, out=np.zeros((4,5), dtype=float)),
@@ -316,9 +301,8 @@ def test_innerouter():
     # now some bogus shapes and types that should fail
     i = np.empty(ref_inner.shape, dtype=float)
     o = np.empty(ref_outer.shape, dtype=float)
-    try:    innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
-    except: confirm(False, "basic broadcasted innerouter works")
-    else:   confirm(True,  "basic broadcasted innerouter works")
+    confirm_does_not_raise( lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o)),
+                            msg = "basic broadcasted innerouter works")
     confirm_raises(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,i)),
                    msg = "in-place broadcasting output dimensions match")
     confirm_raises(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(o,o)),
@@ -344,9 +328,8 @@ def test_innerouter():
     i2    = np.empty((2,) + ref_inner.shape, dtype=float)
     confirm_raises(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(iint,o)),
                    msg = "in-place broadcasting output types match")
-    try:    innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i1,o))
-    except: confirm(False, "broadcasted innerouter: extra dims of length 1 work")
-    else:   confirm(True,  "broadcasted innerouter: extra dims of length 1 work")
+    confirm_does_not_raise( lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i1,o)),
+                            msg = "broadcasted innerouter: extra dims of length 1 work")
     confirm_equal( np.linalg.norm(i1-ref_inner), 0, msg="broadcasted innerouter: extra dims of length 1 work")
     confirm_raises(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i2,o)),
                    msg = "in-place broadcasting output dimensions match")

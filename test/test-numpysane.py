@@ -647,11 +647,8 @@ def test_broadcasting_into_output():
         # inner function is free to detect the error
         f.do_dim_check = False
         f.base = None
-        try:
-            f3(in1, in2)
-            confirm(True, msg='broadcasted function call')
-        except:
-            confirm(False, msg='broadcasted function call')
+        confirm_does_not_raise( lambda: f3(in1, in2),
+                                msg='broadcasted function call')
         f.do_dim_check = True
         f.base = None
         confirm_raises( lambda: f3(in1, in2) )

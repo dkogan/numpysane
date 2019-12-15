@@ -198,6 +198,25 @@ def confirm_raises(f, msg=''):
         return True
 
 
+def confirm_does_not_raise(f, msg=''):
+    r'''If f() raises an exception, report test failure.
+
+    msg identifies this check'''
+
+    global Nchecks
+    global NchecksFailed
+    Nchecks = Nchecks + 1
+
+    try:
+        f()
+        print_green("OK{}".format((': ' + msg) if msg else ''))
+        return True
+    except:
+        print_red("FAILED{}".format((': ' + msg) if msg else ''))
+        NchecksFailed = NchecksFailed + 1
+        return False
+
+
 def finish():
     r'''Finalize the executed tests.
 
