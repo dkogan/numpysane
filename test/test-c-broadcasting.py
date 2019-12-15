@@ -151,24 +151,39 @@ def arr(*shape, **kwargs):
 def test_inner():
     r'''Testing the broadcasted inner product'''
 
-    assertResult_inoutplace(  np.array([[[  30,  255,  730],
-                                          [ 180,  780, 1630]],
-
-                                         [[ 180,  780, 1630],
-                                          [1455, 2430, 3655]],
-
-                                         [[ 330, 1305, 2530],
-                                          [2730, 4080, 5680]],
-
-                                         [[ 480, 1830, 3430],
-                                          [4005, 5730, 7705.0]]]),
-                  innerouter.inner, arr(2,3,5), arr(4,1,3,5) )
+    ref = np.array([[[  30,  255,  730],
+                     [ 180,  780, 1630]],
+                    [[ 180,  780, 1630],
+                     [1455, 2430, 3655]],
+                    [[ 330, 1305, 2530],
+                     [2730, 4080, 5680]],
+                    [[ 480, 1830, 3430],
+                     [4005, 5730, 7705.0]]])
+    assertResult_inoutplace(  ref,
+                              innerouter.inner, arr(2,3,5), arr(4,1,3,5) )
 
     output = np.empty((4,2,3), dtype=int)
     confirm_raises( lambda: innerouter.inner( arr(  2,3,5, dtype=float),
                                               arr(4,1,3,5, dtype=float),
                                               out=output ),
                     "inner(out=out, dtype=dtype) have out=dtype==dtype" )
+
+    # make sure non-contiguous output works properly
+    output = np.empty((4,2,3), dtype=float)
+    confirm(output.flags['C_CONTIGUOUS'])
+    output = nps.reorder( np.empty((2,3,4), dtype=float),
+                          2,0,1 )
+    confirm(not output.flags['C_CONTIGUOUS'])
+    confirm_equal( innerouter.inner( arr(  2,3,5, dtype=float),
+                                     arr(4,1,3,5, dtype=float),
+                                     out=output ),
+                   ref,
+                   msg = 'Noncontiguous output' )
+    confirm(not output.flags['C_CONTIGUOUS'])
+    confirm_equal( output,
+                   ref,
+                   msg = 'Noncontiguous output' )
+
 
 def test_outer():
     r'''Testing the broadcasted outer product'''
@@ -203,6 +218,24 @@ def test_outer():
 
     assertResult_inoutplace( ref,
                              innerouter.outer, arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float) )
+
+    # make sure non-contiguous output (in both the broadcasting AND within each
+    # slice) works properly
+    output = np.empty((4,2,3,5,5), dtype=float)
+    confirm(output.flags['C_CONTIGUOUS'])
+    output = nps.reorder( np.empty((2,3,4,5,5), dtype=float),
+                          2,0,1, 4,3)
+    confirm(not output.flags['C_CONTIGUOUS'])
+    confirm_equal( innerouter.outer( arr(  2,3,5, dtype=float),
+                                     arr(4,1,3,5, dtype=float),
+                                     out=output ),
+                   ref,
+                   msg = 'Noncontiguous output (broadcasting and within each slice)' )
+    confirm(not output.flags['C_CONTIGUOUS'])
+    confirm_equal( output,
+                   ref,
+                   msg = 'Noncontiguous output (broadcasting and within each slice)' )
+
 
 def test_innerouter():
     r'''Testing the broadcasted inner product'''
