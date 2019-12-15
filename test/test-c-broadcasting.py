@@ -119,9 +119,23 @@ confirm_raises( lambda: innerouter.outer_only3(np.arange(5), np.arange(5)) )
 
 try:
     innerouter.outer(a0,b, out=np.zeros((5,5), dtype=float))
-    confirm(True)
+    confirm(True, msg = "Basic in-place broadcasting")
 except:
-    confirm(False)
+    confirm(False, msg = "Basic in-place broadcasting")
+confirm_raises(lambda: innerouter.outer(a0,b, out=np.zeros((5,5), dtype=int)),
+               msg = "Output type must match")
+confirm_raises(lambda: innerouter.outer(a0.astype(int),b.astype(int), out=np.zeros((5,5), dtype=float)),
+               msg = "Output type must match")
+try:
+    innerouter.outer(a0.astype(float),b.astype(float), out=np.zeros((5,5), dtype=float))
+    confirm(True, msg = "Output type must match")
+except:
+    confirm(False, msg = "Output type must match")
+try:
+    innerouter.inner(a0.astype(int),b.astype(int), out=np.zeros((), dtype=int))
+    confirm(True, msg = "Output type must match")
+except:
+    confirm(False, msg = "Output type must match")
 
 confirm_raises( lambda: innerouter.outer(a0,b, out=np.zeros((3,3), dtype=float)),
                 msg = "Wrong dimensions on out" )
