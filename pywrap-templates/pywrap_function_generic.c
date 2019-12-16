@@ -109,10 +109,10 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                                                         \
                                                                         \
         /* guaranteed >= 0 because of the padding */                    \
-        int Ndims_extra_ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name;
+        int Ndims_extra__ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name;
 
 #define UPDATE_NDIMS_EXTRA(name) \
-        if(Ndims_extra < Ndims_extra_ ## name) Ndims_extra = Ndims_extra_ ## name;
+        if(Ndims_extra < Ndims_extra__ ## name) Ndims_extra = Ndims_extra__ ## name;
 
 
         ARGUMENTS(DECLARE_PROTOTYPE_LEN);
@@ -136,7 +136,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                       Ndims_extra,              \
                                                 \
                       #name,                    \
-                      Ndims_extra_ ## name,     \
+                      Ndims_extra__ ## name,     \
                       PROTOTYPE_ ## name, PROTOTYPE_LEN_ ## name,   \
                       __dims__   ## name, __ndim__       ## name))  \
             goto done;
@@ -354,9 +354,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             {
 
 #define ADVANCE_SLICE(name)                         \
-                if(i_dim + Ndims_extra_ ## name >= 0 &&                 \
-                   __dims__ ## name[i_dim + Ndims_extra_ ## name] != 1) \
-                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra_ ## name];
+                if(i_dim + Ndims_extra__ ## name >= 0 &&                 \
+                   __dims__ ## name[i_dim + Ndims_extra__ ## name] != 1) \
+                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra__ ## name];
 
                 ARGUMENTS(ADVANCE_SLICE);
                 OUTPUTS(  ADVANCE_SLICE);
