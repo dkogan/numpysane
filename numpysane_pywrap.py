@@ -421,7 +421,12 @@ bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
             slice_args    = ("output",)+argnames
         else:
             slice_args    = tuple("output{}".format(i) for i in range(Noutputs))+argnames
-        slice_arglist = ["nps_slice_t " + n for n in slice_args] + ['int dummy __attribute__((unused))']
+        slice_arglist = [arg for n in slice_args
+                         for arg in
+                         ("void* data__"              + n + " __attribute__((unused))",
+                          "const npy_intp* dims__"    + n + " __attribute__((unused))",
+                          "const npy_intp* strides__" + n + " __attribute__((unused))")] + \
+                          ['int dummy __attribute__((unused))']
         SLICE_DEFINITIONS = ','.join(slice_arglist)
 
         text = ''

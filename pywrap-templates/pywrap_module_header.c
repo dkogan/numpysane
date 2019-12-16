@@ -28,13 +28,6 @@ do {                                                                    \
         PyErr_SetString(PyExc_RuntimeError, "sigaction-restore failed"); \
 } while(0)
 
-typedef struct
-{
-    void*           data;
-    const npy_intp* strides;
-    const npy_intp* dims;
-} nps_slice_t;
-
 static
 bool parse_dim(// input and output
                npy_intp* dims_named,

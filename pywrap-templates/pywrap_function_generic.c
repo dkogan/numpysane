@@ -3,8 +3,13 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                     PyObject* args,
                                     PyObject* kwargs)
 {
-#define SLICE_ARG(name) nps_slice_t name,
-    typedef bool (slice_function_t)(OUTPUTS(SLICE_ARG) ARGUMENTS(SLICE_ARG) int dummy __attribute__((unused)));
+#define SLICE_ARG(name) \
+    void*           data__    ## name, \
+    const npy_intp* dims__    ## name, \
+    const npy_intp* strides__ ## name,
+
+
+    typedef bool (slice_function_t)(OUTPUTS(SLICE_ARG) ARGUMENTS(SLICE_ARG) int dummy);
 
 
     PyObject* __py__result__    = NULL;
@@ -282,10 +287,10 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             ARGUMENTS(DEFINE_SLICE);
             OUTPUTS(  DEFINE_SLICE);
 
-#define ARGLIST_SLICE(name)                                             \
-            (nps_slice_t){ .data    = (void*)slice_ ## name,           \
-                           .strides = &__strides__ ## name[ Ndims_extra_ ## name ], \
-                           .dims    = &__dims__    ## name[ Ndims_extra_ ## name ] },
+#define ARGLIST_SLICE(name) \
+  (void*)slice_ ## name,                         \
+  &__dims__     ## name[ Ndims_extra__ ## name ], \
+  &__strides__  ## name[ Ndims_extra__ ## name ],
 
             if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
                                   ARGUMENTS(ARGLIST_SLICE) 0)

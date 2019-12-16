@@ -32,32 +32,32 @@ m.function( "inner",
             FUNCTION__slice_code = \
                 {float:
                  r'''
-            ((double*)output.data)[0] =
-              inner_double((double*)a.data,
-                    (double*)b.data,
-                    a.strides[0],
-                    b.strides[0],
-                    a.dims[0]);
+            ((double*)data__output)[0] =
+              inner_double((double*)data__a,
+                    (double*)data__b,
+                    strides__a[0],
+                    strides__b[0],
+                    dims__a[0]);
             return true;
 ''',
                  np.int64:
                  r'''
-            ((int64_t*)output.data)[0] =
-              inner_int64_t((int64_t*)a.data,
-                    (int64_t*)b.data,
-                    a.strides[0],
-                    b.strides[0],
-                    a.dims[0]);
+            ((int64_t*)data__output)[0] =
+              inner_int64_t((int64_t*)data__a,
+                    (int64_t*)data__b,
+                    strides__a[0],
+                    strides__b[0],
+                    dims__a[0]);
             return true;
 ''',
                  np.int32:
                  r'''
-            ((int32_t*)output.data)[0] =
-              inner_int32_t((int32_t*)a.data,
-                    (int32_t*)b.data,
-                    a.strides[0],
-                    b.strides[0],
-                    a.dims[0]);
+            ((int32_t*)data__output)[0] =
+              inner_int32_t((int32_t*)data__a,
+                    (int32_t*)data__b,
+                    strides__a[0],
+                    strides__b[0],
+                    dims__a[0]);
             return true;
 '''})
 
@@ -71,14 +71,14 @@ m.function( "outer",
             FUNCTION__slice_code = \
                 {float:
                  r'''
-            outer((double*)output.data,
-                  output.strides[0],
-                  output.strides[1],
-                  (double*)a.data,
-                  (double*)b.data,
-                  a.strides[0],
-                  b.strides[0],
-                  a.dims[0]);
+            outer((double*)data__output,
+                  strides__output[0],
+                  strides__output[1],
+                  (double*)data__a,
+                  (double*)data__b,
+                  strides__a[0],
+                  strides__b[0],
+                  dims__a[0]);
             return true;
 '''})
 
@@ -92,11 +92,11 @@ m.function( "innerouter",
             FUNCTION__slice_code = \
                 {float:
                  r'''
-            *(double*)output0.data =
-                 innerouter((double*)output1.data,
-                     (double*)a.data,
-                     (double*)b.data,
-                     a.dims[0]);
+            *(double*)data__output0 =
+                 innerouter((double*)data__output1,
+                     (double*)data__a,
+                     (double*)data__b,
+                     dims__a[0]);
             return true;
 '''})
 
