@@ -102,6 +102,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }                                                           \
             for(; i_dim >= -__ndim__ ## name; i_dim--)                  \
             {                                                           \
+                /* extra dummy dimensions, as needed */                 \
                 __dims__    ## name[i_dim + __ndim__ ## name] = 1;      \
                 __strides__ ## name[i_dim + __ndim__ ## name] = 0;      \
             }                                                           \
