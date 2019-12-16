@@ -99,7 +99,7 @@ class module:
                  prototype_input,
                  prototype_output,
                  FUNCTION__slice_code,
-                 VALIDATE_code = ''):
+                 VALIDATE_code = None):
         r'''Add a function to the python module we're creating
 
         SYNOPSIS
@@ -204,15 +204,6 @@ class module:
             raise Exception("Input prototype says we have {} arguments, but names for {} were given. These must match". \
                             format(len(prototype_input), len(argnames)))
 
-
-        function_slice_template = r'''
-static
-bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
-{
-{FUNCTION__slice}
-}
-
-'''
         # I enumerate each named dimension, starting from -1, and counting DOWN
         named_dims = {}
         if not isinstance(prototype_input, tuple):
@@ -417,25 +408,53 @@ bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
             with open(_function_filename, 'r') as f:
                 self.function_template = f.read()
 
+
+
+
+        function_template = r'''
+static
+bool {FUNCTION_NAME}({ARGUMENTS})
+{
+{FUNCTION_BODY}
+}
+'''
         if Noutputs is None:
             slice_args    = ("output",)+argnames
         else:
             slice_args    = tuple("output{}".format(i) for i in range(Noutputs))+argnames
+
+        # The validation function. Evaluated once. For each argument and
+        # output, we pass in the dimensions and the strides (we do NOT pass
+        # in data pointers)
+        validation_arglist = ["const int Ndims__"         + n + " __attribute__((unused)), " +
+                              "const int Ndims_extra__"   + n + " __attribute__((unused)), " +
+                              "const npy_intp* dims__"    + n + " __attribute__((unused)), " +
+                              "const npy_intp* strides__" + n + " __attribute__((unused)), " +
+                              "npy_intp sizeof_element__" + n + " __attribute__((unused)) "
+                         for n in slice_args] + ['int dummy __attribute__((unused))']
+        VALIDATION_ARGUMENTS = ','.join(validation_arglist)
+        text = \
+            _substitute(function_template,
+                        FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
+                        ARGUMENTS     = VALIDATION_ARGUMENTS,
+                        FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
+
         slice_arglist = [arg for n in slice_args
                          for arg in
                          ("void* data__"              + n + " __attribute__((unused))",
                           "const npy_intp* dims__"    + n + " __attribute__((unused))",
                           "const npy_intp* strides__" + n + " __attribute__((unused))")] + \
                           ['int dummy __attribute__((unused))']
-        SLICE_DEFINITIONS = ','.join(slice_arglist)
 
-        text = ''
+        SLICE_ARGUMENTS = ','.join(slice_arglist)
+
         for i in range(len(known_types)):
+            # The evaluation function for one slice
             text += \
-                _substitute(function_slice_template,
-                            SLICE_FUNCTION_NAME    = slice_functions[i],
-                            SLICE_DEFINITIONS      = SLICE_DEFINITIONS,
-                            FUNCTION__slice        = FUNCTION__slice_code[known_types[i]])
+                _substitute(function_template,
+                            FUNCTION_NAME = slice_functions[i],
+                            ARGUMENTS     = SLICE_ARGUMENTS,
+                            FUNCTION_BODY = FUNCTION__slice_code[known_types[i]])
 
         text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
@@ -447,8 +466,7 @@ bool {SLICE_FUNCTION_NAME}({SLICE_DEFINITIONS})
                         PROTOTYPE_DIM_DEFS      = PROTOTYPE_DIM_DEFS,
                         KNOWN_TYPES_LIST_STRING = KNOWN_TYPES_LIST_STRING,
                         TYPE_DEFS               = TYPE_DEFS,
-                        UNPACK_OUTPUTS          = UNPACK_OUTPUTS,
-                        VALIDATE                = VALIDATE_code)
+                        UNPACK_OUTPUTS          = UNPACK_OUTPUTS)
         self.functions.append( (FUNCTION_NAME,
                                 _quote(FUNCTION_DOCSTRING, convert_newlines=True),
                                 text) )

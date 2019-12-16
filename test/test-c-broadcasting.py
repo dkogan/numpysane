@@ -484,12 +484,19 @@ def test_broadcasting():
 
     # Non-contiguous data should work with inner and outer, but not innerouter
     # (that's what the underlying C library does/does not support)
+    a2                = arr(2, dtype=float)
     a25_noncontiguous = arr(5, 2, dtype=float).T
     o255_noncontiguous = nps.transpose(np.zeros((2,5,5), dtype=float))
+    o255_noncontiguous_in_broadcast = np.zeros((2,2,5,5), dtype=float)[:,0,:,:]
     confirm_does_not_raise(lambda: innerouter.inner     (a25_noncontiguous, a5))
     confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5))
     confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5, out=o255_noncontiguous))
     confirm_raises        (lambda: innerouter.innerouter(a25_noncontiguous, a5))
+    confirm_does_not_raise(lambda: innerouter.innerouter(a25, a5, out=(a2, o255)))
+    confirm_raises        (lambda: innerouter.innerouter(a25, a5, out=(a2, o255_noncontiguous)))
+    # noncontiguous array that are noncontiguous ONLY in the broadcasted
+    # dimensions (i.e. each slice IS contiguous) should work fine
+    confirm_does_not_raise(lambda: innerouter.innerouter(a25, a5, out=(a2, o255_noncontiguous_in_broadcast)))
 
 
 test_inner()

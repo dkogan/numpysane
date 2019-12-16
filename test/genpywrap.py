@@ -98,7 +98,26 @@ m.function( "innerouter",
                      (double*)data__b,
                      dims__a[0]);
             return true;
-'''})
+'''},
+            VALIDATE_code = r'''
+            /* output0 is a scalar. It can't be discontiguous */
+            /* output1 is NxN. MUST be contiguous */
+            int Nelems_slice = 1;
+            for(int i=-1; i>=-2; i--)
+            {
+                if(strides__output1[i+Ndims__output1] != sizeof_element__output1*Nelems_slice)
+                    return false;
+                Nelems_slice *= dims__output1[i+Ndims__output1];
+            }
+
+            /* The two inputs must be contiguous too */
+            if(strides__a[Ndims__a-1] != sizeof_element__a)
+                return false;
+            if(strides__b[Ndims__b-1] != sizeof_element__b)
+                return false;
+
+            return true;
+''' )
 
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code

@@ -202,7 +202,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
         OUTPUTS(CHECK_DIMS_NAMED_KNOWN);
 
-{VALIDATE};
 
         // The dimensions of each output must be (dims_extra + PROTOTYPE__output__)
 #define CHECK_OR_CREATE_OUTPUT(name)                                    \
@@ -280,6 +279,21 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
         // Now that the output exists, I can grab the dimensions
         OUTPUTS(DECLARE_DIM_VARS);
+
+#define ARGLIST_VALIDATION(name)                \
+        __ndim__      ## name ,                 \
+        Ndims_extra__ ## name ,                 \
+        __dims__      ## name ,                 \
+        __strides__   ## name ,                 \
+        PyArray_ITEMSIZE(__py__ ## name),
+
+
+        if( ! __{FUNCTION_NAME}__validate(OUTPUTS(  ARGLIST_VALIDATION)
+                                          ARGUMENTS(ARGLIST_VALIDATION) 0) )
+        {
+            PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
+            goto done;
+        }
 
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
