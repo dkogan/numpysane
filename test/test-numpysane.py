@@ -1098,6 +1098,16 @@ def test_outer():
                               nps.outer, arr(2,3,5), arr(4,1,3,5),
                               out_inplace_dtype=float )
 
+    # unequal dimensions.
+    a = arr(1,3,1,4)
+    b = arr(  3,7,3)
+    ref = nps.matmult( nps.dummy(a, -1),
+                       nps.dummy(b, -2))
+    assertResult_inoutplace( ref,
+                             nps.outer, a, b,
+                             out_inplace_dtype=float )
+
+
 def test_matmult():
     r'''Testing the broadcasted matrix multiplication'''
     assertValueShape( None, (4,2,3,5), nps.matmult, arr(2,3,7), arr(4,1,7,5) )

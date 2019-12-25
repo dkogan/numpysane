@@ -1974,7 +1974,7 @@ def vdot(a, b, out=None, dtype=None):
     '''
     return dot(np.conj(a), b, out=out, dtype=dtype)
 
-@broadcast_define( (('n',), ('n',)), prototype_output=('n','n'), out_kwarg='out' )
+@broadcast_define( (('n',), ('m',)), prototype_output=('n','m'), out_kwarg='out' )
 def outer(a, b, out=None):
     r'''Outer product of two 1-dimensional n-long vectors.
 
