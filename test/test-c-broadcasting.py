@@ -488,15 +488,21 @@ def test_broadcasting():
     a25_noncontiguous = arr(5, 2, dtype=float).T
     o255_noncontiguous = nps.transpose(np.zeros((2,5,5), dtype=float))
     o255_noncontiguous_in_broadcast = np.zeros((2,2,5,5), dtype=float)[:,0,:,:]
-    confirm_does_not_raise(lambda: innerouter.inner     (a25_noncontiguous, a5))
-    confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5))
-    confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5, out=o255_noncontiguous))
-    confirm_raises        (lambda: innerouter.innerouter(a25_noncontiguous, a5))
-    confirm_does_not_raise(lambda: innerouter.innerouter(a25, a5, out=(a2, o255)))
-    confirm_raises        (lambda: innerouter.innerouter(a25, a5, out=(a2, o255_noncontiguous)))
-    # noncontiguous array that are noncontiguous ONLY in the broadcasted
-    # dimensions (i.e. each slice IS contiguous) should work fine
-    confirm_does_not_raise(lambda: innerouter.innerouter(a25, a5, out=(a2, o255_noncontiguous_in_broadcast)))
+    confirm_does_not_raise(lambda: innerouter.inner     (a25_noncontiguous, a5),
+                           msg='Validation: noncontiguous in the function slice')
+    confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5),
+                           msg='Validation: noncontiguous in the function slice')
+    confirm_does_not_raise(lambda: innerouter.outer     (a25_noncontiguous, a5, out=o255_noncontiguous),
+                           msg='Validation: noncontiguous in the function slice')
+    confirm_raises        (lambda: innerouter.innerouter(a25_noncontiguous, a5),
+                           msg='Validation: noncontiguous in the function slice')
+    confirm_does_not_raise(lambda: innerouter.innerouter(a25, a5, out=(a2, o255)),
+                           msg='Validation: noncontiguous in the function slice')
+    confirm_raises        (lambda: innerouter.innerouter(a25, a5, out=(a2, o255_noncontiguous)),
+                           msg='Validation: noncontiguous in the function slice')
+
+    confirm_does_not_raise(lambda: innerouter.innerouter(a25, a5, out=(a2, o255_noncontiguous_in_broadcast)),
+                           msg='Validation: noncontiguous array that are noncontiguous ONLY in the broadcasted dimensions (i.e. each slice IS contiguous)')
 
 
 test_inner()

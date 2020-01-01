@@ -423,6 +423,27 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         else:
             slice_args    = tuple("output{}".format(i) for i in range(Noutputs))+argnames
 
+        text = ''
+        contiguous_macro_template = r'''
+#define IS_CONTIGUOUS__{name}()                                                    \
+({                                                                                \
+  bool result = true;                                                             \
+  int Nelems_slice = 1;                                                           \
+  const int Ndims_slice = Ndims__{name} - Ndims_extra__{name};                    \
+  for(int i=-1; i>=-Ndims_slice; i--)                                             \
+  {                                                                               \
+      if(strides__{name}[i+Ndims__{name}] != sizeof_element__{name}*Nelems_slice) \
+      {                                                                           \
+          result = false; break;                                                  \
+      }                                                                           \
+      Nelems_slice *= dims__{name}[i+Ndims__{name}];                              \
+  }                                                                               \
+  result;                                                                         \
+})
+'''
+        for n in slice_args:
+            text += contiguous_macro_template.replace("{name}", n)
+
         # The validation function. Evaluated once. For each argument and
         # output, we pass in the dimensions and the strides (we do NOT pass
         # in data pointers)
@@ -433,11 +454,13 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                               "npy_intp sizeof_element__" + n + " __attribute__((unused)) "
                          for n in slice_args] + ['int dummy __attribute__((unused))']
         VALIDATION_ARGUMENTS = ','.join(validation_arglist)
-        text = \
+        text += \
             _substitute(function_template,
                         FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
                         ARGUMENTS     = VALIDATION_ARGUMENTS,
                         FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
+        for n in slice_args:
+            text += '#undef IS_CONTIGUOUS__{name}\n'.replace('{name}', n)
 
         slice_arglist = [arg for n in slice_args
                          for arg in
@@ -455,6 +478,8 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                             FUNCTION_NAME = slice_functions[i],
                             ARGUMENTS     = SLICE_ARGUMENTS,
                             FUNCTION_BODY = FUNCTION__slice_code[known_types[i]])
+
+
 
         text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
