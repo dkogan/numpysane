@@ -28,10 +28,11 @@ void outer(double* out,
            int n);
 
 // inner and outer product together. Only contiguous data is supported. "double"
-// only
+// only. non-broadcasted "scale" argument scales the output
 double innerouter(double* out,
 
                   const double* a,
                   const double* b,
+                  double scale,
                   int n);
 

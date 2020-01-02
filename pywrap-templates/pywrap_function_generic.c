@@ -9,7 +9,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     const npy_intp* strides__ ## name,
 
 
-    typedef bool (slice_function_t)(OUTPUTS(SLICE_ARG) ARGUMENTS(SLICE_ARG) int dummy);
+    typedef bool (slice_function_t)(OUTPUTS(SLICE_ARG) ARGUMENTS(SLICE_ARG) {EXTRA_ARGUMENTS_SLICE_ARG});
 
 
     PyObject* __py__result__    = NULL;
@@ -18,19 +18,23 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #define ARG_DEFINE(name) PyArrayObject* __py__ ## name = NULL;
     ARGUMENTS(ARG_DEFINE);
     OUTPUTS(  ARG_DEFINE);
+    {EXTRA_ARGUMENTS_ARG_DEFINE};
 
     SET_SIGINT();
 
 #define NAMELIST(name) #name ,
     char* keywords[] = { ARGUMENTS(NAMELIST) "out",
+                         {EXTRA_ARGUMENTS_NAMELIST}
                          NULL };
 #define PARSECODE(name) "O&"
 #define PARSEARG(name) PyArray_Converter, &__py__ ## name,
     if(!PyArg_ParseTupleAndKeywords( args, kwargs,
-                                     ARGUMENTS(PARSECODE) "|O",
+                                     ARGUMENTS(PARSECODE) "|O" {EXTRA_ARGUMENTS_PARSECODES},
                                      keywords,
                                      ARGUMENTS(PARSEARG)
-                                     &__py__output__arg, NULL))
+                                     &__py__output__arg,
+                                     {EXTRA_ARGUMENTS_ARGLIST},
+                                     NULL))
         goto done;
 
     // Helper function to evaluate a given list of arguments in respect to a
@@ -289,7 +293,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
 
         if( ! __{FUNCTION_NAME}__validate(OUTPUTS(  ARGLIST_VALIDATION)
-                                          ARGUMENTS(ARGLIST_VALIDATION) 0) )
+                                          ARGUMENTS(ARGLIST_VALIDATION)
+                                          {EXTRA_ARGUMENTS_ARGLIST}) )
         {
             PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
             goto done;
@@ -308,7 +313,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
   &__strides__  ## name[ Ndims_extra__ ## name ],
 
             if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
-                                  ARGUMENTS(ARGLIST_SLICE) 0)
+                                  ARGUMENTS(ARGLIST_SLICE)
+                                  {EXTRA_ARGUMENTS_ARGLIST})
                 )
             {
                 PyErr_Format(PyExc_RuntimeError, "__{FUNCTION_NAME}__slice failed!");
@@ -378,7 +384,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             }
 
             if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
-                                  ARGUMENTS(ARGLIST_SLICE) 0)
+                                  ARGUMENTS(ARGLIST_SLICE)
+                                  {EXTRA_ARGUMENTS_ARGLIST})
                 )
             {
                 PyErr_Format(PyExc_RuntimeError,

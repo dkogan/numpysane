@@ -41,11 +41,12 @@ void outer(double* out,
 }
 
 // inner and outer product together. Only contiguous data is supported. "double"
-// only
+// only. non-broadcasted "scale" argument scales the output
 double innerouter(double* out,
 
                   const double* a,
                   const double* b,
+                  double scale,
                   int n)
 {
     outer(out,
@@ -53,7 +54,12 @@ double innerouter(double* out,
           a, b,
           sizeof(double), sizeof(double),
           n);
-    return inner_double(a, b,
-                        sizeof(double), sizeof(double),
-                        n);
+    for(int i=0; i<n*n; i++)
+        out[i] *= scale;
+
+    double inner_result =
+        inner_double(a, b,
+                     sizeof(double), sizeof(double),
+                     n);
+    return inner_result * scale;
 }

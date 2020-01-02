@@ -96,16 +96,19 @@ m.function( "innerouter",
                  innerouter((double*)data__output1,
                      (double*)data__a,
                      (double*)data__b,
+                     *scale,
                      dims__a[0]);
             return true;
 '''},
             VALIDATE_code = r'''
             return \
+              *scale > 0.0       &&
               IS_CONTIGUOUS__a() &&
               IS_CONTIGUOUS__b() &&
               IS_CONTIGUOUS__output0() &&
               IS_CONTIGUOUS__output1();
-''' )
+''',
+            extra_args = (("double", "scale", "1", "d"),), )
 
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code

@@ -302,6 +302,20 @@ def test_innerouter():
         confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter produced correct outer.shape")
         confirm_equal(o,       ref_outer,       msg="broadcasted in-place innerouter produced correct outer")
 
+    # in-place with scaling
+    try:
+        i = np.empty(ref_inner.shape, dtype=float)
+        o = np.empty(ref_outer.shape, dtype=float)
+        innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o), scale=3.5)
+    except:
+        confirm(False, msg="broadcasted in-place innerouter succeeded")
+    else:
+        confirm(True, msg="broadcasted in-place innerouter succeeded")
+        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted in-place innerouter with scaling produced correct inner.shape")
+        confirm_equal(i,       ref_inner * 3.5, msg="broadcasted in-place innerouter with scaling produced correct inner")
+        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter with scaling produced correct outer.shape")
+        confirm_equal(o,       ref_outer * 3.5, msg="broadcasted in-place innerouter with scaling produced correct outer")
+
     # in-place, with some extra dummy dimensions
     try:
         i = np.empty((1,) + ref_inner.shape, dtype=float)
@@ -365,6 +379,12 @@ def test_innerouter():
     confirm_equal( np.linalg.norm(i1-ref_inner), 0, msg="broadcasted innerouter: extra dims of length 1 work")
     confirm_raises(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i2,o)),
                    msg = "in-place broadcasting output dimensions match")
+
+    confirm_does_not_raise(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), scale=3.5),
+                           msg = 'Validation looks at the cookie')
+    confirm_raises(lambda: innerouter.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), scale=-3.5),
+                   msg = 'Validation looks at the cookie')
+
 
 def test_broadcasting():
 

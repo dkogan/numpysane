@@ -99,7 +99,8 @@ class module:
                  prototype_input,
                  prototype_output,
                  FUNCTION__slice_code,
-                 VALIDATE_code = None):
+                 VALIDATE_code = None,
+                 extra_args    = ()):
         r'''Add a function to the python module we're creating
 
         SYNOPSIS
@@ -423,6 +424,28 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         else:
             slice_args    = tuple("output{}".format(i) for i in range(Noutputs))+argnames
 
+        EXTRA_ARGUMENTS_ARG_DEFINE     = ''
+        EXTRA_ARGUMENTS_NAMELIST       = ''
+        EXTRA_ARGUMENTS_PARSECODES     = ''
+        EXTRA_ARGUMENTS_ARGLIST        = []
+        EXTRA_ARGUMENTS_ARGLIST_DEFINE = []
+
+        for _type, name, default_value, parsearg in extra_args:
+            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'.format(_type, name))
+            EXTRA_ARGUMENTS_ARG_DEFINE     += "{} {} = {};\n".format(_type, name, default_value)
+            EXTRA_ARGUMENTS_NAMELIST       += '"{}",'.format(name)
+            EXTRA_ARGUMENTS_PARSECODES     += '"{}"'.format(parsearg)
+            EXTRA_ARGUMENTS_ARGLIST.append('&{}'.format(name))
+        if len(extra_args) == 0:
+            # no extra args. I need a dummy argument to make the C parser happy,
+            # so I add a 0. This is because the template being filled-in is
+            # f(....., EXTRA_ARGUMENTS_ARGLIST). A blank EXTRA_ARGUMENTS_ARGLIST
+            # would leave a trailing ,
+            EXTRA_ARGUMENTS_ARGLIST        = ['0']
+            EXTRA_ARGUMENTS_ARGLIST_DEFINE = ['int __dummy __attribute__((unused))']
+        EXTRA_ARGUMENTS_SLICE_ARG = ', '.join(EXTRA_ARGUMENTS_ARGLIST_DEFINE)
+        EXTRA_ARGUMENTS_ARGLIST   = ', '.join(EXTRA_ARGUMENTS_ARGLIST)
+
         text = ''
         contiguous_macro_template = r'''
 #define IS_CONTIGUOUS__{name}()                                                    \
@@ -452,7 +475,8 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                               "const npy_intp* dims__"    + n + " __attribute__((unused)), " +
                               "const npy_intp* strides__" + n + " __attribute__((unused)), " +
                               "npy_intp sizeof_element__" + n + " __attribute__((unused)) "
-                         for n in slice_args] + ['int dummy __attribute__((unused))']
+                                  for n in slice_args] + \
+                             EXTRA_ARGUMENTS_ARGLIST_DEFINE
         VALIDATION_ARGUMENTS = ','.join(validation_arglist)
         text += \
             _substitute(function_template,
@@ -467,7 +491,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                          ("void* data__"              + n + " __attribute__((unused))",
                           "const npy_intp* dims__"    + n + " __attribute__((unused))",
                           "const npy_intp* strides__" + n + " __attribute__((unused))")] + \
-                          ['int dummy __attribute__((unused))']
+                          EXTRA_ARGUMENTS_ARGLIST_DEFINE
 
         SLICE_ARGUMENTS = ','.join(slice_arglist)
 
@@ -487,11 +511,16 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             ' \\\n  '.join(OUTPUTS_LIST) + \
             '\n\n' + \
             _substitute(self.function_template,
-                        FUNCTION_NAME           = FUNCTION_NAME,
-                        PROTOTYPE_DIM_DEFS      = PROTOTYPE_DIM_DEFS,
-                        KNOWN_TYPES_LIST_STRING = KNOWN_TYPES_LIST_STRING,
-                        TYPE_DEFS               = TYPE_DEFS,
-                        UNPACK_OUTPUTS          = UNPACK_OUTPUTS)
+                        FUNCTION_NAME              = FUNCTION_NAME,
+                        PROTOTYPE_DIM_DEFS         = PROTOTYPE_DIM_DEFS,
+                        KNOWN_TYPES_LIST_STRING    = KNOWN_TYPES_LIST_STRING,
+                        TYPE_DEFS                  = TYPE_DEFS,
+                        UNPACK_OUTPUTS             = UNPACK_OUTPUTS,
+                        EXTRA_ARGUMENTS_SLICE_ARG  = EXTRA_ARGUMENTS_SLICE_ARG,
+                        EXTRA_ARGUMENTS_ARG_DEFINE = EXTRA_ARGUMENTS_ARG_DEFINE,
+                        EXTRA_ARGUMENTS_NAMELIST   = EXTRA_ARGUMENTS_NAMELIST,
+                        EXTRA_ARGUMENTS_PARSECODES = EXTRA_ARGUMENTS_PARSECODES,
+                        EXTRA_ARGUMENTS_ARGLIST    = EXTRA_ARGUMENTS_ARGLIST)
         self.functions.append( (FUNCTION_NAME,
                                 _quote(FUNCTION_DOCSTRING, convert_newlines=True),
                                 text) )
