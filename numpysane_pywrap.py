@@ -420,9 +420,9 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 }
 '''
         if Noutputs is None:
-            slice_args    = ("output",)+argnames
+            slice_args = ("output",)+argnames
         else:
-            slice_args    = tuple("output{}".format(i) for i in range(Noutputs))+argnames
+            slice_args = tuple("output{}".format(i) for i in range(Noutputs))+argnames
 
         EXTRA_ARGUMENTS_ARG_DEFINE     = ''
         EXTRA_ARGUMENTS_NAMELIST       = ''
@@ -448,7 +448,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
         text = ''
         contiguous_macro_template = r'''
-#define IS_CONTIGUOUS__{name}()                                                    \
+#define IS_CONTIGUOUS__{name}()                                                   \
 ({                                                                                \
   bool result = true;                                                             \
   int Nelems_slice = 1;                                                           \

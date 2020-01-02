@@ -35,4 +35,3 @@ PyMODINIT_FUNC PyInit_{MODULE_NAME}(void)
 }
 
 #endif
-
