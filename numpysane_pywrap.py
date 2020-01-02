@@ -405,9 +405,9 @@ class module:
             for i_output in range(Noutputs):
                 OUTPUTS_LIST.append( '_({}{})'.format("output", i_output) )
 
-        if not hasattr(self, 'function_template'):
+        if not hasattr(self, 'function_body'):
             with open(_function_filename, 'r') as f:
-                self.function_template = f.read()
+                self.function_body = f.read()
 
 
 
@@ -510,7 +510,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             '\n\n' + \
             ' \\\n  '.join(OUTPUTS_LIST) + \
             '\n\n' + \
-            _substitute(self.function_template,
+            _substitute(self.function_body,
                         FUNCTION_NAME              = FUNCTION_NAME,
                         PROTOTYPE_DIM_DEFS         = PROTOTYPE_DIM_DEFS,
                         KNOWN_TYPES_LIST_STRING    = KNOWN_TYPES_LIST_STRING,
