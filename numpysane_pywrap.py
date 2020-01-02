@@ -1,6 +1,7 @@
 import sys
 import time
 import numpy as np
+from numpysane import NumpysaneError
 import os
 
 # Technically I'm supported to use some "resource extractor" something to
@@ -22,7 +23,7 @@ for p in _pywrap_path:
     if os.path.exists(_module_header_filename):
         break
 else:
-    raise Exception("Couldn't find pywrap templates! Looked in {}".format(_pywrap_path))
+    raise NumpysaneError("Couldn't find pywrap templates! Looked in {}".format(_pywrap_path))
 
 
 def _quote(s, convert_newlines=False):
@@ -202,7 +203,7 @@ class module:
         '''
 
         if len(prototype_input) != len(argnames):
-            raise Exception("Input prototype says we have {} arguments, but names for {} were given. These must match". \
+            raise NumpysaneError("Input prototype says we have {} arguments, but names for {} were given. These must match". \
                             format(len(prototype_input), len(argnames)))
 
         # I enumerate each named dimension, starting from -1, and counting DOWN
@@ -217,13 +218,13 @@ class module:
                 dim = dims_input[i_dim]
                 if isinstance(dim,int):
                     if dim < 0:
-                        raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}'". \
+                        raise NumpysaneError("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}'". \
                                         format(i_dim, argnames[i_arg], dim))
                 elif isinstance(dim, str):
                     if dim not in named_dims:
                         named_dims[dim] = -1-len(named_dims)
                 else:
-                    raise Exception("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
+                    raise NumpysaneError("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
                                     format(i_dim, argnames[i_arg], dim, type(dim)))
 
         # The output is allowed to have named dimensions, but ONLY those that
@@ -254,14 +255,14 @@ class module:
                 dim = dims_output[i_dim]
                 if isinstance(dim,int):
                     if dim < 0:
-                        raise Exception("Output {} dimension {} must be a string (named dimension) or an integer>=0. Got '{}'". \
+                        raise NumpysaneError("Output {} dimension {} must be a string (named dimension) or an integer>=0. Got '{}'". \
                                         format(i_output, i_dim, dim))
                 elif isinstance(dim, str):
                     if dim not in named_dims:
-                        raise Exception("Output {} dimension {} is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
+                        raise NumpysaneError("Output {} dimension {} is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
                                         format(i_output, i_dim, dim))
                 else:
-                    raise Exception("Dimension {} in the output must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
+                    raise NumpysaneError("Dimension {} in the output must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
                                     format(i_dim, dim, type(dim)))
 
 
