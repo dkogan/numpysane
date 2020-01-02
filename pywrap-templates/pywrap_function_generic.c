@@ -37,9 +37,10 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                      NULL))
         goto done;
 
-    // Helper function to evaluate a given list of arguments in respect to a
-    // given broadcasting prototype. This function will flag any errors in the
-    // dimensionality of the inputs. If no errors are detected, it returns
+    // parse_dims() is a helper function to evaluate a given list of arguments
+    // in respect to a given broadcasting prototype. This function will flag any
+    // errors in the dimensionality of the inputs. If no errors are detected, it
+    // returns
 
     //   dims_extra,dims_named
 
