@@ -471,14 +471,14 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         # The validation function. Evaluated once. For each argument and
         # output, we pass in the dimensions and the strides (we do NOT pass
         # in data pointers)
-        validation_arglist = ["const int Ndims__"         + n + " __attribute__((unused)), " +
-                              "const int Ndims_extra__"   + n + " __attribute__((unused)), " +
-                              "const npy_intp* dims__"    + n + " __attribute__((unused)), " +
-                              "const npy_intp* strides__" + n + " __attribute__((unused)), " +
-                              "npy_intp sizeof_element__" + n + " __attribute__((unused)) "
-                                  for n in slice_args] + \
+        validation_arglist = [ arg for n in slice_args for arg in \
+                               ("const int Ndims__"         + n + " __attribute__((unused))",
+                                "const int Ndims_extra__"   + n + " __attribute__((unused))",
+                                "const npy_intp* dims__"    + n + " __attribute__((unused))",
+                                "const npy_intp* strides__" + n + " __attribute__((unused))",
+                                "npy_intp sizeof_element__" + n + " __attribute__((unused))") ] + \
                              EXTRA_ARGUMENTS_ARGLIST_DEFINE
-        VALIDATION_ARGUMENTS = ','.join(validation_arglist)
+        VALIDATION_ARGUMENTS = '\n  ' + ',\n  '.join(validation_arglist)
         text += \
             _substitute(function_template,
                         FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
@@ -494,7 +494,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                           "const npy_intp* strides__" + n + " __attribute__((unused))")] + \
                           EXTRA_ARGUMENTS_ARGLIST_DEFINE
 
-        SLICE_ARGUMENTS = ','.join(slice_arglist)
+        SLICE_ARGUMENTS = '\n  ' + ',\n  '.join(slice_arglist)
 
         for i in range(len(known_types)):
             # The evaluation function for one slice
