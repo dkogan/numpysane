@@ -158,29 +158,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         slice_function_t* slice_function;
 
 {TYPE_DEFS}
-        else
-        {
-#if PY_MAJOR_VERSION == 3
 
-#define INPUT_PERCENT_S(name) "%S,"
-#define INPUT_TYPEOBJ(name) ,(((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) ? \
-                              (PyObject*)PyArray_DESCR(__py__ ## name)->typeobj : (PyObject*)Py_None)
-
-            PyErr_Format(PyExc_RuntimeError,
-                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING}), instead I got (inputs,output) of type ("
-                         ARGUMENTS(INPUT_PERCENT_S)
-                         OUTPUTS(INPUT_PERCENT_S)
-                         ARGUMENTS(INPUT_TYPEOBJ)
-                         OUTPUTS(INPUT_TYPEOBJ) );
-
-#else
-            ////////// python2 doesn't support %S
-            PyErr_Format(PyExc_RuntimeError,
-                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING})");
-#endif
-
-            goto done;
-        }
 
 #define CHECK_DIMS_NAMED_KNOWN(name)                                    \
         for(int i=0; i<PROTOTYPE_LEN_ ## name; i++)                     \

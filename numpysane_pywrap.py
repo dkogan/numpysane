@@ -438,9 +438,32 @@ class module:
             TYPE_DEFS += r'''
         }'''
 
+        TYPE_DEFS += r'''
+        else
+        {
+#if PY_MAJOR_VERSION == 3
 
+#define INPUT_PERCENT_S(name) "%S,"
+#define INPUT_TYPEOBJ(name) ,(((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) ? \
+                              (PyObject*)PyArray_DESCR(__py__ ## name)->typeobj : (PyObject*)Py_None)
 
-        KNOWN_TYPES_LIST_STRING = ','.join(np.dtype(t).name for t in known_types)
+            PyErr_Format(PyExc_RuntimeError,
+                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING}), instead I got (inputs,output) of type ("
+                         ARGUMENTS(INPUT_PERCENT_S)
+                         OUTPUTS(INPUT_PERCENT_S)
+                         ARGUMENTS(INPUT_TYPEOBJ)
+                         OUTPUTS(INPUT_TYPEOBJ) );
+
+#else
+            ////////// python2 doesn't support %S
+            PyErr_Format(PyExc_RuntimeError,
+                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING})");
+#endif
+
+            goto done;
+        }
+'''.replace( '{KNOWN_TYPES_LIST_STRING}',
+             ','.join(np.dtype(t).name for t in known_types) )
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(len(argnames)):
@@ -561,7 +584,6 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             _substitute(self.function_body,
                         FUNCTION_NAME              = FUNCTION_NAME,
                         PROTOTYPE_DIM_DEFS         = PROTOTYPE_DIM_DEFS,
-                        KNOWN_TYPES_LIST_STRING    = KNOWN_TYPES_LIST_STRING,
                         TYPE_DEFS                  = TYPE_DEFS,
                         UNPACK_OUTPUTS             = UNPACK_OUTPUTS,
                         EXTRA_ARGUMENTS_SLICE_ARG  = EXTRA_ARGUMENTS_SLICE_ARG,
