@@ -26,6 +26,7 @@ test/innerouter_pywrap_GENERATED.c: test/genpywrap.py numpysane_pywrap.py $(wild
 # and the compiler complains. But that's how Python does it! So I tell the
 # compiler to chill
 test/innerouter_pywrap_GENERATED.o: CFLAGS += -Wno-cast-function-type
+test/innerouter_pywrap_GENERATED.o: test/innerouter.h
 
 CFLAGS += -Wno-missing-field-initializers
 
