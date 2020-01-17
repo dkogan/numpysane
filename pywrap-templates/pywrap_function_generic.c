@@ -55,7 +55,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     // overall array is as large as the biggest one of those
 
 {PROTOTYPE_DIM_DEFS};
-{TYPE_DEFS};
 {UNPACK_OUTPUTS};
 
     // At this point each output array is either NULL or a PyObject with a
@@ -154,25 +153,12 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // I process the types. The output arrays may not have been created yet,
         // in which case I just let NULL pass, and ignore the type. I'll make
         // new arrays later, and those will have the right type
-        int selected_typenum = NPY_NOTYPE;
+#define DEFINE_OUTPUT_TYPENUM(name) int selected_typenum__ ## name = NPY_NOTYPE;
+        OUTPUTS(DEFINE_OUTPUT_TYPENUM);
         slice_function_t* slice_function;
-        for( int i=0; i<Nknown_typenums; i++ )
-        {
-#define TYPE_MATCHES(name)                                              \
-            &&                                                          \
-                (__py__ ## name == NULL ||                              \
-                 (PyObject*)__py__ ## name == Py_None ||                \
-                 known_typenums[i] == PyArray_DESCR(__py__ ## name)->type_num)
 
-            if(true ARGUMENTS(TYPE_MATCHES) OUTPUTS(TYPE_MATCHES))
-            {
-                // all arguments match this type!
-                selected_typenum = known_typenums[i];
-                slice_function   = slice_functions[i];
-                break;
-            }
-        }
-        if(selected_typenum == NPY_NOTYPE)
+{TYPE_DEFS}
+        else
         {
 #if PY_MAJOR_VERSION == 3
 
@@ -254,7 +240,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             else                                                        \
             {                                                           \
                 /* No output array available. Make one                  */ \
-                __py__ ## name = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum); \
+                __py__ ## name = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum__ ## name); \
                 if(__py__ ## name == NULL)                              \
                 {                                                       \
                     /* Error already set. I simply exit                 */ \
@@ -425,7 +411,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #undef UPDATE_NDIMS_EXTRA
 #undef PARSE_DIMS
 #undef SLICE_ARG
-#undef TYPE_MATCHES
 #undef INPUT_PERCENT_S
 #undef INPUT_TYPEOBJ
 #undef DEFINE_SLICE
@@ -437,3 +422,4 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #undef CHECK_OR_CREATE_OUTPUT
 #undef ARGUMENTS
 #undef OUTPUTS
+#undef DEFINE_OUTPUT_TYPENUM

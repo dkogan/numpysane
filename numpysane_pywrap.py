@@ -301,17 +301,6 @@ class module:
         PROTOTYPE_DIM_DEFS += "    int Ndims_named = {};\n". \
             format(len(named_dims))
 
-        known_types     = tuple(FUNCTION__slice_code.keys())
-        slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,np.dtype(t).name) for t in known_types]
-        TYPE_DEFS =  '    int Nknown_typenums  = {};\n'.format(len(known_types));
-        TYPE_DEFS += \
-            '    int known_typenums[] = {' + \
-            ','.join(str(np.dtype(t).num) for t in known_types) + \
-            '};\n'
-        TYPE_DEFS += \
-            '   slice_function_t* slice_functions[] = {' + \
-            ','.join(slice_functions) + \
-            '};\n'
 
         # Output handling. We unpack each output array into a separate variable.
         # And if we have multiple outputs, we make sure that each one is
@@ -392,6 +381,64 @@ class module:
         OUTPUTS(PULL_OUT_OUTPUT_ARRAYS)
     }
 '''.replace('{Noutputs}', str(Noutputs))
+
+
+
+
+        known_types     = tuple(FUNCTION__slice_code.keys())
+        slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(len(known_types))]
+
+        if all(isinstance(t,type) for t in known_types):
+            # The keys are given as simple types. For each type I generate code
+            # that assumes that ALL the inputs and outputs are of that type
+            pass
+        elif all(isinstance(t,str) for t in known_types):
+            # The keys are strings. I evaluate each of these in order as C code,
+            # and use the first that matches. The C code can look at types (or
+            # anything else) of each input and/or output individually. I simply
+            # interate over FUNCTION__slice_code.keys(), and take the first
+            # match. If you're using python <= 3.6 and you care about the order,
+            # use OrderedDict for FUNCTION__slice_code
+            raise Exception("not implemented yet")
+
+        TYPE_DEFS = r'''
+        if(0) ;'''
+        for i in range(len(known_types)):
+
+            t = known_types[i]
+            slice_function = slice_functions[i]
+            TYPE_DEFS += r'''
+        else if( 1'''
+            for arg in argnames:
+                TYPE_DEFS += r'''
+                && PyArray_DESCR(__py__{name})->type_num == {t}'''.replace('{name}', arg).replace('{t}', str(np.dtype(t).num))
+
+            if Noutputs is None:
+                TYPE_DEFS += r'''
+                && ( __py__{name} == NULL ||
+                     (PyObject*)__py__{name} == Py_None ||
+                     PyArray_DESCR(__py__{name})->type_num == {t} )'''.replace('{name}', 'output').replace('{t}', str(np.dtype(t).num))
+            else:
+                for i_output in range(Noutputs):
+                    TYPE_DEFS += r'''
+                && ( __py__{name} == NULL ||
+                     (PyObject*)__py__{name} == Py_None ||
+                     PyArray_DESCR(__py__{name})->type_num == {t} )'''.replace('{name}', 'output'+str(i_output)).replace('{t}', str(np.dtype(t).num))
+            TYPE_DEFS += r''' )
+        {
+            // all arguments match this type!
+            slice_function = {slice_function};'''.replace('{slice_function}', slice_function)
+            if Noutputs is None:
+                TYPE_DEFS += r'''
+            selected_typenum__{name} = {t};'''.replace('{name}', 'output').replace('{t}', str(np.dtype(t).num))
+            else:
+                for i_output in range(Noutputs):
+                    TYPE_DEFS += r'''
+            selected_typenum__{name} = {t};'''.replace('{name}', 'output'+str(i_output)).replace('{t}', str(np.dtype(t).num))
+            TYPE_DEFS += r'''
+        }'''
+
+
 
         KNOWN_TYPES_LIST_STRING = ','.join(np.dtype(t).name for t in known_types)
 
