@@ -208,8 +208,7 @@ The C broadcasting is functional, but a few more features are on the roadmap:
 
 - It should be possible for some inputs/output to contain different data types
 
-- And sometimes one would want to produce more than one output array for each
-  call, possibly with different types
+- Different inputs/outputs should support different types
 
 - The prototype specification is not flexible enough. Maybe there's some
   relationship between named dimensions that is known. If so, this should be
