@@ -384,63 +384,41 @@ class module:
 
 
 
+        Ntypesets = len(FUNCTION__slice_code)
+        slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(Ntypesets)]
 
-        known_types     = tuple(FUNCTION__slice_code.keys())
-        slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(len(known_types))]
-
-        if all(isinstance(t,type) for t in known_types):
+        if all(isinstance(t,type) for t in FUNCTION__slice_code):
             # The keys are given as simple types. For each type I generate code
             # that assumes that ALL the inputs and outputs are of that type
-            pass
-        elif all(isinstance(t,str) for t in known_types):
-            # The keys are strings. I evaluate each of these in order as C code,
-            # and use the first that matches. The C code can look at types (or
-            # anything else) of each input and/or output individually. I simply
-            # interate over FUNCTION__slice_code.keys(), and take the first
-            # match. If you're using python <= 3.6 and you care about the order,
-            # use OrderedDict for FUNCTION__slice_code
-            raise Exception("not implemented yet")
+            known_types = tuple(FUNCTION__slice_code.keys())
 
-        TYPE_DEFS = r'''
-        if(0) ;'''
-        for i in range(len(known_types)):
+            def type_condition_input(i_typeset, i_arg):
+                return r'''
+                PyArray_DESCR(__py__{name})->type_num == {type}'''. \
+                    replace('{name}', argnames[i_arg]).           \
+                    replace('{type}', str(np.dtype(known_types[i_typeset]).num))
 
-            t = known_types[i]
-            slice_function = slice_functions[i]
-            TYPE_DEFS += r'''
-        else if( 1'''
-            for arg in argnames:
-                TYPE_DEFS += r'''
-                && PyArray_DESCR(__py__{name})->type_num == {t}'''.replace('{name}', arg).replace('{t}', str(np.dtype(t).num))
+            def type_condition_output(i_typeset, i_output):
+                return r'''
+                ( __py__{name} == NULL ||
+                  (PyObject*)__py__{name} == Py_None ||
+                  PyArray_DESCR(__py__{name})->type_num == {type} )'''. \
+                    replace('{name}', 'output' + str(i_output)).        \
+                    replace('{type}', str(np.dtype(known_types[i_typeset]).num))
 
-            if Noutputs is None:
-                TYPE_DEFS += r'''
-                && ( __py__{name} == NULL ||
-                     (PyObject*)__py__{name} == Py_None ||
-                     PyArray_DESCR(__py__{name})->type_num == {t} )'''.replace('{name}', 'output').replace('{t}', str(np.dtype(t).num))
-            else:
-                for i_output in range(Noutputs):
-                    TYPE_DEFS += r'''
-                && ( __py__{name} == NULL ||
-                     (PyObject*)__py__{name} == Py_None ||
-                     PyArray_DESCR(__py__{name})->type_num == {t} )'''.replace('{name}', 'output'+str(i_output)).replace('{t}', str(np.dtype(t).num))
-            TYPE_DEFS += r''' )
-        {
-            // all arguments match this type!
-            slice_function = {slice_function};'''.replace('{slice_function}', slice_function)
-            if Noutputs is None:
-                TYPE_DEFS += r'''
-            selected_typenum__{name} = {t};'''.replace('{name}', 'output').replace('{t}', str(np.dtype(t).num))
-            else:
-                for i_output in range(Noutputs):
-                    TYPE_DEFS += r'''
-            selected_typenum__{name} = {t};'''.replace('{name}', 'output'+str(i_output)).replace('{t}', str(np.dtype(t).num))
-            TYPE_DEFS += r'''
-        }'''
+            def type_condition_typeset(i_typeset):
+                type_conditions = \
+                    [type_condition_input (i_typeset, i_arg) for i_arg in range(len(argnames))]
+                if Noutputs is None:
+                    type_conditions += [type_condition_output(i_typeset, '')]
+                else:
+                    type_conditions += \
+                        [type_condition_output(i_typeset, i_output) for i_output in range(Noutputs)]
+                return ' &&'.join(type_conditions)
 
-        TYPE_DEFS += r'''
-        else
-        {
+            type_conditions = [type_condition_typeset(i) for i in range(Ntypesets)]
+
+            no_match_error_message = r'''
 #if PY_MAJOR_VERSION == 3
 
 #define INPUT_PERCENT_S(name) "%S,"
@@ -461,9 +439,49 @@ class module:
 #endif
 
             goto done;
-        }
 '''.replace( '{KNOWN_TYPES_LIST_STRING}',
              ','.join(np.dtype(t).name for t in known_types) )
+
+
+        elif all(isinstance(t,str) for t in FUNCTION__slice_code):
+            # The keys are strings. I evaluate each of these in order as C code,
+            # and use the first that matches. The C code can look at types (or
+            # anything else) of each input and/or output individually. I simply
+            # interate over FUNCTION__slice_code.keys(), and take the first
+            # match. If you're using python <= 3.6 and you care about the order,
+            # use OrderedDict for FUNCTION__slice_code
+            type_conditions = type(FUNCTION__slice_code.keys())
+            raise Exception("not implemented yet")
+
+        TYPE_DEFS = r'''
+        if(0) ;'''
+        for i_typeset in range(Ntypesets):
+
+            TYPE_DEFS += r'''
+        else if(''' + type_conditions[i_typeset] + ' )'
+            TYPE_DEFS += r'''
+        {
+            // all arguments match this typeset!
+            slice_function = ''' + slice_functions[i_typeset] + ';'
+            if Noutputs is None:
+                TYPE_DEFS += r'''
+            selected_typenum__{name} = {type};'''. \
+                replace('{name}', 'output'). \
+                replace('{type}', str(np.dtype(known_types[i_typeset]).num))
+            else:
+                for i_output in range(Noutputs):
+                    TYPE_DEFS += r'''
+            selected_typenum__{name} = {type};'''. \
+                replace('{name}', 'output'+str(i_output)). \
+                replace('{type}', str(np.dtype(known_types[i_typeset]).num))
+            TYPE_DEFS += r'''
+        }'''
+
+        TYPE_DEFS += r'''
+        else
+        {
+''' + no_match_error_message + '''        }
+'''
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(len(argnames)):
@@ -566,13 +584,14 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
         SLICE_ARGUMENTS = '\n  ' + ',\n  '.join(slice_arglist)
 
-        for i in range(len(known_types)):
+        for i in range(Ntypesets):
             # The evaluation function for one slice
+            typeset_indices = tuple(FUNCTION__slice_code.keys())
             text += \
                 _substitute(function_template,
                             FUNCTION_NAME = slice_functions[i],
                             ARGUMENTS     = SLICE_ARGUMENTS,
-                            FUNCTION_BODY = FUNCTION__slice_code[known_types[i]])
+                            FUNCTION_BODY = FUNCTION__slice_code[typeset_indices[i]])
 
 
 
