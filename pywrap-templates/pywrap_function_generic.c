@@ -153,12 +153,76 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // I process the types. The output arrays may not have been created yet,
         // in which case I just let NULL pass, and ignore the type. I'll make
         // new arrays later, and those will have the right type
-#define DEFINE_OUTPUT_TYPENUM(name) int selected_typenum__ ## name = NPY_NOTYPE;
+#define DEFINE_OUTPUT_TYPENUM(name) int selected_typenum__ ## name;
         OUTPUTS(DEFINE_OUTPUT_TYPENUM);
         slice_function_t* slice_function;
 
-{TYPE_DEFS}
+#define TYPE_MATCHES_ARGLIST(name) int typenum__ ## name,
+        bool type_matches(ARGUMENTS(TYPE_MATCHES_ARGLIST)
+                          OUTPUTS(  TYPE_MATCHES_ARGLIST)
+                          slice_function_t* f)
+        {
 
+#define SET_SELECTED_TYPENUM_OUTPUT(name) selected_typenum__ ## name = typenum__ ## name;
+#define TYPE_MATCHES(name)                                              \
+            && ( __py__ ## name == NULL ||                              \
+              (PyObject*)__py__ ## name == Py_None ||                   \
+              PyArray_DESCR(__py__ ## name)->type_num == typenum__ ## name )
+
+            if(true ARGUMENTS(TYPE_MATCHES) OUTPUTS(TYPE_MATCHES))
+            {
+                /* all arguments match this typeset! */
+                slice_function = f;
+                OUTPUTS(SET_SELECTED_TYPENUM_OUTPUT);
+                return true;
+            }
+            return false;
+        }
+#undef SET_SELECTED_TYPENUM_OUTPUT
+#undef TYPE_MATCHES
+#undef TYPE_MATCHES_ARGLIST
+
+
+#define TYPESETS(_) \
+        {TYPESETS}
+#define TYPESET_MATCHES({TYPESET_MATCHES_ARGLIST}, i)                   \
+        else if( type_matches({TYPESET_MATCHES_ARGLIST},                \
+                              __{FUNCTION_NAME}__ ## i ## __slice) )    \
+        {                                                               \
+            /* matched. type_matches() did all the work. */             \
+        }
+
+        if(0) ;
+        TYPESETS(TYPESET_MATCHES)
+        else
+        {
+
+#if PY_MAJOR_VERSION == 3
+
+#define INPUT_PERCENT_S(name) "%S,"
+#define INPUT_TYPEOBJ(name) ,(((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) ? \
+                              (PyObject*)PyArray_DESCR(__py__ ## name)->typeobj : (PyObject*)Py_None)
+
+            PyErr_Format(PyExc_RuntimeError,
+                         "The set of input and output types must correspond to one of these sets:\n"
+                         {TYPESETS_NAMES}
+                         "instead I got (inputs,output) of type ("
+                         ARGUMENTS(INPUT_PERCENT_S)
+                         OUTPUTS(INPUT_PERCENT_S)
+                         ARGUMENTS(INPUT_TYPEOBJ)
+                         OUTPUTS(INPUT_TYPEOBJ) );
+
+#else
+            ////////// python2 doesn't support %S
+            PyErr_Format(PyExc_RuntimeError,
+                         "The set of input and output types must correspond to one of these sets:\n"
+                         {TYPESETS_NAMES});
+#endif
+
+            goto done;
+        }
+#undef TYPESETS
+#undef TYPESET_MATCHES
 
 #define CHECK_DIMS_NAMED_KNOWN(name)                                    \
         for(int i=0; i<PROTOTYPE_LEN_ ## name; i++)                     \
@@ -400,4 +464,3 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #undef CHECK_OR_CREATE_OUTPUT
 #undef ARGUMENTS
 #undef OUTPUTS
-#undef DEFINE_OUTPUT_TYPENUM

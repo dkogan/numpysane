@@ -384,10 +384,8 @@ class module:
 '''.replace('{Noutputs}', str(Noutputs))
 
 
-
         Ntypesets = len(FUNCTION__slice_code)
         slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(Ntypesets)]
-
         # The keys of FUNCTION__slice_code are either:
 
         # - a type: all inputs, outputs MUST have this type
@@ -409,85 +407,16 @@ class module:
             else:
                 raise NumpysaneError("Each of FUNCTION__slice_code.keys() MUST be either a type, or a list of types (one per input, output in order)")
 
-        def type_condition_input(i_typeset, i_arg):
-            return r'''
-                PyArray_DESCR(__py__{name})->type_num == {type}'''. \
-                    replace('{name}', argnames[i_arg]).           \
-                    replace('{type}', str(np.dtype(known_types[i_typeset][i_arg]).num))
-
-        def type_condition_output(i_typeset, i_output):
-            return r'''
-                ( __py__{name} == NULL ||
-                  (PyObject*)__py__{name} == Py_None ||
-                  PyArray_DESCR(__py__{name})->type_num == {type} )'''. \
-                    replace('{name}', 'output' + ('' if i_output is None else str(i_output))).        \
-                    replace('{type}', str(np.dtype(known_types[i_typeset][Ninputs + (0 if i_output is None else i_output)]).num))
-
-        def type_condition_typeset(i_typeset):
-            type_conditions = \
-                [type_condition_input(i_typeset, i_arg) for i_arg in range(Ninputs)]
-            if Noutputs is None:
-                type_conditions += [type_condition_output(i_typeset, None)]
-            else:
-                type_conditions += \
-                    [type_condition_output(i_typeset, i_output) for i_output in range(Noutputs)]
-            return ' &&'.join(type_conditions)
-
-        type_conditions = [type_condition_typeset(i) for i in range(Ntypesets)]
-
-        no_match_error_message = r'''
-#if PY_MAJOR_VERSION == 3
-
-#define INPUT_PERCENT_S(name) "%S,"
-#define INPUT_TYPEOBJ(name) ,(((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) ? \
-                              (PyObject*)PyArray_DESCR(__py__ ## name)->typeobj : (PyObject*)Py_None)
-
-            PyErr_Format(PyExc_RuntimeError,
-                         "The set of input and output types must correspond to one of these sets:{KNOWN_TYPES_LIST_STRING}\ninstead I got (inputs,output) of type ("
-                         ARGUMENTS(INPUT_PERCENT_S)
-                         OUTPUTS(INPUT_PERCENT_S)
-                         ARGUMENTS(INPUT_TYPEOBJ)
-                         OUTPUTS(INPUT_TYPEOBJ) );
-
-#else
-            ////////// python2 doesn't support %S
-            PyErr_Format(PyExc_RuntimeError,
-                         "The set of input and output types must correspond to one of these sets:{KNOWN_TYPES_LIST_STRING}");
-#endif
-
-            goto done;
-'''.replace( '{KNOWN_TYPES_LIST_STRING}',
-             ''.join( '\\n"\n"   (' + ','.join(np.dtype(t).name for t in s) + ')' for s in known_types))
-
-        TYPE_DEFS = r'''
-        if(0) ;'''
-        for i_typeset in range(Ntypesets):
-
-            TYPE_DEFS += r'''
-        else if(''' + type_conditions[i_typeset] + ' )'
-            TYPE_DEFS += r'''
-        {
-            // all arguments match this typeset!
-            slice_function = ''' + slice_functions[i_typeset] + ';'
-            if Noutputs is None:
-                TYPE_DEFS += r'''
-            selected_typenum__{name} = {type};'''. \
-                replace('{name}', 'output'). \
-                replace('{type}', str(np.dtype(known_types[i_typeset][Ninputs]).num))
-            else:
-                for i_output in range(Noutputs):
-                    TYPE_DEFS += r'''
-            selected_typenum__{name} = {type};'''. \
-                replace('{name}', 'output'+str(i_output)). \
-                replace('{type}', str(np.dtype(known_types[i_typeset][Ninputs + i_output]).num))
-            TYPE_DEFS += r'''
-        }'''
-
-        TYPE_DEFS += r'''
-        else
-        {
-''' + no_match_error_message + '''        }
-'''
+        # {TYPESETS} is _(11, 15, 17, 0) _(13, 15, 17, 1)
+        # {TYPESET_MATCHES_ARGLIST} is t0,t1,t2
+        # {TYPESETS_NAMES} is
+        #                         "   (float32,int32)\n"
+        #                         "   (float64,int32)\n"
+        TYPESETS = ' '.join( ("_(" + ','.join(tuple(str(np.dtype(t).num) for t in known_types[i]) + (str(i),)) + ')') \
+                              for i in range(Ntypesets))
+        TYPESET_MATCHES_ARGLIST = ','.join(("t" + str(i)) for i in range(Ninputs_and_outputs))
+        TYPESETS_NAMES = ' '.join(('"  (' + ','.join( np.dtype(t).name for t in s) + ')\\n"') \
+                                  for s in known_types)
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(Ninputs):
@@ -609,13 +538,17 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             _substitute(self.function_body,
                         FUNCTION_NAME              = FUNCTION_NAME,
                         PROTOTYPE_DIM_DEFS         = PROTOTYPE_DIM_DEFS,
-                        TYPE_DEFS                  = TYPE_DEFS,
                         UNPACK_OUTPUTS             = UNPACK_OUTPUTS,
                         EXTRA_ARGUMENTS_SLICE_ARG  = EXTRA_ARGUMENTS_SLICE_ARG,
                         EXTRA_ARGUMENTS_ARG_DEFINE = EXTRA_ARGUMENTS_ARG_DEFINE,
                         EXTRA_ARGUMENTS_NAMELIST   = EXTRA_ARGUMENTS_NAMELIST,
                         EXTRA_ARGUMENTS_PARSECODES = EXTRA_ARGUMENTS_PARSECODES,
-                        EXTRA_ARGUMENTS_ARGLIST    = EXTRA_ARGUMENTS_ARGLIST)
+                        EXTRA_ARGUMENTS_ARGLIST    = EXTRA_ARGUMENTS_ARGLIST,
+                        TYPESETS                   = TYPESETS,
+                        TYPESET_MATCHES_ARGLIST    = TYPESET_MATCHES_ARGLIST,
+                        TYPESETS_NAMES             = TYPESETS_NAMES)
+
+
         self.functions.append( (FUNCTION_NAME,
                                 _quote(FUNCTION_DOCSTRING, convert_newlines=True),
                                 text) )
