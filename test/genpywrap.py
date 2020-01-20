@@ -238,5 +238,42 @@ try:
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
 
+try:
+    m.function( "sorted_indices_broken",
+                "Return the sorted element indices",
+                argnames         = ("x",),
+                prototype_input  = (('n',),),
+                prototype_output = ('n',),
+                FUNCTION__slice_code = { float: '' })
+except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
+
+try:
+    m.function( "sorted_indices_broken2",
+                "Return the sorted element indices",
+                argnames         = ("x",),
+                prototype_input  = (('n',),),
+                prototype_output = ('n',),
+                FUNCTION__slice_code = { float: '', int: '' })
+except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
+
+try:
+    m.function( "sorted_indices_broken3",
+                "Return the sorted element indices",
+                argnames         = ("x",),
+                prototype_input  = (('n',),),
+                prototype_output = ('n',),
+                FUNCTION__slice_code = { (float, int): '', int: '' })
+except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
+
+try:
+    m.function( "sorted_indices_broken4",
+                "Return the sorted element indices",
+                argnames         = ("x",),
+                prototype_input  = (('n',),),
+                prototype_output = ('n',),
+                FUNCTION__slice_code = { (float, int, int): '', int: '' })
+except: pass # known error
+else:   raise Exception("Expected invalid usage of FUNCTION__slice_code keys didn't fail!")
+
 
 m.write()
