@@ -36,3 +36,12 @@ double innerouter(double* out,
                   double scale,
                   int n);
 
+// Assumes that indices_order[] has room for at least N values
+void sorted_indices_float(// output
+                          int* indices_order,
+                          // input
+                          const float* x, int N);
+void sorted_indices_double(// output
+                           int* indices_order,
+                           // input
+                           const double* x, int N);

@@ -202,9 +202,10 @@ class module:
 
         '''
 
-        if len(prototype_input) != len(argnames):
+        Ninputs = len(argnames)
+        if len(prototype_input) != Ninputs:
             raise NumpysaneError("Input prototype says we have {} arguments, but names for {} were given. These must match". \
-                            format(len(prototype_input), len(argnames)))
+                            format(len(prototype_input), Ninputs))
 
         # I enumerate each named dimension, starting from -1, and counting DOWN
         named_dims = {}
@@ -280,7 +281,7 @@ class module:
             return ','.join(str(dim) for dim in shape)
 
         PROTOTYPE_DIM_DEFS = ''
-        for i_arg_input in range(len(argnames)):
+        for i_arg_input in range(Ninputs):
             PROTOTYPE_DIM_DEFS += "    const npy_intp PROTOTYPE_{}[{}] = {{{}}};\n". \
                 format(argnames[i_arg_input],
                        len(prototype_input[i_arg_input]),
@@ -387,38 +388,54 @@ class module:
         Ntypesets = len(FUNCTION__slice_code)
         slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(Ntypesets)]
 
-        if all(isinstance(t,type) for t in FUNCTION__slice_code):
-            # The keys are given as simple types. For each type I generate code
-            # that assumes that ALL the inputs and outputs are of that type
-            known_types = tuple(FUNCTION__slice_code.keys())
+        # The keys of FUNCTION__slice_code are either:
 
-            def type_condition_input(i_typeset, i_arg):
-                return r'''
+        # - a type: all inputs, outputs MUST have this type
+        # - a list of types: the types in this list correspond to the inputs and
+        #   outputs of the call, in that order.
+        #
+        # I convert the known-type list to the one-type-per-element form for
+        # consistent processing
+        known_types = list(FUNCTION__slice_code.keys())
+        Ninputs_and_outputs = Ninputs + (1 if Noutputs is None else Noutputs)
+        for i in range(len(known_types)):
+            if isinstance(known_types[i], type):
+                known_types[i] = (known_types[i],) * Ninputs_and_outputs
+            elif hasattr(known_types[i], '__iter__')        and \
+                 len(known_types[i]) == Ninputs_and_outputs and \
+                 all(isinstance(t,type) for t in known_types[i]):
+                # already a list of types. we're good
+                pass
+            else:
+                raise NumpysaneError("Each of FUNCTION__slice_code.keys() MUST be either a type, or a list of types (one per input, output in order)")
+
+        def type_condition_input(i_typeset, i_arg):
+            return r'''
                 PyArray_DESCR(__py__{name})->type_num == {type}'''. \
                     replace('{name}', argnames[i_arg]).           \
-                    replace('{type}', str(np.dtype(known_types[i_typeset]).num))
+                    replace('{type}', str(np.dtype(known_types[i_typeset][i_arg]).num))
 
-            def type_condition_output(i_typeset, i_output):
-                return r'''
+        def type_condition_output(i_typeset, i_output):
+            return r'''
                 ( __py__{name} == NULL ||
                   (PyObject*)__py__{name} == Py_None ||
                   PyArray_DESCR(__py__{name})->type_num == {type} )'''. \
-                    replace('{name}', 'output' + str(i_output)).        \
-                    replace('{type}', str(np.dtype(known_types[i_typeset]).num))
+                    replace('{name}', 'output' + ('' if i_output is None else str(i_output))).        \
+                    replace('{type}', str(np.dtype(known_types[i_typeset][Ninputs + (0 if i_output is None else i_output)]).num))
 
-            def type_condition_typeset(i_typeset):
-                type_conditions = \
-                    [type_condition_input (i_typeset, i_arg) for i_arg in range(len(argnames))]
-                if Noutputs is None:
-                    type_conditions += [type_condition_output(i_typeset, '')]
-                else:
-                    type_conditions += \
-                        [type_condition_output(i_typeset, i_output) for i_output in range(Noutputs)]
-                return ' &&'.join(type_conditions)
+        def type_condition_typeset(i_typeset):
+            type_conditions = \
+                [type_condition_input(i_typeset, i_arg) for i_arg in range(Ninputs)]
+            if Noutputs is None:
+                type_conditions += [type_condition_output(i_typeset, None)]
+            else:
+                type_conditions += \
+                    [type_condition_output(i_typeset, i_output) for i_output in range(Noutputs)]
+            return ' &&'.join(type_conditions)
 
-            type_conditions = [type_condition_typeset(i) for i in range(Ntypesets)]
+        type_conditions = [type_condition_typeset(i) for i in range(Ntypesets)]
 
-            no_match_error_message = r'''
+        no_match_error_message = r'''
 #if PY_MAJOR_VERSION == 3
 
 #define INPUT_PERCENT_S(name) "%S,"
@@ -426,7 +443,7 @@ class module:
                               (PyObject*)PyArray_DESCR(__py__ ## name)->typeobj : (PyObject*)Py_None)
 
             PyErr_Format(PyExc_RuntimeError,
-                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING}), instead I got (inputs,output) of type ("
+                         "The set of input and output types must correspond to one of these sets:{KNOWN_TYPES_LIST_STRING}\ninstead I got (inputs,output) of type ("
                          ARGUMENTS(INPUT_PERCENT_S)
                          OUTPUTS(INPUT_PERCENT_S)
                          ARGUMENTS(INPUT_TYPEOBJ)
@@ -435,23 +452,12 @@ class module:
 #else
             ////////// python2 doesn't support %S
             PyErr_Format(PyExc_RuntimeError,
-                         "ALL inputs and outputs must have consistent type: one of ({KNOWN_TYPES_LIST_STRING})");
+                         "The set of input and output types must correspond to one of these sets:{KNOWN_TYPES_LIST_STRING}");
 #endif
 
             goto done;
 '''.replace( '{KNOWN_TYPES_LIST_STRING}',
-             ','.join(np.dtype(t).name for t in known_types) )
-
-
-        elif all(isinstance(t,str) for t in FUNCTION__slice_code):
-            # The keys are strings. I evaluate each of these in order as C code,
-            # and use the first that matches. The C code can look at types (or
-            # anything else) of each input and/or output individually. I simply
-            # interate over FUNCTION__slice_code.keys(), and take the first
-            # match. If you're using python <= 3.6 and you care about the order,
-            # use OrderedDict for FUNCTION__slice_code
-            type_conditions = type(FUNCTION__slice_code.keys())
-            raise Exception("not implemented yet")
+             ''.join( '\\n"\n"   (' + ','.join(np.dtype(t).name for t in s) + ')' for s in known_types))
 
         TYPE_DEFS = r'''
         if(0) ;'''
@@ -467,13 +473,13 @@ class module:
                 TYPE_DEFS += r'''
             selected_typenum__{name} = {type};'''. \
                 replace('{name}', 'output'). \
-                replace('{type}', str(np.dtype(known_types[i_typeset]).num))
+                replace('{type}', str(np.dtype(known_types[i_typeset][Ninputs]).num))
             else:
                 for i_output in range(Noutputs):
                     TYPE_DEFS += r'''
             selected_typenum__{name} = {type};'''. \
                 replace('{name}', 'output'+str(i_output)). \
-                replace('{type}', str(np.dtype(known_types[i_typeset]).num))
+                replace('{type}', str(np.dtype(known_types[i_typeset][Ninputs + i_output]).num))
             TYPE_DEFS += r'''
         }'''
 
@@ -484,7 +490,7 @@ class module:
 '''
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
-        for i_arg_input in range(len(argnames)):
+        for i_arg_input in range(Ninputs):
             ARGUMENTS_LIST.append( '_({})'.format(argnames[i_arg_input]) )
 
         OUTPUTS_LIST = ['#define OUTPUTS(_)']

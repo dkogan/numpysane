@@ -110,6 +110,30 @@ m.function( "innerouter",
 ''',
             extra_args = (("double", "scale", "1", "d"),), )
 
+m.function( "sorted_indices",
+            "Return the sorted element indices",
+
+            argnames         = ("x",),
+            prototype_input  = (('n',),),
+            prototype_output = ('n',),
+
+            FUNCTION__slice_code = \
+                {(np.float32, np.int32):
+                 r'''
+                 sorted_indices_float((int*)data__output,
+                     (float*)data__x,
+                     dims__x[0]);
+                 return true;
+''',
+
+                 (float, np.int32):
+                 r'''
+                 sorted_indices_double((int*)data__output,
+                     (double*)data__x,
+                     dims__x[0]);
+                 return true;
+'''},
+            VALIDATE_code = 'return IS_CONTIGUOUS__x();' )
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code
 # should barf

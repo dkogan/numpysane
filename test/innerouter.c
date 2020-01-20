@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdint.h>
 
@@ -63,3 +65,31 @@ double innerouter(double* out,
                      n);
     return inner_result * scale;
 }
+
+
+#include <stdlib.h>
+#define DEFINE_SORTED_INDICES_T(T)                                      \
+static int compar_indices_ ## T(const void* _i0, const void* _i1,       \
+                                void* _x)                               \
+{                                                                       \
+    const int i0 = *(const int*)_i0;                                    \
+    const int i1 = *(const int*)_i1;                                    \
+    const T* x = (const T*)_x;                                          \
+    if( x[i0] < x[i1] ) return -1;                                      \
+    if( x[i0] > x[i1] ) return  1;                                      \
+    return 0;                                                           \
+}                                                                       \
+/* Assumes that indices_order[] has room for at least N values */       \
+void sorted_indices_ ## T(/* output */                                  \
+                          int* indices_order,                           \
+                                                                        \
+                          /* input */                                   \
+                          const T* x, int N)                            \
+{                                                                       \
+    for(int i=0; i<N; i++)                                              \
+        indices_order[i] = i;                                           \
+    qsort_r(indices_order, N, sizeof(indices_order[0]),                 \
+            compar_indices_ ## T, (void*)x);                            \
+}
+DEFINE_SORTED_INDICES_T(float)
+DEFINE_SORTED_INDICES_T(double)

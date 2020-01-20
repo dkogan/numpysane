@@ -386,6 +386,25 @@ def test_innerouter():
                    msg = 'Validation looks at the cookie')
 
 
+def test_sorted_indices():
+    x64  = np.array((1., 5., 3, 2.5, 3.5, 2.9), dtype=float)
+    x32  = np.array((1., 5., 3, 2.5, 3.5, 2.9), dtype=np.float32)
+    iref = np.array((0, 3, 5, 2, 4, 1), dtype=int)
+
+    confirm_raises(lambda: innerouter.sorted_indices(np.arange(5, dtype=int)))
+    confirm_does_not_raise(lambda: innerouter.sorted_indices(np.arange(5, dtype=np.float32)))
+    confirm_does_not_raise(lambda: innerouter.sorted_indices(np.arange(5, dtype=np.float32),
+                                                             out=np.arange(5, dtype=np.int32)))
+    confirm_raises(lambda: innerouter.sorted_indices(np.arange(5, dtype=np.float32),
+                                                     out=np.arange(5, dtype=int)))
+    confirm_raises(lambda: innerouter.sorted_indices(np.arange(5, dtype=np.float32),
+                                                     out=np.arange(5, dtype=float)))
+    assertResult_inoutplace( iref,
+                             innerouter.sorted_indices, x64, out_inplace_dtype=np.int32)
+    assertResult_inoutplace( iref,
+                             innerouter.sorted_indices, x32, out_inplace_dtype=np.int32)
+
+
 def test_broadcasting():
 
     assertValueShape( np.array(5),                (),     innerouter.inner, arr(3),     arr(3))
@@ -529,5 +548,6 @@ test_inner()
 test_outer()
 test_innerouter()
 test_broadcasting()
+test_sorted_indices()
 
 finish()
