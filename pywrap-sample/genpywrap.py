@@ -31,7 +31,7 @@ m.function( "inner",
             prototype_output = (),
 
             FUNCTION__slice_code = \
-                {float:
+                {np.float64:
                  r'''
             ((double*)output.data)[0] =
               inner_double((double*)a.data,
@@ -70,7 +70,7 @@ m.function( "outer",
             prototype_output = ('n', 'n'),
 
             FUNCTION__slice_code = \
-                {float:
+                {np.float64:
                  r'''
             outer((double*)output.data,
                   (double*)a.data,

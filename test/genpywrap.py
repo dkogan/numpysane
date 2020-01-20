@@ -30,7 +30,7 @@ m.function( "inner",
             prototype_output = (),
 
             FUNCTION__slice_code = \
-                {float:
+                {np.float64:
                  r'''
             ((double*)data__output)[0] =
               inner_double((double*)data__a,
@@ -69,7 +69,7 @@ m.function( "outer",
             prototype_output = ('n', 'n'),
 
             FUNCTION__slice_code = \
-                {float:
+                {np.float64:
                  r'''
             outer((double*)data__output,
                   strides__output[0],
@@ -90,7 +90,7 @@ m.function( "innerouter",
             prototype_output = ((), ('n', 'n')),
 
             FUNCTION__slice_code = \
-                {float:
+                {np.float64:
                  r'''
             *(double*)data__output0 =
                  innerouter((double*)data__output1,
@@ -126,7 +126,7 @@ m.function( "sorted_indices",
                  return true;
 ''',
 
-                 (float, np.int32):
+                 (np.float64, np.int32):
                  r'''
                  sorted_indices_double((int*)data__output,
                      (double*)data__x,
@@ -143,7 +143,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('n', 'fn'),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
@@ -153,7 +153,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('n', -1),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
@@ -163,7 +163,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), (-1,)),
                 prototype_output = ('n', 'n'),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
@@ -174,7 +174,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',())),
                 prototype_output = ('m'),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: input dims must be integers or strings")
 
@@ -184,7 +184,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',-1)),
                 prototype_output = (),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: input dims must >=0")
 
@@ -194,7 +194,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (-1,),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must >=0")
 
@@ -204,7 +204,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('m', ()),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be integers or strings")
 
@@ -214,7 +214,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('m'),
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must all be known")
 
@@ -224,7 +224,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = 'n',
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
 
@@ -234,7 +234,7 @@ try:
                 argnames         = ("a", "b"),
                 prototype_input  = (('n',), 'n'),
                 prototype_output = 'n',
-                FUNCTION__slice_code = dict(float='return true;'))
+                FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
 
@@ -244,7 +244,7 @@ try:
                 argnames         = ("x",),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { float: 'return true;' })
+                FUNCTION__slice_code = { np.float64: 'return true;' })
 except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
 
 try:
@@ -253,7 +253,7 @@ try:
                 argnames         = ("x",),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { float: 'return true;', int: 'return true;' })
+                FUNCTION__slice_code = { np.float64: 'return true;', np.int32: 'return true;' })
 except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
 
 try:
@@ -262,7 +262,7 @@ try:
                 argnames         = ("x",),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { (float, int): 'return true;', int: 'return true;' })
+                FUNCTION__slice_code = { (np.float64, np.int32): 'return true;', np.int32: 'return true;' })
 except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
 
 try:
@@ -271,7 +271,7 @@ try:
                 argnames         = ("x",),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { (float, int, int): 'return true;', int: 'return true;' })
+                FUNCTION__slice_code = { (np.float64, np.int32, np.int32): 'return true;', np.int32: 'return true;' })
 except: pass # known error
 else:   raise Exception("Expected invalid usage of FUNCTION__slice_code keys didn't fail!")
 
