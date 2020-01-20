@@ -472,7 +472,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
         text = ''
         contiguous_macro_template = r'''
-#define IS_CONTIGUOUS__{name}()                                                   \
+#define IS_CONTIGUOUS__{name}(set_error)                                          \
 ({                                                                                \
   bool result = true;                                                             \
   int Nelems_slice = 1;                                                           \
@@ -481,7 +481,11 @@ bool {FUNCTION_NAME}({ARGUMENTS})
   {                                                                               \
       if(strides__{name}[i+Ndims__{name}] != sizeof_element__{name}*Nelems_slice) \
       {                                                                           \
-          result = false; break;                                                  \
+          result = false;                                                         \
+          if(set_error)                                                           \
+              PyErr_Format(PyExc_RuntimeError,                                    \
+                           "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
+          break;                                                                  \
       }                                                                           \
       Nelems_slice *= dims__{name}[i+Ndims__{name}];                              \
   }                                                                               \

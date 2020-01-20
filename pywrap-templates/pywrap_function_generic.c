@@ -325,7 +325,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                           ARGUMENTS(ARGLIST_VALIDATION)
                                           {EXTRA_ARGUMENTS_ARGLIST}) )
         {
-            PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
+            if(PyErr_Occurred() == NULL)
+                PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
             goto done;
         }
 
