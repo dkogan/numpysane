@@ -277,10 +277,9 @@ def assertResult_inoutplace( ref, func, *args, **kwargs ):
 
     '''
 
-    out_inplace_dtype = None
-    if 'out_inplace_dtype' in kwargs:
-        out_inplace_dtype = kwargs['out_inplace_dtype']
-        del kwargs['out_inplace_dtype']
+    out_inplace_dtype = kwargs.get('out_inplace_dtype', None)
+    try: del kwargs['out_inplace_dtype']
+    except: pass
 
     assertValueShape( ref, ref.shape, func, *args, **kwargs )
 
