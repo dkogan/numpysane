@@ -202,6 +202,9 @@ class module:
 
         '''
 
+        if type(argnames) not in (list, tuple) or not all( type(arg) is str for arg in argnames):
+            raise NumpysaneError("argnames MUST be a list or tuple of strings")
+
         Ninputs = len(argnames)
         if len(prototype_input) != Ninputs:
             raise NumpysaneError("Input prototype says we have {} arguments, but names for {} were given. These must match". \
