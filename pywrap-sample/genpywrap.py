@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-r'''A demo script to generate broadcast-aware python wrapping to testlib
+r'''A demo script to generate broadcast-aware python wrapping to samplelib
 
-testlib is a tiny demo library that can compute inner and outer products. Here
+samplelib is a tiny demo library that can compute inner and outer products. Here
 we wrap each available function. For each one we provide a code snipped that
-takes raw data arrays for each slice, and invokes the testlib library for each
+takes raw data arrays for each slice, and invokes the samplelib library for each
 one
 
 '''
@@ -19,9 +19,9 @@ import numpysane as nps
 import numpysane_pywrap as npsp
 
 
-m = npsp.module( MODULE_NAME      = "testlibmodule",
+m = npsp.module( MODULE_NAME      = "samplelibmodule",
                  MODULE_DOCSTRING = "Test module",
-                 HEADER           = '#include "testlib.h"')
+                 HEADER           = '#include "samplelib.h"')
 
 m.function( "inner",
             "Inner-product pywrapped with npsp",

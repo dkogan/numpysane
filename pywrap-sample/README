@@ -5,13 +5,13 @@ The wrapper can be produced and built by running "make". Then you can use the
 wrapper (to check that the output is correct) by running tst.py
 
 We produce a broadcast-aware python wrapper to a tiny C library called
-"testlib". This library is in testlib.[ch], and can compute inner and outer
+"samplelib". This library is in samplelib.[ch], and can compute inner and outer
 products.
 
-A demo script to generate broadcast-aware python wrapping for testlib is in
+A demo script to generate broadcast-aware python wrapping for samplelib is in
 genpywrap.py. The Makefile is set up to run this script, and to compile the
 results into a python extension module.
 
-This extension module can then be used by calling testlibmodule.inner() and
-testlibmodule.outer(). Samples appear in tst.py
+This extension module can then be used by calling samplelibmodule.inner() and
+samplelibmodule.outer(). Samples appear in tst.py
 

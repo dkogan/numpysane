@@ -8,7 +8,7 @@ import numpysane as nps
 import sys
 
 # The extension module we're testing
-import testlibmodule
+import samplelibmodule
 
 # Basic 1D arrays
 a0 = np.arange(5, dtype=float)
@@ -18,14 +18,14 @@ b  = a0+3
 a1 = np.arange(10, dtype=float).reshape(2,5)
 a2 = nps.transpose(np.arange(10, dtype=float).reshape(5,2))
 
-print(testlibmodule.inner(a0,b))
-print(testlibmodule.inner(a1,b))
-print(testlibmodule.inner(a2,b))
+print(samplelibmodule.inner(a0,b))
+print(samplelibmodule.inner(a1,b))
+print(samplelibmodule.inner(a2,b))
 
-print(testlibmodule.outer(a0,b))
-print(testlibmodule.outer(a1,b))
-print(testlibmodule.outer(a2,b))
+print(samplelibmodule.outer(a0,b))
+print(samplelibmodule.outer(a1,b))
+print(samplelibmodule.outer(a2,b))
 
 out = np.zeros((), dtype=float)
-testlibmodule.inner(a0,b, out=out)
+samplelibmodule.inner(a0,b, out=out)
 print(out)
