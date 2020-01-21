@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-r'''generate broadcast-aware python wrapping to innerouter
+r'''generate broadcast-aware python wrapping to testlib
 
-The test suite runs this script to python-wrap the innerouter C library, then
+The test suite runs this script to python-wrap the testlib C library, then
 the test suite builds this python extension module, and then the test suite
 validates this module's behavior
 
@@ -18,9 +18,9 @@ import numpysane as nps
 import numpysane_pywrap as npsp
 
 
-m = npsp.module( MODULE_NAME      = "innerouter",
+m = npsp.module( MODULE_NAME      = "testlib",
                  MODULE_DOCSTRING = "Inner and outer products module",
-                 HEADER           = '#include "innerouter.h"')
+                 HEADER           = '#include "testlib.h"')
 
 m.function( "inner",
             "Inner-product pywrapped with npsp",
@@ -82,7 +82,7 @@ m.function( "outer",
             return true;
 '''})
 
-m.function( "innerouter",
+m.function( "testlib",
             "Inner and outer products pywrapped with npsp",
 
             argnames         = ("a", "b"),
@@ -93,7 +93,7 @@ m.function( "innerouter",
                 {np.float64:
                  r'''
             *(double*)data__output0 =
-                 innerouter((double*)data__output1,
+                 testlib((double*)data__output1,
                      (double*)data__a,
                      (double*)data__b,
                      *scale,

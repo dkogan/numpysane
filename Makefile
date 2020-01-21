@@ -7,31 +7,31 @@
 PYTHON_VERSION_FOR_EXTENSIONS := 3
 include Makefile.common.header
 
-# I build a python extension module called "innerouter" from the C library
-# (innerouter) and from the numpysane_pywrap wrapper. The wrapper is generated with
+# I build a python extension module called "testlib" from the C library
+# (testlib) and from the numpysane_pywrap wrapper. The wrapper is generated with
 # genpywrap.py
-test/innerouter$(PY_EXT_SUFFIX): test/innerouter_pywrap_GENERATED.o test/innerouter.o
+test/testlib$(PY_EXT_SUFFIX): test/testlib_pywrap_GENERATED.o test/testlib.o
 	$(PY_MRBUILD_LINKER) $(PY_MRBUILD_LDFLAGS) $^ -o $@
-test/innerouter_pywrap_GENERATED.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
+test/testlib_pywrap_GENERATED.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
 
 CC ?= gcc
 CFLAGS += -g
 %.o:%.c
 	$(CC) -Wall -Wextra $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-test/innerouter_pywrap_GENERATED.c: test/genpywrap.py numpysane_pywrap.py $(wildcard pywrap-templates/*.c)
+test/testlib_pywrap_GENERATED.c: test/genpywrap.py numpysane_pywrap.py $(wildcard pywrap-templates/*.c)
 	./$< > $@
 
 # In the python api I have to cast a PyCFunctionWithKeywords to a PyCFunction,
 # and the compiler complains. But that's how Python does it! So I tell the
 # compiler to chill
-test/innerouter_pywrap_GENERATED.o: CFLAGS += -Wno-cast-function-type
-test/innerouter_pywrap_GENERATED.o: test/innerouter.h
+test/testlib_pywrap_GENERATED.o: CFLAGS += -Wno-cast-function-type
+test/testlib_pywrap_GENERATED.o: test/testlib.h
 
 CFLAGS += -Wno-missing-field-initializers
 
 clean:
-	rm -rf test/*.[do] test/*.o test/*.so test/*.so.* test/innerouter_pywrap_GENERATED.c README.org README
+	rm -rf test/*.[do] test/*.o test/*.so test/*.so.* test/testlib_pywrap_GENERATED.c README.org README
 .PHONY: clean
 
 
@@ -50,7 +50,7 @@ check2: test2
 check3: test3
 test2 test3: test/test-numpysane.py test-c-broadcasting
 	python$(patsubst test%,%,$@) test/test-numpysane.py
-test-c-broadcasting: test/innerouter$(PY_EXT_SUFFIX)
+test-c-broadcasting: test/testlib$(PY_EXT_SUFFIX)
 	python${PYTHON_VERSION_FOR_EXTENSIONS} test/test-c-broadcasting.py
 
 .PHONY: check check2 check3 test test2 test3 test-c-broadcasting
