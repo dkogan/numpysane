@@ -96,7 +96,7 @@ class module:
     def function(self,
                  FUNCTION_NAME,
                  FUNCTION_DOCSTRING,
-                 argnames,
+                 args_input,
                  prototype_input,
                  prototype_output,
                  FUNCTION__slice_code,
@@ -139,7 +139,7 @@ class module:
         - FUNCTION_DOCSTRING
           The docstring for this function
 
-        - argnames
+        - args_input
           The names of the arguments. Must have the same number of elements as
           prototype_input
 
@@ -182,7 +182,7 @@ class module:
 
           This function is called for each broadcasting slice. The number of
           arguments and their names are generated from the "prototype_input" and
-          "argnames" arguments. The strides and shape define the memory layout
+          "args_input" arguments. The strides and shape define the memory layout
           of the data in memory for this slice. The 'shape' is only knowable at
           runtime because of named dimensions. The inner slice function returns
           true on success.
@@ -202,10 +202,10 @@ class module:
 
         '''
 
-        if type(argnames) not in (list, tuple) or not all( type(arg) is str for arg in argnames):
-            raise NumpysaneError("argnames MUST be a list or tuple of strings")
+        if type(args_input) not in (list, tuple) or not all( type(arg) is str for arg in args_input):
+            raise NumpysaneError("args_input MUST be a list or tuple of strings")
 
-        Ninputs = len(argnames)
+        Ninputs = len(args_input)
         if len(prototype_input) != Ninputs:
             raise NumpysaneError("Input prototype says we have {} arguments, but names for {} were given. These must match". \
                             format(len(prototype_input), Ninputs))
@@ -223,13 +223,13 @@ class module:
                 if isinstance(dim,int):
                     if dim < 0:
                         raise NumpysaneError("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}'". \
-                                        format(i_dim, argnames[i_arg], dim))
+                                        format(i_dim, args_input[i_arg], dim))
                 elif isinstance(dim, str):
                     if dim not in named_dims:
                         named_dims[dim] = -1-len(named_dims)
                 else:
                     raise NumpysaneError("Dimension {} in argument '{}' must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
-                                    format(i_dim, argnames[i_arg], dim, type(dim)))
+                                    format(i_dim, args_input[i_arg], dim, type(dim)))
 
         # The output is allowed to have named dimensions, but ONLY those that
         # appear in the input. The output may be a single tuple (describing the
@@ -286,7 +286,7 @@ class module:
         PROTOTYPE_DIM_DEFS = ''
         for i_arg_input in range(Ninputs):
             PROTOTYPE_DIM_DEFS += "    const npy_intp PROTOTYPE_{}[{}] = {{{}}};\n". \
-                format(argnames[i_arg_input],
+                format(args_input[i_arg_input],
                        len(prototype_input[i_arg_input]),
                        expand_prototype(prototype_input[i_arg_input]));
         if Noutputs is None:
@@ -423,7 +423,7 @@ class module:
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
         for i_arg_input in range(Ninputs):
-            ARGUMENTS_LIST.append( '_({})'.format(argnames[i_arg_input]) )
+            ARGUMENTS_LIST.append( '_({})'.format(args_input[i_arg_input]) )
 
         OUTPUTS_LIST = ['#define OUTPUTS(_)']
         if Noutputs is None:
@@ -447,9 +447,9 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 }
 '''
         if Noutputs is None:
-            slice_args = ("output",)+argnames
+            slice_args = ("output",)+args_input
         else:
-            slice_args = tuple("output{}".format(i) for i in range(Noutputs))+argnames
+            slice_args = tuple("output{}".format(i) for i in range(Noutputs))+args_input
 
         EXTRA_ARGUMENTS_ARG_DEFINE     = ''
         EXTRA_ARGUMENTS_NAMELIST       = ''

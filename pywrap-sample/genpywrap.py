@@ -26,7 +26,7 @@ m = npsp.module( MODULE_NAME      = "samplelibmodule",
 m.function( "inner",
             "Inner-product pywrapped with npsp",
 
-            argnames         = ("a", "b"),
+            args_input       = ("a", "b"),
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
@@ -65,7 +65,7 @@ m.function( "inner",
 m.function( "outer",
             "Outer-product pywrapped with npsp",
 
-            argnames         = ("a", "b"),
+            args_input       = ("a", "b"),
             prototype_input  = (('n',), ('n',)),
             prototype_output = ('n', 'n'),
 
