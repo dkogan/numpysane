@@ -237,7 +237,7 @@ def test_outer():
                    msg = 'Noncontiguous output (broadcasting and within each slice)' )
 
 
-def test_testlib():
+def test_innerouter():
     r'''Testing the broadcasted inner product'''
 
     ref_inner = np.array([[[  30,  255,  730],
@@ -279,110 +279,110 @@ def test_testlib():
 
     # not in-place
     try:
-        i,o = testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float))
+        i,o = testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float))
     except:
-        confirm(False, msg="broadcasted testlib succeeded")
+        confirm(False, msg="broadcasted innerouter succeeded")
     else:
-        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted testlib produced correct inner.shape")
-        confirm_equal(i,       ref_inner,       msg="broadcasted testlib produced correct inner")
-        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted testlib produced correct outer.shape")
-        confirm_equal(o,       ref_outer,       msg="broadcasted testlib produced correct outer")
+        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted innerouter produced correct inner.shape")
+        confirm_equal(i,       ref_inner,       msg="broadcasted innerouter produced correct inner")
+        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted innerouter produced correct outer.shape")
+        confirm_equal(o,       ref_outer,       msg="broadcasted innerouter produced correct outer")
 
     # in-place
     try:
         i = np.empty(ref_inner.shape, dtype=float)
         o = np.empty(ref_outer.shape, dtype=float)
-        testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
+        testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
     except:
-        confirm(False, msg="broadcasted in-place testlib succeeded")
+        confirm(False, msg="broadcasted in-place innerouter succeeded")
     else:
-        confirm(True, msg="broadcasted in-place testlib succeeded")
-        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted in-place testlib produced correct inner.shape")
-        confirm_equal(i,       ref_inner,       msg="broadcasted in-place testlib produced correct inner")
-        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place testlib produced correct outer.shape")
-        confirm_equal(o,       ref_outer,       msg="broadcasted in-place testlib produced correct outer")
+        confirm(True, msg="broadcasted in-place innerouter succeeded")
+        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted in-place innerouter produced correct inner.shape")
+        confirm_equal(i,       ref_inner,       msg="broadcasted in-place innerouter produced correct inner")
+        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter produced correct outer.shape")
+        confirm_equal(o,       ref_outer,       msg="broadcasted in-place innerouter produced correct outer")
 
     # in-place with scaling
     try:
         i = np.empty(ref_inner.shape, dtype=float)
         o = np.empty(ref_outer.shape, dtype=float)
-        testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o), scale=3.5)
+        testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o), scale=3.5)
     except:
-        confirm(False, msg="broadcasted in-place testlib succeeded")
+        confirm(False, msg="broadcasted in-place innerouter succeeded")
     else:
-        confirm(True, msg="broadcasted in-place testlib succeeded")
-        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted in-place testlib with scaling produced correct inner.shape")
-        confirm_equal(i,       ref_inner * 3.5, msg="broadcasted in-place testlib with scaling produced correct inner")
-        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place testlib with scaling produced correct outer.shape")
-        confirm_equal(o,       ref_outer * 3.5, msg="broadcasted in-place testlib with scaling produced correct outer")
+        confirm(True, msg="broadcasted in-place innerouter succeeded")
+        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted in-place innerouter with scaling produced correct inner.shape")
+        confirm_equal(i,       ref_inner * 3.5, msg="broadcasted in-place innerouter with scaling produced correct inner")
+        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter with scaling produced correct outer.shape")
+        confirm_equal(o,       ref_outer * 3.5, msg="broadcasted in-place innerouter with scaling produced correct outer")
 
     # in-place, with some extra dummy dimensions
     try:
         i = np.empty((1,) + ref_inner.shape, dtype=float)
         o = np.empty(ref_outer.shape, dtype=float)
-        testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
+        testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
     except:
-        confirm(False, msg="broadcasted in-place testlib succeeded")
+        confirm(False, msg="broadcasted in-place innerouter succeeded")
     else:
-        confirm(True, msg="broadcasted in-place testlib succeeded")
-        confirm_equal(i.shape[1:], ref_inner.shape, msg="broadcasted in-place testlib produced correct inner.shape")
-        confirm_equal(i,           ref_inner,       msg="broadcasted in-place testlib produced correct inner")
-        confirm_equal(o.shape,     ref_outer.shape, msg="broadcasted in-place testlib produced correct outer.shape")
-        confirm_equal(o,           ref_outer,       msg="broadcasted in-place testlib produced correct outer")
+        confirm(True, msg="broadcasted in-place innerouter succeeded")
+        confirm_equal(i.shape[1:], ref_inner.shape, msg="broadcasted in-place innerouter produced correct inner.shape")
+        confirm_equal(i,           ref_inner,       msg="broadcasted in-place innerouter produced correct inner")
+        confirm_equal(o.shape,     ref_outer.shape, msg="broadcasted in-place innerouter produced correct outer.shape")
+        confirm_equal(o,           ref_outer,       msg="broadcasted in-place innerouter produced correct outer")
 
     # in-place, with some extra dummy dimensions
     try:
         i = np.empty(ref_inner.shape, dtype=float)
         o = np.empty((1,) + ref_outer.shape, dtype=float)
-        testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
+        testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o))
     except:
-        confirm(False, msg="broadcasted in-place testlib succeeded")
+        confirm(False, msg="broadcasted in-place innerouter succeeded")
     else:
-        confirm(True, msg="broadcasted in-place testlib succeeded")
-        confirm_equal(i.shape,     ref_inner.shape, msg="broadcasted in-place testlib produced correct inner.shape")
-        confirm_equal(i,           ref_inner,       msg="broadcasted in-place testlib produced correct inner")
-        confirm_equal(o.shape[1:], ref_outer.shape, msg="broadcasted in-place testlib produced correct outer.shape")
-        confirm_equal(o,           ref_outer,       msg="broadcasted in-place testlib produced correct outer")
+        confirm(True, msg="broadcasted in-place innerouter succeeded")
+        confirm_equal(i.shape,     ref_inner.shape, msg="broadcasted in-place innerouter produced correct inner.shape")
+        confirm_equal(i,           ref_inner,       msg="broadcasted in-place innerouter produced correct inner")
+        confirm_equal(o.shape[1:], ref_outer.shape, msg="broadcasted in-place innerouter produced correct outer.shape")
+        confirm_equal(o,           ref_outer,       msg="broadcasted in-place innerouter produced correct outer")
 
     # now some bogus shapes and types that should fail
     i = np.empty(ref_inner.shape, dtype=float)
     o = np.empty(ref_outer.shape, dtype=float)
-    confirm_does_not_raise( lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o)),
-                            msg = "basic broadcasted testlib works")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,i)),
+    confirm_does_not_raise( lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o)),
+                            msg = "basic broadcasted innerouter works")
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,i)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(o,o)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(o,o)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(o,i)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(o,i)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o,i)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o,i)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,i,o)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,i,o)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=int), out=(i,o)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=int), out=(i,o)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=o),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=o),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=i),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=i),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,None)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,None)),
                    msg = "in-place broadcasting output dimensions match")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(None,i)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(None,i)),
                    msg = "in-place broadcasting output dimensions match")
     iint  = np.empty(ref_inner.shape, dtype=int)
     i1    = np.empty((1,) + ref_inner.shape, dtype=float)
     i2    = np.empty((2,) + ref_inner.shape, dtype=float)
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(iint,o)),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(iint,o)),
                    msg = "in-place broadcasting output types match")
-    confirm_does_not_raise( lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i1,o)),
-                            msg = "broadcasted testlib: extra dims of length 1 work")
-    confirm_equal( np.linalg.norm(i1-ref_inner), 0, msg="broadcasted testlib: extra dims of length 1 work")
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i2,o)),
+    confirm_does_not_raise( lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i1,o)),
+                            msg = "broadcasted innerouter: extra dims of length 1 work")
+    confirm_equal( np.linalg.norm(i1-ref_inner), 0, msg="broadcasted innerouter: extra dims of length 1 work")
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i2,o)),
                    msg = "in-place broadcasting output dimensions match")
 
-    confirm_does_not_raise(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), scale=3.5),
+    confirm_does_not_raise(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), scale=3.5),
                            msg = 'Validation looks at the cookie')
-    confirm_raises(lambda: testlib.testlib(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), scale=-3.5),
+    confirm_raises(lambda: testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), scale=-3.5),
                    msg = 'Validation looks at the cookie')
 
 
@@ -428,10 +428,10 @@ def test_broadcasting():
 
     # make sure the output COUNTS are checked (if I expect 2 outputs, but get
     # only 1, that's an error
-    confirm( testlib.testlib(arr(5), arr(  5)) is not None, msg='output count check' )
-    confirm( testlib.testlib(arr(5), arr(2,5)) is not None, msg='output count check' )
+    confirm( testlib.innerouter(arr(5), arr(  5)) is not None, msg='output count check' )
+    confirm( testlib.innerouter(arr(5), arr(2,5)) is not None, msg='output count check' )
 
-    confirm( testlib.testlib(arr(5), arr(  5)) is not None,
+    confirm( testlib.innerouter(arr(5), arr(  5)) is not None,
              msg='output dimensionality check with given out' )
 
 
@@ -448,80 +448,80 @@ def test_broadcasting():
 
     # no broadcasting
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=o), \
+                    testlib.innerouter(a5, a5, out=o), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=o2), \
+                    testlib.innerouter(a5, a5, out=o2), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o,)), \
+                    testlib.innerouter(a5, a5, out=(o,)), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o55,)), \
+                    testlib.innerouter(a5, a5, out=(o55,)), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o55,o)), \
+                    testlib.innerouter(a5, a5, out=(o55,o)), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o,o2)), \
+                    testlib.innerouter(a5, a5, out=(o,o2)), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o,o5)), \
+                    testlib.innerouter(a5, a5, out=(o,o5)), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o2,o55)), \
+                    testlib.innerouter(a5, a5, out=(o2,o55)), \
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a5, out=(o,o55,o)), \
+                    testlib.innerouter(a5, a5, out=(o,o55,o)), \
                     msg='output dimensionality check with given out' )
-    confirm( testlib.testlib(a5, a5, out=(o,o55)) is not None,
+    confirm( testlib.innerouter(a5, a5, out=(o,o55)) is not None,
              msg='output dimensionality check with given out' )
     confirm_equal(o,   a5.dot(a5),      msg='in-place broadcasting computed the right value')
     confirm_equal(o55, np.outer(a5,a5), msg='in-place broadcasting computed the right value')
 
     # two broadcasted slices
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=o),
+                    testlib.innerouter(a5, a25, out=o),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=o2),
+                    testlib.innerouter(a5, a25, out=o2),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o,)),
+                    testlib.innerouter(a5, a25, out=(o,)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o55,)),
+                    testlib.innerouter(a5, a25, out=(o55,)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o55,o)),
+                    testlib.innerouter(a5, a25, out=(o55,o)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o,o2)),
+                    testlib.innerouter(a5, a25, out=(o,o2)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o,o5)),
+                    testlib.innerouter(a5, a25, out=(o,o5)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o2,o55)),
+                    testlib.innerouter(a5, a25, out=(o2,o55)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o,o55,o)),
+                    testlib.innerouter(a5, a25, out=(o,o55,o)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o,o55)),
+                    testlib.innerouter(a5, a25, out=(o,o55)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o2,o55)),
+                    testlib.innerouter(a5, a25, out=(o2,o55)),
                     msg='output dimensionality check with given out' )
     confirm_raises( lambda: \
-                    testlib.testlib(a5, a25, out=(o,o255)),
+                    testlib.innerouter(a5, a25, out=(o,o255)),
                     msg='output dimensionality check with given out' )
-    confirm( testlib.testlib(a5, a25, out=(o2,o255)) is not None,
+    confirm( testlib.innerouter(a5, a25, out=(o2,o255)) is not None,
              msg='output dimensionality check with given out' )
     confirm_equal(o2,   nps.inner(a5,a25), msg='in-place broadcasting computed the right value')
     confirm_equal(o255, nps.outer(a5,a25), msg='in-place broadcasting computed the right value')
 
-    # Non-contiguous data should work with inner and outer, but not testlib
+    # Non-contiguous data should work with inner and outer, but not innerouter
     # (that's what the underlying C library does/does not support)
     a2                = arr(2, dtype=float)
     a25_noncontiguous = arr(5, 2, dtype=float).T
@@ -533,20 +533,20 @@ def test_broadcasting():
                            msg='Validation: noncontiguous in the function slice')
     confirm_does_not_raise(lambda: testlib.outer     (a25_noncontiguous, a5, out=o255_noncontiguous),
                            msg='Validation: noncontiguous in the function slice')
-    confirm_raises        (lambda: testlib.testlib(a25_noncontiguous, a5),
+    confirm_raises        (lambda: testlib.innerouter(a25_noncontiguous, a5),
                            msg='Validation: noncontiguous in the function slice')
-    confirm_does_not_raise(lambda: testlib.testlib(a25, a5, out=(a2, o255)),
+    confirm_does_not_raise(lambda: testlib.innerouter(a25, a5, out=(a2, o255)),
                            msg='Validation: noncontiguous in the function slice')
-    confirm_raises        (lambda: testlib.testlib(a25, a5, out=(a2, o255_noncontiguous)),
+    confirm_raises        (lambda: testlib.innerouter(a25, a5, out=(a2, o255_noncontiguous)),
                            msg='Validation: noncontiguous in the function slice')
 
-    confirm_does_not_raise(lambda: testlib.testlib(a25, a5, out=(a2, o255_noncontiguous_in_broadcast)),
+    confirm_does_not_raise(lambda: testlib.innerouter(a25, a5, out=(a2, o255_noncontiguous_in_broadcast)),
                            msg='Validation: noncontiguous array that are noncontiguous ONLY in the broadcasted dimensions (i.e. each slice IS contiguous)')
 
 
 test_inner()
 test_outer()
-test_testlib()
+test_innerouter()
 test_broadcasting()
 test_sorted_indices()
 

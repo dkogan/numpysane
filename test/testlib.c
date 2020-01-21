@@ -44,7 +44,7 @@ void outer(double* out,
 
 // inner and outer product together. Only contiguous data is supported. "double"
 // only. non-broadcasted "scale" argument scales the output
-double testlib(double* out,
+double innerouter(double* out,
 
                   const double* a,
                   const double* b,

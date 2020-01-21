@@ -82,7 +82,7 @@ m.function( "outer",
             return true;
 '''})
 
-m.function( "testlib",
+m.function( "innerouter",
             "Inner and outer products pywrapped with npsp",
 
             args_input       = ("a", "b"),
@@ -93,7 +93,7 @@ m.function( "testlib",
                 {np.float64:
                  r'''
             *(double*)data__output0 =
-                 testlib((double*)data__output1,
+                 innerouter((double*)data__output1,
                      (double*)data__a,
                      (double*)data__b,
                      *scale,
