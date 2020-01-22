@@ -19,7 +19,7 @@ import numpysane_pywrap as npsp
 
 
 m = npsp.module( MODULE_NAME      = "testlib",
-                 MODULE_DOCSTRING = "Inner and outer products module",
+                 MODULE_DOCSTRING = "Some functions to test the python wrapping",
                  HEADER           = '#include "testlib.h"')
 
 m.function( "inner",
