@@ -149,62 +149,60 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
         // Now deal with dimensionality
 
+        // It's possible for my arguments (and the output) to have fewer
+        // dimensions than required by the prototype, and still pass all the
+        // dimensionality checks, assuming implied leading dimensions of length
+        // 1. For instance I could receive a scalar where a ('n',) dimension is
+        // expected, or a ('n',) vector where an ('m','n') array is expected. I
+        // initially handle this with Ndims_extra<0 for those arguments and then
+        // later, I make copies with actual "1" values in place. I do that because:
+        //
+        // 1. I want to support the above-described case where implicit leading
+        //    length-1 dimensions are used
+        //
+        // 2. I want to support new named-dimensions in the outputs, pulled from
+        //    the in-place arrays
+        //
+        // #2 requires partial processing of the outputs before they're all
+        // guaranteed to exist. So I can't allocate temporary __dims__##name and
+        // __strides__##name arrays on the stack: I don't know how big they are
+        // yet. But I need explicit dimensions in memory to pass to the
+        // validation and slice callbacks. So I do it implicitly first, and then
+        // explicitly
 
-        // the maximum of Ndims_extra_this for all the arguments
+        // the maximum of Ndims_extra_this for all the arguments. Each one COULD
+        // be <0 but Ndims_extra is capped at the bottom at 0
         int Ndims_extra = 0;
 
-        // It's possible for my arguments (and the output) to have fewer dimensions
-        // than required by the prototype, and still pass all the dimensionality
-        // checks, assuming implied leading dimensions of length 1. For instance I
-        // could receive a scalar where a ('n',) dimension is expected, or a ('n',)
-        // vector where an ('m','n') array is expected. I thus make a local (and
-        // padded) copy of the strides and dims arrays, and use those where needed.
-        // Most of the time these will just be copies of the input. The dimension
-        // counts and argument counts will be relatively small, so this is only a
-        // tiny bit wasteful
-#define DECLARE_PROTOTYPE_LEN(name)                      \
-        const int PROTOTYPE_LEN_ ## name = (int)sizeof(PROTOTYPE_ ## name)/sizeof(PROTOTYPE_ ## name[0]);
+#define DECLARE_DIM_VARS(name)                                          \
+        const int       PROTOTYPE_LEN_ ## name = (int)sizeof(PROTOTYPE_ ## name)/sizeof(PROTOTYPE_ ## name[0]); \
+        int             __ndim__       ## name = -1;                    \
+        const npy_intp* __dims__       ## name = NULL;                  \
+        const npy_intp* __strides__    ## name = NULL;                  \
+        /* May be <0 */                                                 \
+        int             Ndims_extra__  ## name = -1;
 
-#define DECLARE_DIM_VARS(name)                      \
-        int          __ndim__    ## name = PyArray_NDIM(__py__ ## name); \
-        if( __ndim__ ## name < PROTOTYPE_LEN_ ## name )                 \
-            /* Too few input dimensions. Add dummy dimension of length-1 */ \
-            __ndim__ ## name = PROTOTYPE_LEN_ ## name;                  \
-        npy_intp __dims__   ## name[__ndim__ ## name];                  \
-        npy_intp __strides__## name[__ndim__ ## name];                  \
+#define DEFINE_DIM_VARS(name)                                           \
+        if((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) \
         {                                                               \
-            const npy_intp* dims_orig    = PyArray_DIMS   (__py__ ## name); \
-            const npy_intp* strides_orig = PyArray_STRIDES(__py__ ## name); \
-            npy_intp        ndim_orig    = PyArray_NDIM   (__py__ ## name); \
-            int i_dim = -1;                                             \
-            for(; i_dim >= -ndim_orig; i_dim--)                         \
-            {                                                           \
-                __dims__   ## name[i_dim + __ndim__ ## name] = dims_orig   [i_dim + ndim_orig]; \
-                __strides__## name[i_dim + __ndim__ ## name] = strides_orig[i_dim + ndim_orig]; \
-            }                                                           \
-            for(; i_dim >= -__ndim__ ## name; i_dim--)                  \
-            {                                                           \
-                /* extra dummy dimensions, as needed */                 \
-                __dims__    ## name[i_dim + __ndim__ ## name] = 1;      \
-                __strides__ ## name[i_dim + __ndim__ ## name] = 0;      \
-            }                                                           \
-        }                                                               \
-                                                                        \
-                                                                        \
-        /* guaranteed >= 0 because of the padding */                    \
-        int Ndims_extra__ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name;
-
-#define UPDATE_NDIMS_EXTRA(name) \
-        if(Ndims_extra < Ndims_extra__ ## name) Ndims_extra = Ndims_extra__ ## name;
+            __ndim__    ## name = PyArray_NDIM   (__py__ ## name);      \
+            __dims__    ## name = PyArray_DIMS   (__py__ ## name);      \
+            __strides__ ## name = PyArray_STRIDES(__py__ ## name);      \
+            /* May be <0 */                                             \
+            Ndims_extra__ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name; \
+            if(Ndims_extra < Ndims_extra__ ## name)                     \
+                Ndims_extra = Ndims_extra__ ## name;                    \
+        }
 
 
-        ARGUMENTS(DECLARE_PROTOTYPE_LEN);
+
         ARGUMENTS(DECLARE_DIM_VARS);
-        ARGUMENTS(UPDATE_NDIMS_EXTRA);
-        OUTPUTS(  DECLARE_PROTOTYPE_LEN);
-        // OUTPUTS(DECLARE_DIM_VARS) done later, AFTER we create the output
-        // arrays, which may not exist yet
-
+        ARGUMENTS(DEFINE_DIM_VARS);
+        OUTPUTS(  DECLARE_DIM_VARS);
+        OUTPUTS(  DEFINE_DIM_VARS);
+        // Any outputs that are given are processed here. Outputs that are NOT
+        // given are skipped for now. I'll create them later, and do the
+        // necessary updates and checks later by expanding DEFINE_DIM_VARS later
 
         npy_intp dims_extra[Ndims_extra];
         for(int i=0; i<Ndims_extra; i++)
@@ -214,17 +212,25 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         for(int i=0; i<Ndims_named; i++)
             dims_named[i] = -1;
 
-#define PARSE_DIMS(name)    \
-        if(!parse_dim(dims_named, dims_extra,   \
-                      Ndims_extra,              \
-                                                \
-                      #name,                    \
-                      Ndims_extra__ ## name,     \
-                      PROTOTYPE_ ## name, PROTOTYPE_LEN_ ## name,   \
-                      __dims__   ## name, __ndim__       ## name))  \
-            goto done;
+#define PARSE_DIMS(name)                                                \
+        if((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) \
+        {                                                               \
+            if(!parse_dim_for_one_arg(dims_named, dims_extra,           \
+                                      Ndims_extra,                      \
+                                                                        \
+                                      #name,                            \
+                                      Ndims_extra__ ## name,            \
+                                      PROTOTYPE_ ## name, PROTOTYPE_LEN_ ## name, \
+                                      __dims__   ## name, __ndim__       ## name, \
+                                      is_output))                       \
+                goto done;                                              \
+        }
 
+        bool is_output = false;
         ARGUMENTS(PARSE_DIMS);
+        is_output = true;
+        OUTPUTS(  PARSE_DIMS);
+
 
         // now have dims_extra,dims_named;
 
@@ -239,10 +245,14 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 goto done;                                              \
             }
         OUTPUTS(CHECK_DIMS_NAMED_KNOWN);
+        // I don't check the inputs; parse_dim() would have barfed if any named
+        // input dimension wasn't determined. The outputs don't all exist yet,
+        // so I need to check
 
 
         // The dimensions of each output must be (dims_extra + PROTOTYPE__output__)
-#define CHECK_OR_CREATE_OUTPUT(name)                                    \
+#define CREATE_MISSING_OUTPUT(name)                                    \
+        if((PyObject*)__py__ ## name == Py_None || __py__ ## name == NULL) \
         {                                                               \
             int Ndims_output = Ndims_extra + PROTOTYPE_LEN_ ## name;    \
             npy_intp dims_output_want[Ndims_output];                    \
@@ -255,74 +265,82 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 else                                                    \
                     dims_output_want[i+Ndims_extra] = PROTOTYPE_ ## name[i]; \
                                                                         \
-            if((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) \
+            /* No output array available. Make one                  */  \
+            __py__ ## name = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum__ ## name); \
+            if(__py__ ## name == NULL)                                  \
             {                                                           \
-                /* An output array was given. I make sure it has the correct dimensions. I */ \
-                /* allow leading dimensions of length 1. I compare from the end, */ \
-                /* comparing with 1 if either list runs out             */ \
-                int Ndims_to_compare1 = PyArray_NDIM(__py__ ## name);   \
-                int Ndims_to_compare2 = Ndims_output;                   \
-                int Ndims_to_compare = Ndims_to_compare1;               \
-                if(Ndims_to_compare < Ndims_to_compare2)                \
-                    Ndims_to_compare = Ndims_to_compare2;               \
-                                                                        \
-                for( int i_dim=-1;                                      \
-                     i_dim >= -Ndims_to_compare;                        \
-                     i_dim--)                                           \
-                {                                                       \
-                    int i_dim_var       = i_dim + PyArray_NDIM(__py__ ## name); \
-                    int i_dim_output    = i_dim + Ndims_output;         \
-                    int dim_var         = i_dim_var    >= 0 ? PyArray_DIMS(__py__ ## name)[i_dim_var   ] : 1; \
-                    int dim_output_want = i_dim_output >= 0 ? dims_output_want            [i_dim_output] : 1; \
-                    if(dim_var != dim_output_want)                      \
-                    {                                                   \
-                        PyErr_Format(PyExc_RuntimeError,                \
-                                     "Given output array dimension %d mismatch. Expected %d but got %d", \
-                                     i_dim,                             \
-                                     dim_output_want, dim_var);         \
-                        goto done;                                      \
-                    }                                                   \
-                }                                                       \
+                /* Error already set. I simply exit                 */  \
+                goto done;                                              \
             }                                                           \
-            else                                                        \
+                                                                        \
+            if(populate_output_tuple__i >= 0)                           \
             {                                                           \
-                /* No output array available. Make one                  */ \
-                __py__ ## name = (PyArrayObject*)PyArray_SimpleNew(Ndims_output, dims_output_want, selected_typenum__ ## name); \
-                if(__py__ ## name == NULL)                              \
-                {                                                       \
-                    /* Error already set. I simply exit                 */ \
-                    goto done;                                          \
-                }                                                       \
-                                                                        \
-                if(populate_output_tuple__i >= 0)                       \
-                {                                                       \
-                    PyTuple_SET_ITEM(__py__output__arg,                 \
-                                     populate_output_tuple__i,          \
-                                     (PyObject*)__py__ ## name);        \
-                    populate_output_tuple__i++;                         \
-                    Py_INCREF(__py__ ## name);                          \
-                }                                                       \
-                else if(__py__output__arg == NULL)                      \
-                {                                                       \
-                    /* one output, no output given */                   \
-                    __py__output__arg = (PyObject*)__py__ ## name;      \
-                    Py_INCREF(__py__output__arg);                       \
-                }                                                       \
+                PyTuple_SET_ITEM(__py__output__arg,                     \
+                                 populate_output_tuple__i,              \
+                                 (PyObject*)__py__ ## name);            \
+                populate_output_tuple__i++;                             \
+                Py_INCREF(__py__ ## name);                              \
             }                                                           \
+            else if(__py__output__arg == NULL)                          \
+            {                                                           \
+                /* one output, no output given */                       \
+                __py__output__arg = (PyObject*)__py__ ## name;          \
+                Py_INCREF(__py__output__arg);                           \
+            }                                                           \
+            DEFINE_DIM_VARS(name);                                      \
         }
-        OUTPUTS(CHECK_OR_CREATE_OUTPUT);
+        OUTPUTS(CREATE_MISSING_OUTPUT);
+
+
+        // I'm done messing around with the dimensions. Everything passed, and
+        // all the arrays have been created. Some arrays MAY have some implicit
+        // length-1 dimensions. I can't communicate this to the validation and
+        // slice functions. So I explicitly make copies of the dimension and
+        // stride arrays, making any implicit length-1 dimensions explicit. The
+        // callbacks then see all the dimension data in memory
+#define MAKE_MOUNTED_COPIES(name)                                       \
+        int __ndim__mounted__ ## name = __ndim__ ## name;               \
+        if( __ndim__ ## name < PROTOTYPE_LEN_ ## name )                 \
+            /* Too few input dimensions. Add dummy dimension of length 1 */ \
+            __ndim__mounted__ ## name = PROTOTYPE_LEN_ ## name;         \
+        npy_intp __dims__mounted__    ## name[__ndim__mounted__ ## name]; \
+        npy_intp __strides__mounted__ ## name[__ndim__mounted__ ## name]; \
+        {                                                               \
+            int i_dim = -1;                                             \
+            for(; i_dim >= -__ndim__ ## name; i_dim--)                  \
+                {                                                       \
+                    __dims__mounted__   ## name[i_dim + __ndim__mounted__ ## name] = __dims__    ## name[i_dim + __ndim__ ## name]; \
+                    __strides__mounted__## name[i_dim + __ndim__mounted__ ## name] = __strides__ ## name[i_dim + __ndim__ ## name]; \
+                }                                                       \
+            for(; i_dim >= -__ndim__mounted__ ## name; i_dim--)         \
+                {                                                       \
+                    /* extra dummy dimensions, as needed */             \
+                    __dims__mounted__    ## name[i_dim + __ndim__mounted__ ## name] = 1; \
+                    __strides__mounted__ ## name[i_dim + __ndim__mounted__ ## name] = 0; \
+                }                                                       \
+        }                                                               \
+        /* Now guaranteed >= 0 because of the padding */                \
+        int Ndims_extra__mounted__ ## name = __ndim__mounted__ ## name - PROTOTYPE_LEN_ ## name; \
+                                                                        \
+        /* Ndims_extra and dims_extra[] are already right */
+
+        ARGUMENTS(MAKE_MOUNTED_COPIES);
+        OUTPUTS(  MAKE_MOUNTED_COPIES);
+
+
+
+
+
+
 
         // Each output variable is now an allocated array, and each one has a
         // reference. The argument __py__output__arg ALSO has a reference
 
-        // Now that the output exists, I can grab the dimensions
-        OUTPUTS(DECLARE_DIM_VARS);
-
 #define ARGLIST_VALIDATION(name)                \
-        __ndim__      ## name ,                 \
-        Ndims_extra__ ## name ,                 \
-        __dims__      ## name ,                 \
-        __strides__   ## name ,                 \
+        __ndim__mounted__       ## name ,       \
+        Ndims_extra__mounted__  ## name ,       \
+        __dims__mounted__       ## name ,       \
+        __strides__mounted__    ## name ,       \
         PyArray_ITEMSIZE(__py__ ## name),
 
 
@@ -343,9 +361,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             OUTPUTS(  DEFINE_SLICE);
 
 #define ARGLIST_SLICE(name) \
-  (void*)slice_ ## name,                         \
-  &__dims__     ## name[ Ndims_extra__ ## name ], \
-  &__strides__  ## name[ Ndims_extra__ ## name ],
+  (void*)slice_         ## name,                                   \
+  &__dims__mounted__    ## name[ Ndims_extra__mounted__ ## name ], \
+  &__strides__mounted__ ## name[ Ndims_extra__mounted__ ## name ],
 
             if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
                                   ARGUMENTS(ARGLIST_SLICE)
@@ -360,6 +378,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         }
 
 #if 0
+        // most of these should be __mounted ?
+
         // How many elements (not bytes) to advance for each broadcasted dimension.
         // Takes into account the length-1 slieces (implicit and explicit)
         int stride_extra_elements_a[Ndims_extra];
@@ -410,9 +430,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             {
 
 #define ADVANCE_SLICE(name)                         \
-                if(i_dim + Ndims_extra__ ## name >= 0 &&                 \
-                   __dims__ ## name[i_dim + Ndims_extra__ ## name] != 1) \
-                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra__ ## name];
+                if(i_dim + Ndims_extra__mounted__ ## name >= 0 &&                 \
+                   __dims__mounted__ ## name[i_dim + Ndims_extra__mounted__ ## name] != 1) \
+                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra__mounted__ ## name];
 
                 ARGUMENTS(ADVANCE_SLICE);
                 OUTPUTS(  ADVANCE_SLICE);
@@ -456,7 +476,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #undef PARSECODE
 #undef PARSEARG
 #undef DECLARE_DIM_VARS
-#undef UPDATE_NDIMS_EXTRA
+#undef DEFINE_DIM_VARS
 #undef PARSE_DIMS
 #undef SLICE_ARG
 #undef INPUT_PERCENT_S
@@ -465,8 +485,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #undef ARGLIST_SLICE
 #undef ADVANCE_SLICE
 #undef FREE_PYARRAY
-#undef DECLARE_PROTOTYPE_LEN
 #undef CHECK_DIMS_NAMED_KNOWN
-#undef CHECK_OR_CREATE_OUTPUT
+#undef CREATE_MISSING_OUTPUT
+#undef MAKE_MOUNTED_COPIES
 #undef ARGUMENTS
 #undef OUTPUTS

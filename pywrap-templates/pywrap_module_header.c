@@ -29,16 +29,17 @@ do {                                                                    \
 } while(0)
 
 static
-bool parse_dim(// input and output
-               npy_intp* dims_named,
-               npy_intp* dims_extra,
+bool parse_dim_for_one_arg(// input and output
+                           npy_intp* dims_named,
+                           npy_intp* dims_extra,
 
-               // input
-               int Ndims_extra,
-               const char* arg_name,
-               int Ndims_extra_var,
-               const npy_intp* dims_want, int Ndims_want,
-               const npy_intp* dims_var,  int Ndims_var )
+                           // input
+                           int Ndims_extra,
+                           const char* arg_name,
+                           int Ndims_extra_var,
+                           const npy_intp* dims_want, int Ndims_want,
+                           const npy_intp* dims_var,  int Ndims_var,
+                           bool is_output)
 {
     // MAKE SURE THE PROTOTYPE DIMENSIONS MATCH (the trailing dimensions)
     //
@@ -53,9 +54,8 @@ bool parse_dim(// input and output
         int dim_want   = dims_want[i_dim_want];
 
         int i_dim_var = i_dim + Ndims_var;
-        // I assume i_dim_var>=0 because the caller prepended dimensions of
-        // length-1 as needed
-        int dim_var   = dims_var[i_dim_var];
+        // if we didn't get enough dimensions, use dim=1
+        int dim_var = i_dim_var >= 0 ? dims_var[i_dim_var] : 1;
 
         if(dim_want < 0)
         {
@@ -96,22 +96,54 @@ bool parse_dim(// input and output
 
     // MAKE SURE THE BROADCASTED DIMENSIONS MATCH (the leading dimensions)
     //
-    // This argument has Ndims_extra_var dimensions to broadcast. The
-    // current dimensions to broadcast must be at least as large, and must
-    // match
+    // This argument has Ndims_extra_var dimensions above the prototype (may be
+    // <0 if there're implicit leading length-1 dimensions at the start). The
+    // current dimensions to broadcast must match
+    //
+    // Also handle special broadcasting logic for outputs. The extra dimensions
+    // on the output must match the extra dimensions from the inputs EXACTLY.
+    // Some things could be reasonably supported, but it's all not very useful,
+    // and error-prone
+    if(is_output && Ndims_extra_var != Ndims_extra)
+    {
+        PyErr_Format(PyExc_RuntimeError,
+                     "Outputs must match the broadcasted dimensions EXACTLY. '%s' has %d extra, broadcasted dimensions while the inputs have %d",
+                     arg_name,
+                     Ndims_extra_var, Ndims_extra);
+        return false;
+    }
+
     for( int i_dim=-1;
          i_dim >= -Ndims_extra_var;
          i_dim--)
     {
         int i_dim_var = i_dim - Ndims_want + Ndims_var;
-        // I assume i_dim_var>=0 because the caller prepended dimensions of
-        // length-1 as needed
-        int dim_var   = dims_var[i_dim_var];
-
-        int i_dim_extra = i_dim + Ndims_extra;
+        // if we didn't get enough dimensions, use dim=1
+        int dim_var = i_dim_var >= 0 ? dims_var[i_dim_var] : 1;
 
         if (dim_var != 1)
         {
+            int i_dim_extra = i_dim + Ndims_extra;
+            if(i_dim_extra < 0)
+            {
+                PyErr_Format(PyExc_RuntimeError,
+                             "Argument '%s' dimension %d (broadcasted dimension %d) i_dim_extra<0: %d. This shouldn't happen. There's a bug in the implicit-leading-dimension logic. Please report",
+                             arg_name,
+                             i_dim-Ndims_want, i_dim,
+                             i_dim_extra);
+                return false;
+            }
+
+            if(is_output && dims_extra[i_dim_extra] != dim_var)
+            {
+                PyErr_Format(PyExc_RuntimeError,
+                             "Outputs must match the broadcasted dimensions EXACTLY. '%s' dimension %d (broadcasted dimension %d) has length %d, while the inputs have %d",
+                             arg_name,
+                             i_dim-Ndims_want, i_dim,
+                             dim_var, dims_extra[i_dim_extra]);
+                return false;
+            }
+
             if( dims_extra[i_dim_extra] == 1)
                 dims_extra[i_dim_extra] = dim_var;
             else if(dims_extra[i_dim_extra] != dim_var)
