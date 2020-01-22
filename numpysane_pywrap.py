@@ -263,8 +263,8 @@ class module:
                                         format(i_output, i_dim, dim))
                 elif isinstance(dim, str):
                     if dim not in named_dims:
-                        raise NumpysaneError("Output {} dimension {} is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
-                                        format(i_output, i_dim, dim))
+                        # This output is a new named dimension. Output matrices must be passed in to define it
+                        named_dims[dim] = -1-len(named_dims)
                 else:
                     raise NumpysaneError("Dimension {} in output {} must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
                                     format(i_dim, i_output, dim, type(dim)))
