@@ -22,6 +22,23 @@ m = npsp.module( MODULE_NAME      = "testlib",
                  MODULE_DOCSTRING = "Some functions to test the python wrapping",
                  HEADER           = '#include "testlib.h"')
 
+m.function( "identity3",
+            "Generates a 3x3 identity matrix",
+
+            args_input       = (),
+            prototype_input  = (),
+            prototype_output = (3,3),
+
+            FUNCTION__slice_code = \
+                {np.float64:
+                 r'''
+    for(int i=0; i<3; i++)
+        for(int j=0; j<3; j++)
+            ((double*)(data__output + i*strides__output[0] + j*strides__output[1]))[0] =
+                 (i==j) ? 1.0 : 0.0;
+    return true;
+'''})
+
 m.function( "inner",
             "Inner-product pywrapped with npsp",
 

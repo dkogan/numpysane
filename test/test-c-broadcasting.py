@@ -148,6 +148,30 @@ def arr(*shape, **kwargs):
     return np.arange(product, dtype=dtype).reshape(*shape)
 
 
+def test_identity3():
+    r'''Testing identity3()'''
+
+    ref = np.array(((1,0,0),
+                    (0,1,0),
+                    (0,0,1)),dtype=float)
+    ref_int = np.array(((1,0,0),
+                        (0,1,0),
+                        (0,0,1)),dtype=int)
+
+    out     = ref*0
+    out_int = ref_int*0
+
+    assertResult_inoutplace( ref,
+                             testlib.identity3 )
+    confirm_does_not_raise( lambda: testlib.identity3(out = out))
+    confirm_raises(         lambda: testlib.identity3(out = out_int))
+
+    out_discontiguous = np.zeros((4,5,6), dtype=float)[:3,:3,0]
+    confirm(not out_discontiguous.flags['C_CONTIGUOUS'])
+    testlib.identity3(out = out_discontiguous)
+    confirm_equal(ref, out_discontiguous)
+
+
 def test_inner():
     r'''Testing the broadcasted inner product'''
 
@@ -544,6 +568,8 @@ def test_broadcasting():
                            msg='Validation: noncontiguous array that are noncontiguous ONLY in the broadcasted dimensions (i.e. each slice IS contiguous)')
 
 
+
+test_identity3()
 test_inner()
 test_outer()
 test_innerouter()
