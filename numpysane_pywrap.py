@@ -266,8 +266,8 @@ class module:
                         raise NumpysaneError("Output {} dimension {} is a NEW named dimension: '{}'. Output named dimensions MUST match those already seen in the input". \
                                         format(i_output, i_dim, dim))
                 else:
-                    raise NumpysaneError("Dimension {} in the output must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
-                                    format(i_dim, dim, type(dim)))
+                    raise NumpysaneError("Dimension {} in output {} must be a string (named dimension) or an integer>=0. Got '{}' (type '{}')". \
+                                    format(i_dim, i_output, dim, type(dim)))
 
 
 
