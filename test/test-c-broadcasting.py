@@ -170,6 +170,41 @@ def test_identity3():
     confirm_equal(ref, out_discontiguous)
 
 
+def test_identity():
+    r'''Testing identity()
+
+    This tests much of the named-dimensions-in-output-only logic
+
+    '''
+
+    # This i
+    ref     = np.eye(2, dtype=float)
+    ref_int = np.eye(2, dtype=int)
+
+    out     = np.zeros((2,2), dtype=float)
+    out_int = np.zeros((2,2), dtype=int)
+
+    out32   = np.zeros((3,2), dtype=float)
+    out23   = np.zeros((3,2), dtype=float)
+
+    confirm_raises(lambda: testlib.identity(),
+                   msg='output-only named dimensions MUST be given in the in-place array')
+    confirm_raises(lambda: testlib.identity(out=out_int),
+                   msg='types must match')
+    confirm_equal(ref, testlib.identity(out=out),
+                  msg='basic output-only named dimensions work')
+    confirm_raises(lambda: testlib.identity(out=out23),
+                   msg='output-only named dimensions must still be self-consistent')
+    confirm_raises(lambda: testlib.identity(out=out32),
+                   msg='output-only named dimensions must still be self-consistent')
+
+    out_discontiguous = np.zeros((4,5,6), dtype=float)[:3,:3,0]
+    confirm(not out_discontiguous.flags['C_CONTIGUOUS'])
+    testlib.identity(out = out_discontiguous)
+    confirm_equal(np.eye(3, dtype=float),
+                  out_discontiguous)
+
+
 def test_inner():
     r'''Testing the broadcasted inner product'''
 
@@ -567,6 +602,7 @@ def test_broadcasting():
 
 
 test_identity3()
+test_identity()
 test_inner()
 test_outer()
 test_innerouter()

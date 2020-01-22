@@ -241,7 +241,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                dims_named[-PROTOTYPE_ ## name[i]-1] < 0)                \
             {                                                           \
                 PyErr_Format(PyExc_RuntimeError,                        \
-                             "Output prototype has some named dimension not encountered in the input. The pywrap generator shouldn't have let this happen"); \
+                             "Output prototype " #name " dimension %d is named, but not defined by the input. You MUST pass in-place output array(s) to define these dimensions", \
+                             i);                                         \
                 goto done;                                              \
             }
         OUTPUTS(CHECK_DIMS_NAMED_KNOWN);

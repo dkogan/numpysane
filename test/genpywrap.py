@@ -39,6 +39,24 @@ m.function( "identity3",
     return true;
 '''})
 
+m.function( "identity",
+            '''Generates an NxN identity matrix. Output matrices must be passed-in to define N''',
+
+            args_input       = (),
+            prototype_input  = (),
+            prototype_output = ('N', 'N'),
+
+            FUNCTION__slice_code = \
+                {np.float64:
+                 r'''
+    int N = dims__output[0];
+    for(int i=0; i<N; i++)
+        for(int j=0; j<N; j++)
+            ((double*)(data__output + i*strides__output[0] + j*strides__output[1]))[0] =
+                 (i==j) ? 1.0 : 0.0;
+    return true;
+'''},)
+
 m.function( "inner",
             "Inner-product pywrapped with npsp",
 
@@ -154,15 +172,6 @@ m.function( "sorted_indices",
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code
 # should barf
-try:
-    m.function( "outer_broken",
-                "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
-                prototype_input  = (('n',), ('n',)),
-                prototype_output = ('n', 'fn'),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
-except: pass # known error
-else:   raise Exception("Expected error didn't happen")
 
 try:
     m.function( "outer_broken",
@@ -183,17 +192,6 @@ try:
                 FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
-
-# first check invalid broadcasting defines
-try:
-    m.function( "outer_broken",
-                "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
-                prototype_input  = (('n',), ('n',())),
-                prototype_output = ('m'),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
-except: pass # known error
-else:   raise Exception("Expected error didn't happen: input dims must be integers or strings")
 
 try:
     m.function( "outer_broken",
@@ -224,16 +222,6 @@ try:
                 FUNCTION__slice_code = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be integers or strings")
-
-try:
-    m.function( "outer_broken",
-                "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
-                prototype_input  = (('n',), ('n',)),
-                prototype_output = ('m'),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
-except: pass # known error
-else:   raise Exception("Expected error didn't happen: output dims must all be known")
 
 try:
     m.function( "outer_broken",
