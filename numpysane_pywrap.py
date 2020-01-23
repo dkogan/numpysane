@@ -497,6 +497,11 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 '''
         for n in slice_args:
             text += contiguous_macro_template.replace("{name}", n)
+        text += \
+            '\n' + \
+            '#define IS_CONTIGUOUS_ALL(set_error) ' + \
+            ' && '.join( "IS_CONTIGUOUS__"+name+"(set_error)" for name in slice_args) + \
+            '\n'
 
         # The validation function. Evaluated once. For each argument and
         # output, we pass in the dimensions and the strides (we do NOT pass
@@ -516,6 +521,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
         for n in slice_args:
             text += '#undef IS_CONTIGUOUS__{name}\n'.replace('{name}', n)
+        text += '#undef IS_CONTIGUOUS_ALL\n'
 
         slice_arglist = [arg for n in slice_args
                          for arg in

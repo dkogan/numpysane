@@ -138,10 +138,7 @@ m.function( "innerouter",
             VALIDATE_code = r'''
             return \
               *scale > 0.0       &&
-              IS_CONTIGUOUS__a(true) &&
-              IS_CONTIGUOUS__b(true) &&
-              IS_CONTIGUOUS__output0(true) &&
-              IS_CONTIGUOUS__output1(true);
+              IS_CONTIGUOUS_ALL(true);
 ''',
             extra_args = (("double", "scale", "1", "d"),), )
 
