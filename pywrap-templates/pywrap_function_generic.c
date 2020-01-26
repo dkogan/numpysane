@@ -128,9 +128,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             PyErr_Format(PyExc_RuntimeError,
                          "The set of input and output types must correspond to one of these sets:\n"
                          {TYPESETS_NAMES}
-                         "instead I got (inputs,output) of type ("
-                         ARGUMENTS(INPUT_PERCENT_S)
-                         OUTPUTS(INPUT_PERCENT_S)
+                         "instead I got types (inputs: " ARGUMENTS(INPUT_PERCENT_S) ")"
+                         "   outputs: (" OUTPUTS(INPUT_PERCENT_S) ")\n"
+                         "None in an output is not an error: a new array of the right type will be created"
                          ARGUMENTS(INPUT_TYPEOBJ)
                          OUTPUTS(INPUT_TYPEOBJ) );
 

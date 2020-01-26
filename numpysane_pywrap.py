@@ -418,7 +418,15 @@ class module:
         TYPESETS = ' '.join( ("_(" + ','.join(tuple(str(np.dtype(t).num) for t in known_types[i]) + (str(i),)) + ')') \
                               for i in range(Ntypesets))
         TYPESET_MATCHES_ARGLIST = ','.join(("t" + str(i)) for i in range(Ninputs_and_outputs))
-        TYPESETS_NAMES = ' '.join(('"  (' + ','.join( np.dtype(t).name for t in s) + ')\\n"') \
+        def parened_type_list(l, Ninputs):
+            r'''Converts list of types to string
+
+            Like "(inputs: float32,int32  outputs: float32, float32)"
+'''
+            si = 'inputs: '  + ','.join( np.dtype(t).name for t in l[:Ninputs])
+            so = 'outputs: ' + ','.join( np.dtype(t).name for t in l[Ninputs:])
+            return '(' + si + '   ' + so + ')'
+        TYPESETS_NAMES = ' '.join(('"  ' + parened_type_list(s,Ninputs) +'\\n"') \
                                   for s in known_types)
 
         ARGUMENTS_LIST = ['#define ARGUMENTS(_)']
