@@ -47,74 +47,28 @@ r'''more-reasonable core functionality for numpy
     array([ 305, 1250])
 
 * DESCRIPTION
-Numpy is widely used, relatively polished, and has a wide range of libraries
-available. At the same time, some of its very core functionality is strange,
-confusing and just plain wrong. This is in contrast with PDL
-(http://pdl.perl.org), which has a much more reasonable core, but a number of
-higher-level warts, and a relative dearth of library support. This module
-intends to improve the developer experience by providing alternate APIs to some
-core numpy functionality that is much more reasonable, especially for those who
-have used PDL in the past.
+Numpy is a very widely used toolkit for numerical computation in Python. Despite
+its popularity, some of its core functionality is mysterious and/or incomplete.
+numpysane is a library to fill in those gaps by providing new routines for that
+functionality. The functions provided by this module fall into three broad
+categories, listed below.
 
-Instead of writing a new module (this module), it would be really nice to simply
-patch numpy to give everybody the more reasonable behavior. I'd be very happy to
-do that, but the issues lie with some very core functionality, and any changes
-in behavior would break existing code. Any comments in how to achieve better
-behaviors in a less forky manner are welcome.
-
-Finally, if the existing system DOES make sense in some way that I'm simply not
-understanding, I'm happy to listen. I have no intention to disparage anyone or
-anything; I just want a more usable system for numerical computations.
-
-The issues addressed by this module fall into two broad categories:
-
-1. Incomplete broadcasting support
-2. Strange, special-case-ridden rules for basic array manipulation, especially
-   dealing with dimensionality
+Most of these functions are direct translations of analogous ones in PDL
+(http://pdl.perl.org), a numerical computation library for perl.
 
 ** Broadcasting
-*** Problem
 Numpy has a limited support for broadcasting
 (http://docs.scipy.org/doc/numpy/user/basics.broadcasting.html), a generic way
-to vectorize functions. When making a broadcasted call to a function, you pass
-in arguments with the inputs to vectorize available in new dimensions, and the
-broadcasting mechanism automatically calls the function multiple times as
-needed, and reports the output as an array collecting all the results.
+to vectorize functions. A broadcasting-aware function knows the dimensionality
+of its inputs, and any extra dimensions in the input are automatically used for
+vectorization.
 
+*** Broadcasting rules
 A basic example is an inner product: a function that takes in two
-identically-sized vectors (1-dimensional arrays) and returns a scalar
-(0-dimensional array). A broadcasted inner product function could take in two
-arrays of shape (2,3,4), compute the 6 inner products of length-4 each, and
-report the output in an array of shape (2,3). Numpy puts the most-significant
-dimension at the end, which is why this isn't 12 inner products of length-2
-each. This is an arbitrary design choice, which could have been made
-differently: PDL puts the most-significant dimension at the front.
-
-The user doesn't choose whether to use broadcasting or not: some functions
-support it, and some do not. In PDL, broadcasting (called "threading" in that
-system) is a pervasive concept throughout. A PDL user has an expectation that
-every function can broadcast, and the documentation for every function is very
-explicit about the dimensionality of the inputs and outputs. Any data above the
-expected input dimensions is broadcast.
-
-By contrast, in numpy very few functions know how to broadcast. On top of that,
-the documentation is usually silent about the broadcasting status of a function
-in question. And on top of THAT, broadcasting rules state that an array of
-dimensions (n,m) is functionally identical to one of dimensions
-(1,1,1,....1,n,m). Sadly, numpy does not respect its own broadcasting rules, and
-many functions have special-case logic to create different behaviors for inputs
-with different numbers of dimensions; and this creates unexpected results. The
-effect of all this is a messy situation where the user is often not sure of the
-exact behavior of the functions they're calling, and trial and error is required
-to make the system do what one wants.
-
-*** Solution
-This module contains functionality to make any arbitrary function broadcastable,
-in either C or Python.
-
-**** Broadcasting rules
-A detailed description of broadcasting rules is available in the numpy
-documentation: http://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+identically-sized 1-dimensional arrays (input prototype (('n',), ('n',)) ) and
+returns a scalar (output prototype () ). If one calls a broadcasting-aware inner
+product with two arrays of shape (2,3,4) as input, it would compute 6 inner
+products of length-4 each, and report the output in an array of shape (2,3).
 
 In short:
 
@@ -142,15 +96,34 @@ will return an output array of shape (2,5, ...), where ... is the shape of each
 output slice. Note again that the prototype dictates the TRAILING shape of the
 inputs.
 
-The output of the inner function can be a numpy array or a tuple of numpy
-arrays. The output specification in the prototype can contain a shape tuple (for
-the one-and-only output), or a tuple of shape tuples (for multiple outputs,
-returned as tuples).
+*** What about the stock broadcasting support?
+The numpy documentation dedicates a whole page explaining the broadcasting
+rules, but since very few numpy functions support broadcasting (and the docs are
+usually silent on the topic), there's very little user expectation that any
+given function supports it, and most users thus haven't even heard of it. And on
+top of THAT, broadcasting rules state that an array of dimensions (n,m) is
+functionally identical to one of dimensions (1,1,1,....1,n,m), but numpy does
+not respect its own broadcasting rules, and many functions have special-case
+logic to create different behaviors for inputs with different numbers of
+dimensions. The effect of all this is a messy situation where the user is often
+not sure of the exact behavior of the functions they're calling, and trial and
+error is required to make the system do what one wants.
 
-**** Broadcasting in python
+*** What this module provides
+This module contains functionality to make any arbitrary function broadcastable,
+in either C or Python. In both cases, the input and output (required in C,
+optional in Python) prototypes are declared, and these are used for
+shape-checking and vectorization each time the function is called.
 
-This is invoked as a decorator, applied to the arbitrary user function. An
-example:
+The functions can have either
+
+- A single output, returned as a numpy array. The output specification in the
+  prototype is a single shape tuple
+- Multiple outputs, returned as a tuple of numpy arrays. The output
+  specification in the prototype is a tuple of shape tuples
+
+*** Broadcasting in python
+This is invoked as a decorator, applied to any function. An example:
 
     >>> import numpysane as nps
 
@@ -158,10 +131,11 @@ example:
     ... def inner_product(a, b):
     ...     return a.dot(b)
 
-Here we have a simple inner product function to compute ONE inner product. We
-call 'broadcast_define' to add a broadcasting-aware wrapper that takes two 1D
-vectors of length 'n' each (same 'n' for the two inputs). This new
-'inner_product' function applies broadcasting, as needed:
+Here we have a simple inner product function to compute ONE inner product. The
+'broadcast_define' decorator adds broadcasting-awareness: 'inner_product()'
+expects two 1D vectors of length 'n' each (same 'n' for the two inputs),
+vectorizing extra dimensions, as needed. The inputs are shape-checked, and
+incompatible dimensions will trigger an exception. Example:
 
     >>> import numpy as np
 
@@ -179,17 +153,17 @@ vectors of length 'n' each (same 'n' for the two inputs). This new
     >>> inner_product(a,b)
     array([ 305, 1250])
 
-
 Another related function in this module broadcast_generate(). It's similar to
 broadcast_define(), but instead of adding broadcasting-awareness to an existing
-function, it simply generates tuples from a set of arguments according to a
-given prototype.
+function, it returns a generator that produces tuples from a set of arguments
+according to a given prototype.
 
 Stock numpy has some rudimentary support for all this with its vectorize()
 function, but it assumes only scalar inputs and outputs, which severaly limits
-its usefulness.
+its usefulness. See the docstrings for 'broadcast_define' and
+'broadcast_generate' in the INTERFACE section below for usage details.
 
-**** Broadcasting in C
+*** Broadcasting in C
 
 A C-level flavor of broadcast_define() is available. It wraps C code in C loops.
 This is an analogue of PDL::PP (http://pdl.perl.org/PDLdocs/PP.html). Here the
@@ -214,20 +188,36 @@ The C broadcasting is functional, but a few more features are on the roadmap:
   relationship between named dimensions that is known. If so, this should be
   specify-able
 
-- Parallelization for broadcasted slices. Since each broadcasting loop is
-  independent, this is a very natural place to add parallelism. This is fairly
-  simple with OpenMP.
+*** New planned functionality
 
-** Strangeness in core routines
-*** Problem
-There are some core numpy functions whose behavior is strange, full of special
-cases and very confusing, at least to me. That makes it difficult to achieve
-some very basic things. In the following examples, I use a function "arr" that
-returns a numpy array with given dimensions:
+- Parallelization for broadcasted slices. Since each broadcasting loop is
+  independent, this is a natural place to add parallelism. This should be
+  straightforward with OpenMP.
+
+** Core routine improvements
+Numpy functions that move dimensions around and concatenate matrices are
+unintuitive. For instance, a simple concatenation of a row-vector or a
+column-vector to a matrix requires arcane knowledge to accomplish reliably. This
+module provides new functions that can be used for these basic operations. These
+new functions do have well-defined and sensible behavior, and they largely come
+from the interfaces in PDL (http://pdl.perl.org). These all respect the core
+rules of numpy broadcasting:
+
+- LEADING length-1 dimensions don't affect the meaning of an array, so the
+  routines handle missing or extra length-1 dimensions at the front
+
+- The inner-most dimensions of an array are the TRAILING ones, so whenever an
+  axis specification is used, it is strongly recommended (sometimes required) to
+  count the axes from the back by passing in axis<0
+
+A high level description of the functionality is given here, and each function
+is described in detail in the INTERFACE section below. In the following
+examples, I use a function "arr" that returns a numpy array with given
+dimensions:
 
     >>> def arr(*shape):
     ...     product = reduce( lambda x,y: x*y, shape)
-    ...     return np.arange(product).reshape(*shape)
+    ...     return numpy.arange(product).reshape(*shape)
 
     >>> arr(1,2,3)
     array([[[0, 1, 2],
@@ -236,137 +226,338 @@ returns a numpy array with given dimensions:
     >>> arr(1,2,3).shape
     (1, 2, 3)
 
-The following sections are an incomplete list of the strange functionality I've
-encountered.
+*** Concatenation
+This module provides two functions to do this
 
-**** Concatenation
-A prime example of confusing functionality is the array concatenation routines.
-Numpy has a number of functions to do this, each being strange.
+**** glue
+Concatenates some number of arrays along a given axis ('axis' must be given in a
+kwarg). Implicit length-1 dimensions are added at the start as needed.
+Dimensions other than the glueing axis must match exactly. Basic usage:
 
-***** hstack()
+    >>> row_vector = arr(  3,)
+    >>> col_vector = arr(5,1,)
+    >>> matrix     = arr(5,3,)
+
+    >>> numpysane.glue(matrix, row_vector, axis = -2).shape
+    (6,3)
+
+    >>> numpysane.glue(matrix, col_vector, axis = -1).shape
+    (5,4)
+
+**** cat
+Concatenate some number of arrays along a new leading axis. Implicit length-1
+dimensions are added, and the logical shapes of the inputs must match. This
+function is a logical inverse of numpy array iteration: iteration splits an
+array over its leading dimension, while cat joins a number of arrays via a new
+leading dimension. Basic usage:
+
+    >>> numpysane.cat(arr(5,), arr(5,)).shape
+    (2,5)
+
+    >>> numpysane.cat(arr(5,), arr(1,1,5,)).shape
+    (2,1,1,5)
+
+*** Manipulation of dimensions
+Several functions are available, all being fairly direct ports of their PDL
+(http://pdl.perl.org) equivalents
+**** clump
+Reshapes the array by grouping together 'n' dimensions, where 'n' is given in a
+kwarg. If 'n' > 0, then n leading dimensions are clumped; if 'n' < 0, then -n
+trailing dimensions are clumped. Basic usage:
+
+    >>> numpysane.clump( arr(2,3,4), n = -2).shape
+    (2, 12)
+
+    >>> numpysane.clump( arr(2,3,4), n =  2).shape
+    (6, 4)
+
+**** atleast_dims
+Adds length-1 dimensions at the front of an array so that all the given
+dimensions are in-bounds. Any axis<0 may expand the shape. Adding new leading
+dimensions (axis>=0) is never useful, since numpy broadcasts from the end, so
+clump() treats axis>0 as a check only: the requested axis MUST already be
+in-bounds, or an exception is thrown. This function always preserves the meaning
+of all the axes in the array: axis=-1 is the same axis before and after the
+call. Basic usage:
+
+    >>> numpysane.atleast_dims(arr(2,3), -1).shape
+    (2, 3)
+
+    >>> numpysane.atleast_dims(arr(2,3), -2).shape
+    (2, 3)
+
+    >>> numpysane.atleast_dims(arr(2,3), -3).shape
+    (1, 2, 3)
+
+    >>> numpysane.atleast_dims(arr(2,3), 0).shape
+    (2, 3)
+
+    >>> numpysane.atleast_dims(arr(2,3), 1).shape
+    (2, 3)
+
+    >>> numpysane.atleast_dims(arr(2,3), 2).shape
+    [exception]
+
+**** mv
+Moves a dimension from one position to another. Basic usage to move the last
+dimension (-1) to the front (0)
+
+    >>> numpysane.mv(arr(2,3,4), -1, 0).shape
+    (4, 2, 3)
+
+Or to move a dimension -5 (added implicitly) to the end
+
+    >>> numpysane.mv(arr(2,3,4), -5, -1).shape
+    (1, 2, 3, 4, 1)
+
+**** xchg
+Exchanges the positions of two dimensions. Basic usage to move the last
+dimension (-1) to the front (0), and the front to the back.
+
+    >>> numpysane.xchg(arr(2,3,4), -1, 0).shape
+    (4, 3, 2)
+
+Or to swap a dimension -5 (added implicitly) with dimension -2
+
+    >>> numpysane.xchg(arr(2,3,4), -5, -2).shape
+    (3, 1, 2, 1, 4)
+
+**** transpose
+Reverses the order of the two trailing dimensions in an array. The whole array
+is seen as being an array of 2D matrices, each matrix living in the 2 most
+significant dimensions, which implies this definition. Basic usage:
+
+    >>> numpysane.transpose( arr(2,3) ).shape
+    (3,2)
+
+    >>> numpysane.transpose( arr(5,2,3) ).shape
+    (5,3,2)
+
+    >>> numpysane.transpose( arr(3,) ).shape
+    (3,1)
+
+Note that in the second example we had 5 matrices, and we transposed each one.
+And in the last example we turned a row vector into a column vector by adding an
+implicit leading length-1 dimension before transposing.
+
+**** dummy
+Adds a single length-1 dimension at the given position. Basic usage:
+
+    >>> numpysane.dummy(arr(2,3,4), -1).shape
+    (2, 3, 4, 1)
+
+**** reorder
+Reorders the dimensions in an array using the given order. Basic usage:
+
+    >>> numpysane.reorder( arr(2,3,4), -1, -2, -3 ).shape
+    (4, 3, 2)
+
+    >>> numpysane.reorder( arr(2,3,4), 0, -1, 1 ).shape
+    (2, 4, 3)
+
+    >>> numpysane.reorder( arr(2,3,4), -2 , -1, 0 ).shape
+    (3, 4, 2)
+
+    >>> numpysane.reorder( arr(2,3,4), -4 , -2, -5, -1, 0 ).shape
+    (1, 3, 1, 4, 2)
+
+** Basic linear algebra
+*** inner
+Broadcast-aware inner product. Identical to numpysane.dot(). Basic usage to
+compute 4 inner products of length 3 each:
+
+    >>> numpysane.inner(arr(  3,),
+                        arr(4,3,)).shape
+    (4,)
+
+    >>> numpysane.inner(arr(  3,),
+                        arr(4,3,))
+    array([5, 14, 23, 32])
+
+*** dot
+Broadcast-aware non-conjugating dot product. Identical to numpysane.inner().
+
+*** vdot
+Broadcast-aware conjugating dot product. Same as numpysane.dot(), except this
+one conjugates complex input, which numpysane.dot() does not
+
+*** outer
+Broadcast-aware outer product. Basic usage to compute 4 outer products of length
+3 each:
+
+    >>> numpysane.outer(arr(  3,),
+                        arr(4,3,)).shape
+    array(4, 3, 3)
+
+*** norm2
+Broadcast-aware 2-norm. numpysane.norm2(x) is identical to numpysane.inner(x,x):
+
+    >>> numpysane.norm2(arr(4,3))
+    array([5, 50, 149, 302])
+
+*** mag
+Broadcast-aware vector magnitude. mag(x) is functionally identical to
+sqrt(numpysane.norm2(x)) and sqrt(numpysane.inner(x,x))
+
+    >>> numpysane.mag(arr(4,3))
+    array([ 2.23606798,  7.07106781, 12.20655562, 17.3781472 ])
+
+*** trace
+Broadcast-aware matrix trace.
+
+    >>> numpysane.trace(arr(4,3,3))
+    array([12., 39., 66., 93.])
+
+*** matmult
+Broadcast-aware matrix multiplication. This accepts an arbitrary number of
+inputs, and adds leading length-1 dimensions as needed. Multiplying a row-vector
+by a matrix
+
+    >>> numpysane.matmult( arr(3,), arr(3,2) ).shape
+    (2,)
+
+Multiplying a row-vector by 5 different matrices:
+
+    >>> numpysane.matmult( arr(3,), arr(5,3,2) ).shape
+    (5, 2)
+
+Multiplying a matrix by a col-vector:
+
+    >>> numpysane.matmult( arr(3,2), arr(2,1) ).shape
+    (3, 1)
+
+Multiplying a row-vector by a matrix by a col-vector:
+
+    >>> numpysane.matmult( arr(3,), arr(3,2), arr(2,1) ).shape
+    (1,)
+
+** What's wrong with existing numpy functions?
+Why did I go through all the trouble to reimplement all this? Doesn't numpy
+already do all these things? Yes, it does. But in a very nonintuitive way.
+
+*** Concatenation
+**** hstack()
 hstack() performs a "horizontal" concatenation. When numpy prints an array, this
-is the last dimension (remember, the most significant dimensions in numpy are at
-the end). So one would expect that this function concatenates arrays along this
-last dimension. In the special case of 1D and 2D arrays, one would be right:
+is the last dimension (the most significant dimensions in numpy are at the end).
+So one would expect that this function concatenates arrays along this last
+dimension. In the special case of 1D and 2D arrays, one would be right:
 
-    >>> np.hstack( (arr(3), arr(3))).shape
+    >>> numpy.hstack( (arr(3), arr(3))).shape
     (6,)
 
-    >>> np.hstack( (arr(2,3), arr(2,3))).shape
+    >>> numpy.hstack( (arr(2,3), arr(2,3))).shape
     (2, 6)
 
 but in any other case, one would be wrong:
 
-    >>> np.hstack( (arr(1,2,3), arr(1,2,3))).shape
+    >>> numpy.hstack( (arr(1,2,3), arr(1,2,3))).shape
     (1, 4, 3)     <------ I expect (1, 2, 6)
 
-    >>> np.hstack( (arr(1,2,3), arr(1,2,4))).shape
+    >>> numpy.hstack( (arr(1,2,3), arr(1,2,4))).shape
     [exception]   <------ I expect (1, 2, 7)
 
-    >>> np.hstack( (arr(3), arr(1,3))).shape
+    >>> numpy.hstack( (arr(3), arr(1,3))).shape
     [exception]   <------ I expect (1, 6)
 
-    >>> np.hstack( (arr(1,3), arr(3))).shape
+    >>> numpy.hstack( (arr(1,3), arr(3))).shape
     [exception]   <------ I expect (1, 6)
 
-I think the above should all succeed, and should produce the shapes as
-indicated. Cases such as "np.hstack( (arr(3), arr(1,3)))" are maybe up for
-debate, but broadcasting rules allow adding as many extra length-1 dimensions as
-we want without changing the meaning of the object, so I claim this should work.
-Either way, if you print out the operands for any of the above, you too would
-expect a "horizontal" stack() to work as stated above.
+The above should all succeed, and should produce the shapes as indicated. Cases
+such as "numpy.hstack( (arr(3), arr(1,3)))" are maybe up for debate, but
+broadcasting rules allow adding as many extra length-1 dimensions as we want
+without changing the meaning of the object, so I claim this should work. Either
+way, if you print out the operands for any of the above, you too would expect a
+"horizontal" stack() to work as stated above.
 
 It turns out that normally hstack() concatenates along axis=1, unless the first
-argument only has one dimension, in which case axis=0 is used. This is 100%
-wrong in a system where the most significant dimension is the last one, unless
-you assume that everyone has only 2D arrays, where the last dimension and the
-second dimension are the same.
+argument only has one dimension, in which case axis=0 is used. In a system where
+the most significant dimension is the last one, this is only correct if everyone
+has only 2D arrays. The correct way to do this is to concatenate along axis=-1.
+It works for n-dimensionsal objects, and doesn't require the special case logic
+for 1-dimensional objects.
 
-The correct way to do this is to concatenate along axis=-1. It works for
-n-dimensionsal objects, and doesn't require the special case logic for
-1-dimensional objects that hstack() has.
-
-***** vstack()
+**** vstack()
 Similarly, vstack() performs a "vertical" concatenation. When numpy prints an
 array, this is the second-to-last dimension (remember, the most significant
 dimensions in numpy are at the end). So one would expect that this function
-concatenates arrays along this second-to-last dimension. In the special
+concatenates arrays along this second-to-last dimension. Again, in the special
 case of 1D and 2D arrays, one would be right:
 
-    >>> np.vstack( (arr(2,3), arr(2,3))).shape
+    >>> numpy.vstack( (arr(2,3), arr(2,3))).shape
     (4, 3)
 
-    >>> np.vstack( (arr(3), arr(3))).shape
+    >>> numpy.vstack( (arr(3), arr(3))).shape
     (2, 3)
 
-    >>> np.vstack( (arr(1,3), arr(3))).shape
+    >>> numpy.vstack( (arr(1,3), arr(3))).shape
     (2, 3)
 
-    >>> np.vstack( (arr(3), arr(1,3))).shape
+    >>> numpy.vstack( (arr(3), arr(1,3))).shape
     (2, 3)
 
-    >>> np.vstack( (arr(2,3), arr(3))).shape
+    >>> numpy.vstack( (arr(2,3), arr(3))).shape
     (3, 3)
 
 Note that this function appears to tolerate some amount of shape mismatches. It
 does it in a form one would expect, but given the state of the rest of this
-system, I found it surprising. For instance "np.hstack( (arr(1,3), arr(3)))"
-fails, so one would think that "np.vstack( (arr(1,3), arr(3)))" would fail too.
+system, I found it surprising. For instance "numpy.hstack( (arr(1,3), arr(3)))"
+fails, so one would think that "numpy.vstack( (arr(1,3), arr(3)))" would fail
+too.
 
 And once again, adding more dimensions make it confused, for the same reason:
 
-    >>> np.vstack( (arr(1,2,3), arr(2,3))).shape
+    >>> numpy.vstack( (arr(1,2,3), arr(2,3))).shape
     [exception]   <------ I expect (1, 4, 3)
 
-    >>> np.vstack( (arr(1,2,3), arr(1,2,3))).shape
+    >>> numpy.vstack( (arr(1,2,3), arr(1,2,3))).shape
     (2, 2, 3)     <------ I expect (1, 4, 3)
 
 Similarly to hstack(), vstack() concatenates along axis=0, which is "vertical"
 only for 2D arrays, but not for any others. And similarly to hstack(), the 1D
-case has special-cased logic to work properly.
+case has special-cased logic to make it work properly.
 
 The correct way to do this is to concatenate along axis=-2. It works for
 n-dimensionsal objects, and doesn't require the special case for 1-dimensional
-objects that vstack() has.
+objects.
 
-***** dstack()
+**** dstack()
 I'll skip the detailed description, since this is similar to hstack() and
 vstack(). The intent was to concatenate across axis=-3, but the implementation
 takes axis=2 instead. This is wrong, as before. And I find it strange that these
 3 functions even exist, since they are all special-cases: the concatenation axis
 should be an argument, and at most, the edge special case (hstack()) should
-exist. This brings us to the next function:
+exist. This brings us to the next function
 
-***** concatenate()
+**** concatenate()
 This is a more general function, and unlike hstack(), vstack() and dstack(), it
 takes as input a list of arrays AND the concatenation dimension. It accepts
 negative concatenation dimensions to allow us to count from the end, so things
-should work better. And in many ways that failed previously, they do:
+should work better. And in many cases that failed previously, they do:
 
-    >>> np.concatenate( (arr(1,2,3), arr(1,2,3)), axis=-1).shape
+    >>> numpy.concatenate( (arr(1,2,3), arr(1,2,3)), axis=-1).shape
     (1, 2, 6)
 
-    >>> np.concatenate( (arr(1,2,3), arr(1,2,4)), axis=-1).shape
+    >>> numpy.concatenate( (arr(1,2,3), arr(1,2,4)), axis=-1).shape
     (1, 2, 7)
 
-    >>> np.concatenate( (arr(1,2,3), arr(1,2,3)), axis=-2).shape
+    >>> numpy.concatenate( (arr(1,2,3), arr(1,2,3)), axis=-2).shape
     (1, 4, 3)
 
 But many things still don't work as I would expect:
 
-    >>> np.concatenate( (arr(1,3), arr(3)), axis=-1).shape
+    >>> numpy.concatenate( (arr(1,3), arr(3)), axis=-1).shape
     [exception]   <------ I expect (1, 6)
 
-    >>> np.concatenate( (arr(3), arr(1,3)), axis=-1).shape
+    >>> numpy.concatenate( (arr(3), arr(1,3)), axis=-1).shape
     [exception]   <------ I expect (1, 6)
 
-    >>> np.concatenate( (arr(1,3), arr(3)), axis=-2).shape
+    >>> numpy.concatenate( (arr(1,3), arr(3)), axis=-2).shape
     [exception]   <------ I expect (3, 3)
 
-    >>> np.concatenate( (arr(3), arr(1,3)), axis=-2).shape
+    >>> numpy.concatenate( (arr(3), arr(1,3)), axis=-2).shape
     [exception]   <------ I expect (2, 3)
 
-    >>> np.concatenate( (arr(2,3), arr(2,3)), axis=-3).shape
+    >>> numpy.concatenate( (arr(2,3), arr(2,3)), axis=-3).shape
     [exception]   <------ I expect (2, 2, 3)
 
 This function works as expected only if
@@ -376,11 +567,11 @@ This function works as expected only if
   concatenating
 - All inputs HAVE the dimension along which we're concatenating
 
-A legitimate use case that violates these conditions: I have an object that
-contains N 3D vectors, and I want to add another 3D vector to it. This is
-essentially the first failing example above.
+A common use case that violates these conditions: I have an object that contains
+N 3D vectors, and I want to add another 3D vector to it. This is essentially the
+first failing example above.
 
-***** stack()
+**** stack()
 The name makes it sound exactly like concatenate(), and it takes the same
 arguments, but it is very different. stack() requires that all inputs have
 EXACTLY the same shape. It then concatenates all the inputs along a new
@@ -388,88 +579,23 @@ dimension, and places that dimension in the location given by the 'axis' input.
 If this is the exact type of concatenation you want, this function works fine.
 But it's one of many things a user may want to do.
 
-**** inner() and dot()
-Another arbitrary example of a strange API is np.dot() and np.inner(). In a
-real-valued n-dimensional Euclidean space, a "dot product" is just another name
-for an "inner product". Numpy disagrees.
-
-It looks like np.dot() is matrix multiplication, with some wonky behaviors when
-given higher-dimension objects, and with some special-case behaviors for
-1-dimensional and 0-dimensional objects:
-
-    >>> np.dot( arr(4,5,2,3), arr(3,5)).shape
-    (4, 5, 2, 5) <--- expected result for a broadcasted matrix multiplication
-
-    >>> np.dot( arr(3,5), arr(4,5,2,3)).shape
-    [exception] <--- np.dot() is not commutative.
-                     Expected for matrix multiplication, but not for a dot
-                     product
-
-    >>> np.dot( arr(4,5,2,3), arr(1,3,5)).shape
-    (4, 5, 2, 1, 5) <--- don't know where this came from at all
-
-    >>> np.dot( arr(4,5,2,3), arr(3)).shape
-    (4, 5, 2) <--- 1D special case. This is a dot product.
-
-    >>> np.dot( arr(4,5,2,3), 3).shape
-    (4, 5, 2, 3) <--- 0D special case. This is a scaling.
-
-It looks like np.inner() is some sort of quasi-broadcastable inner product, also
-with some funny dimensioning rules. In many cases it looks like np.dot(a,b) is
-the same as np.inner(a, transpose(b)) where transpose() swaps the last two
-dimensions:
-
-
-    >>> np.inner( arr(4,5,2,3), arr(5,3)).shape
-    (4, 5, 2, 5) <--- All the length-3 inner products collected into a shape
-                      with not-quite-broadcasting rules
-
-    >>> np.inner( arr(5,3), arr(4,5,2,3)).shape
-    (5, 4, 5, 2) <--- np.inner() is not commutative. Unexpected
-                      for an inner product
-
-    >>> np.inner( arr(4,5,2,3), arr(1,5,3)).shape
-    (4, 5, 2, 1, 5) <--- No idea
-
-    >>> np.inner( arr(4,5,2,3), arr(3)).shape
-    (4, 5, 2) <--- 1D special case. This is a dot product.
-
-    >>> np.inner( arr(4,5,2,3), 3).shape
-    (4, 5, 2, 3) <--- 0D special case. This is a scaling.
-
-**** atleast_xd()
-Numpy has 3 special-case functions atleast_1d(), atleast_2d() and atleast_3d().
-For 4d and higher, you need to do something else. As expected by now, these do
-surprising things:
-
-    >>> np.atleast_3d( arr(3)).shape
-    (1, 3, 1)
-
-I don't know when this is what I would want, so we move on.
-
-
-*** Solution
-This module introduces new functions that can be used for this core
-functionality instead of the builtin numpy functions. These new functions work
-in ways that (I think) are more intuitive and more reasonable. They do not refer
-to anything being "horizontal" or "vertical", nor do they talk about "rows" or
-"columns"; these concepts simply don't apply in a generic N-dimensional system.
-These functions are very explicit about the dimensionality of the
-inputs/outputs, and fit well into a broadcasting-aware system. Furthermore, the
-names and semantics of these new functions come directly from PDL, which is more
-consistent in this area.
+**** Thoughts on concatenation
+This module introduces numpysane.glue() and numpysane.cat() to replace all the
+above functions. These do not refer to anything being "horizontal" or
+"vertical", nor do they talk about "rows" or "columns": these concepts simply
+don't apply in a generic N-dimensional system. These functions are very explicit
+about the dimensionality of the inputs/outputs, and fit well into a
+broadcasting-aware system.
 
 Since these functions assume that broadcasting is an important concept in the
 system, the given axis indices should be counted from the most significant
 dimension: the last dimension in numpy. This means that where an axis index is
 specified, negative indices are encouraged. glue() forbids axis>=0 outright.
 
-
-Example for further justification:
-
+***** Example for further justification
 An array containing N 3D vectors would have shape (N,3). Another array
-containing a single 3D vector would have shape (3). Counting the dimensions from
-the end, each vector is indexed in dimension -1. However, counting from the
+containing a single 3D vector would have shape (3,). Counting the dimensions
+from the end, each vector is indexed in dimension -1. However, counting from the
 front, the vector is indexed in dimension 0 or 1, depending on which of the two
 arrays we're looking at. If we want to add the single vector to the array
 containing the N vectors, and we mistakenly try to concatenate along the first
@@ -479,7 +605,7 @@ have shape (N,3) and not (3,N)? Because if we apply python iteration to it, we'd
 expect to get N iterates of arrays with shape (3,) each, and numpy iterates from
 the first dimension:
 
-    >>> a = np.arange(2*3).reshape(2,3)
+    >>> a = numpy.arange(2*3).reshape(2,3)
 
     >>> a
     array([[0, 1, 2],
@@ -488,74 +614,80 @@ the first dimension:
     >>> [x for x in a]
     [array([0, 1, 2]), array([3, 4, 5])]
 
-New functions this module provides (documented fully in the next section):
+*** Manipulation of dimensions
+**** atleast_xd()
+Numpy has 3 special-case functions atleast_1d(), atleast_2d() and atleast_3d().
+For 4d and higher, you need to do something else. These do surprising things:
 
-**** glue
-Concatenates arrays along a given axis ('axis' must be given in a kwarg).
-Implicit length-1 dimensions are added at the start as needed. Dimensions other
-than the glueing axis must match exactly.
+    >>> numpy.atleast_3d(arr(3)).shape
+    (1, 3, 1)
 
-**** cat
-Concatenate a given list of arrays along a new least-significant (leading) axis.
-Again, implicit length-1 dimensions are added, and the resulting shapes must
-match, and no data duplication occurs.
+**** transpose()
+Given a matrix (a 2D array), numpy.transpose() swaps the two dimensions, as
+expected. Given anything else, it does not do what is expected:
 
-**** clump
-Reshapes the array by grouping together 'n' dimensions, where 'n' is given in a
-kwarg. If 'n' > 0, then n leading dimensions are clumped; if 'n' < 0, then -n
-trailing dimensions are clumped
+    >>> numpy.transpose(arr(3,      )).shape
+    (3,)
 
-**** atleast_dims
-Adds length-1 dimensions at the front of an array so that all the given
-dimensions are in-bounds. Given axis<0 can expand the shape; given axis>=0 MUST
-already be in-bounds. This preserves the alignment of the most-significant axis
-index.
+    >>> numpy.transpose(arr(3,4,    )).shape
+    (4, 3)
 
-**** mv
-Moves a dimension from one position to another
+    >>> numpy.transpose(arr(3,4,5,6,)).shape
+    (6, 5, 4, 3)
 
-**** xchg
-Exchanges the positions of two dimensions
+I.e. numpy.transpose() reverses the order of ALL dimensions in the array. So if
+we have N 2D matrices in a single array, numpy.transpose() doesn't transpose
+each matrix.
 
-**** transpose
-Reverses the order of the two most significant dimensions in an array. The whole
-array is seen as being an array of 2D matrices, each matrix living in the 2 most
-significant dimensions, which implies this definition.
+*** Basic linear algebra
+**** inner() and dot()
+numpy.inner() and numpy.dot() are strange. In a real-valued n-dimensional
+Euclidean space, a "dot product" is just another name for an "inner product".
+Numpy disagrees.
 
-**** dummy
-Adds a single length-1 dimension at the given position
+It looks like numpy.dot() is matrix multiplication, with some wonky behaviors
+when given higher-dimension objects, and with some special-case behaviors for
+1-dimensional and 0-dimensional objects:
 
-**** reorder
-Completely reorders the dimensions in an array
+    >>> numpy.dot( arr(4,5,2,3), arr(3,5)).shape
+    (4, 5, 2, 5) <--- expected result for a broadcasted matrix multiplication
 
-**** dot
-Broadcast-aware non-conjugating dot product. Identical to inner
+    >>> numpy.dot( arr(3,5), arr(4,5,2,3)).shape
+    [exception] <--- numpy.dot() is not commutative.
+                     Expected for matrix multiplication, but not for a dot
+                     product
 
-**** vdot
-Broadcast-aware conjugating dot product
+    >>> numpy.dot( arr(4,5,2,3), arr(1,3,5)).shape
+    (4, 5, 2, 1, 5) <--- don't know where this came from at all
 
-**** inner
-Broadcast-aware inner product. Identical to dot
+    >>> numpy.dot( arr(4,5,2,3), arr(3)).shape
+    (4, 5, 2) <--- 1D special case. This is a dot product.
 
-**** outer
-Broadcast-aware outer product.
+    >>> numpy.dot( arr(4,5,2,3), 3).shape
+    (4, 5, 2, 3) <--- 0D special case. This is a scaling.
 
-**** norm2
-Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
+It looks like numpy.inner() is some sort of quasi-broadcastable inner product, also
+with some funny dimensioning rules. In many cases it looks like numpy.dot(a,b) is
+the same as numpy.inner(a, transpose(b)) where transpose() swaps the last two
+dimensions:
 
-**** mag
-Broadcast-aware vector magnitude. mag(x) is functionally identical to
-sqrt(inner(x,x))
 
-**** trace
-Broadcast-aware trace.
+    >>> numpy.inner( arr(4,5,2,3), arr(5,3)).shape
+    (4, 5, 2, 5) <--- All the length-3 inner products collected into a shape
+                      with not-quite-broadcasting rules
 
-**** matmult
-Broadcast-aware matrix multiplication
+    >>> numpy.inner( arr(5,3), arr(4,5,2,3)).shape
+    (5, 4, 5, 2) <--- numpy.inner() is not commutative. Unexpected
+                      for an inner product
 
-*** New planned functionality
-The functions listed above are a start, but more will be added with time.
+    >>> numpy.inner( arr(4,5,2,3), arr(1,5,3)).shape
+    (4, 5, 2, 1, 5) <--- No idea
 
+    >>> numpy.inner( arr(4,5,2,3), arr(3)).shape
+    (4, 5, 2) <--- 1D special case. This is a dot product.
+
+    >>> numpy.inner( arr(4,5,2,3), 3).shape
+    (4, 5, 2, 3) <--- 0D special case. This is a scaling.
 '''
 
 import numpy as np
@@ -1515,6 +1647,8 @@ def cat(*args):
                 [103, 104, 105]]),
          array([[-100,  -99,  -98],
                 [ -97,  -96,  -95]])]
+        ### Note that this is the same as [a,b,c]: cat is the reverse of
+        ### iterating on an array
 
     This function concatenates the input arrays into an array shaped like the
     highest-dimensioned input, but with a new outer (at the start) dimension.
@@ -1522,7 +1656,8 @@ def cat(*args):
 
     As usual, the dimensions are aligned along the last one, so broadcasting
     will continue to work as expected. Note that this is the opposite operation
-    from iterating a numpy array; see the example above.
+    from iterating a numpy array: iteration splits an array over its leading
+    dimension, while cat joins a number of arrays via a new leading dimension.
 
     '''
     if len(args) == 0:
@@ -2198,8 +2333,8 @@ def matmult( *args ):
                [504]])
 
     This multiplies N matrices together by repeatedly calling matmult2() for
-    each adjacent pair. Unlike matmult2(), the arguments MUST all be matrices to
-    multiply. The 'out' kwarg for the output is not supported here.
+    each adjacent pair. Unlike matmult2(), the 'out' kwarg for the output is not
+    supported here.
 
     This function supports broadcasting fully, in C internally
 
