@@ -921,13 +921,19 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     - Extra dimensions left over at the front must be consistent for all the
       input arguments, meaning:
 
-      - All dimensions !=1 must be identical
-      - Missing dimensions are implicitly set to 1
+      - All dimensions of length != 1 must match
+      - Dimensions of length 1 match corresponding dimensions of any length in
+        other arrays
+      - Missing leading dimensions are implicitly set to length 1
 
     - The output(s) have a shape where
       - The trailing dimensions are whatever the function being broadcasted
         returns
       - The leading dimensions come from the extra dimensions in the inputs
+
+    Calling a function wrapped with broadcast_define() with more positional
+    arguments than specified in the prototype passes these extra positional
+    arguments verbatim to the inner function. Same with keyword arguments.
 
     Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
     and these broadcast as one would expect:
