@@ -590,7 +590,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             # python3 puts this into a different module
             import shlex
             shellquote = shlex.quote
-        print("// THIS IS A GENERATED FILE. CHANGES WILL BE OVERWRITTEN",
+        print("// THIS IS A GENERATED FILE. DO NOT MODIFY WITH CHANGES YOU WANT TO KEEP",
               file=file)
         print("// Generated on {} with   {}\n\n". \
               format(time.strftime("%Y-%m-%d %H:%M:%S"),
