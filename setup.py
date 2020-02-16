@@ -30,6 +30,6 @@ setup(name         = 'numpysane',
       long_description = """numpysane is a collection of core routines to provide basic numpy
 functionality in a more reasonable way""",
 
-      license      = 'LGPL-3+',
+      license      = 'LGPL',
       py_modules   = ['numpysane', 'numpysane_pywrap'],
       data_files = [ ('share/python-numpysane/pywrap-templates', pywrap_templates)])
