@@ -877,7 +877,7 @@ def _broadcast_iter_dim( args, prototype, dims_extra ):
 def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     r'''Vectorizes an arbitrary function, expecting input as in the given prototype.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1390,7 +1390,7 @@ all the keyword arguments are passed through untouched.'''. \
 def broadcast_generate(prototype, args):
     r'''A generator that produces broadcasted slices
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1434,7 +1434,7 @@ def broadcast_generate(prototype, args):
 def glue(*args, **kwargs):
     r'''Concatenates a given list of arrays along the given 'axis' keyword argument.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1611,7 +1611,7 @@ def glue(*args, **kwargs):
 def cat(*args):
     r'''Concatenates a given list of arrays along a new first (outer) dimension.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1675,7 +1675,7 @@ def cat(*args):
 def clump(x, **kwargs):
     r'''Groups the given n dimensions together.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpysane as nps
         >>> nps.clump( arr(2,3,4), n = -2).shape
@@ -1738,7 +1738,7 @@ def clump(x, **kwargs):
 def atleast_dims(x, *dims):
     r'''Returns an array with extra length-1 dimensions to contain all given axes.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1856,7 +1856,7 @@ def atleast_dims(x, *dims):
 def mv(x, axis_from, axis_to):
     r'''Moves a given axis to a new position. Similar to numpy.moveaxis().
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1896,7 +1896,7 @@ def mv(x, axis_from, axis_to):
 def xchg(x, axis_a, axis_b):
     r'''Exchanges the positions of the two given axes. Similar to numpy.swapaxes()
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1925,7 +1925,7 @@ def xchg(x, axis_a, axis_b):
 def transpose(x):
     r'''Reverses the order of the last two dimensions.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1955,7 +1955,7 @@ def transpose(x):
 def dummy(x, axis=None):
     r'''Adds a single length-1 dimension at the given position.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -1997,7 +1997,7 @@ def dummy(x, axis=None):
 def reorder(x, *dims):
     r'''Reorders the dimensions of an array.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2035,7 +2035,7 @@ def reorder(x, *dims):
 def dot(a, b, out=None, dtype=None):
     r'''Non-conjugating dot product of two 1-dimensional n-long vectors.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2087,7 +2087,7 @@ def vdot(a, b, out=None, dtype=None):
 
     vdot(a,b) is equivalent to dot(np.conj(a), b)
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2118,7 +2118,7 @@ def vdot(a, b, out=None, dtype=None):
 def outer(a, b, out=None):
     r'''Outer product of two 1-dimensional n-long vectors.
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2150,7 +2150,7 @@ def outer(a, b, out=None):
 def norm2(a, **kwargs):
     r'''Broadcast-aware 2-norm. norm2(x) is identical to inner(x,x)
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2170,7 +2170,7 @@ def norm2(a, **kwargs):
 def mag(a, out=None):
     r'''Magnitude of a vector. mag(x) is functionally identical to sqrt(inner(x,x))
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2207,7 +2207,7 @@ def mag(a, out=None):
 def trace(a):
     r'''Broadcast-aware trace
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2247,7 +2247,7 @@ def trace(a):
 def matmult2(a, b, out=None):
     r'''Multiplication of two matrices
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
@@ -2310,7 +2310,7 @@ def matmult2(a, b, out=None):
 def matmult( *args ):
     r'''Multiplication of N matrices
 
-    Synopsis:
+    SYNOPSIS
 
         >>> import numpy as np
         >>> import numpysane as nps
