@@ -138,7 +138,7 @@ m.function( "innerouter",
             VALIDATE_code = r'''
             return \
               *scale > 0.0       &&
-              IS_CONTIGUOUS_ALL(true);
+              CHECK_CONTIGUOUS_AND_SETERROR_ALL();
 ''',
             extra_args = (("double", "scale", "1", "d"),), )
 
@@ -165,7 +165,7 @@ m.function( "sorted_indices",
                      dims__x[0]);
                  return true;
 '''},
-            VALIDATE_code = 'return IS_CONTIGUOUS__x(true);' )
+            VALIDATE_code = 'return CHECK_CONTIGUOUS_AND_SETERROR__x();' )
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code
 # should barf

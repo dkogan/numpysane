@@ -483,7 +483,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
         text = ''
         contiguous_macro_template = r'''
-#define IS_CONTIGUOUS__{name}(set_error)                                          \
+#define CHECK_CONTIGUOUS__{name}()                                                \
 ({                                                                                \
   bool result = true;                                                             \
   int Nelems_slice = 1;                                                           \
@@ -493,22 +493,42 @@ bool {FUNCTION_NAME}({ARGUMENTS})
       if(strides__{name}[i+Ndims__{name}] != sizeof_element__{name}*Nelems_slice) \
       {                                                                           \
           result = false;                                                         \
-          if(set_error)                                                           \
-              PyErr_Format(PyExc_RuntimeError,                                    \
-                           "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
           break;                                                                  \
       }                                                                           \
       Nelems_slice *= dims__{name}[i+Ndims__{name}];                              \
   }                                                                               \
   result;                                                                         \
 })
+
+#define CHECK_CONTIGUOUS_AND_SETERROR__{name}()                                   \
+({                                                                                \
+  bool result = true;                                                             \
+  int Nelems_slice = 1;                                                           \
+  const int Ndims_slice = Ndims__{name} - Ndims_extra__{name};                    \
+  for(int i=-1; i>=-Ndims_slice; i--)                                             \
+  {                                                                               \
+      if(strides__{name}[i+Ndims__{name}] != sizeof_element__{name}*Nelems_slice) \
+      {                                                                           \
+          result = false;                                                         \
+          PyErr_Format(PyExc_RuntimeError,                                        \
+                       "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
+          break;                                                                  \
+      }                                                                           \
+      Nelems_slice *= dims__{name}[i+Ndims__{name}];                              \
+  }                                                                               \
+  result;                                                                         \
+})
+
 '''
         for n in slice_args:
             text += contiguous_macro_template.replace("{name}", n)
-        text += \
-            '\n' + \
-            '#define IS_CONTIGUOUS_ALL(set_error) ' + \
-            ' && '.join( "IS_CONTIGUOUS__"+name+"(set_error)" for name in slice_args) + \
+        text +=                                                                                \
+            '\n' +                                                                             \
+            '#define CHECK_CONTIGUOUS_ALL() ' +                                                \
+            ' && '.join( "CHECK_CONTIGUOUS__"+name+"()" for name in slice_args) +              \
+            '\n' +                                                                             \
+            '#define CHECK_CONTIGUOUS_AND_SETERROR_ALL() ' +                                   \
+            ' && '.join( "CHECK_CONTIGUOUS_AND_SETERROR__"+name+"()" for name in slice_args) + \
             '\n'
 
         # The validation function. Evaluated once. For each argument and
@@ -528,8 +548,10 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         ARGUMENTS     = VALIDATION_ARGUMENTS,
                         FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
         for n in slice_args:
-            text += '#undef IS_CONTIGUOUS__{name}\n'.replace('{name}', n)
-        text += '#undef IS_CONTIGUOUS_ALL\n'
+            text += '#undef CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
+            text += '#undef CHECK_CONTIGUOUS_AND_SETERROR__{name}\n'.replace('{name}', n)
+        text += '#undef CHECK_CONTIGUOUS_ALL\n'
+        text += '#undef CHECK_CONTIGUOUS_AND_SETERROR_ALL\n'
 
         slice_arglist = [arg for n in slice_args
                          for arg in
