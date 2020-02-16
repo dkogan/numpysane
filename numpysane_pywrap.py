@@ -417,7 +417,7 @@ class module:
         #                         "   (float64,int32)\n"
         TYPESETS = ' '.join( ("_(" + ','.join(tuple(str(np.dtype(t).num) for t in known_types[i]) + (str(i),)) + ')') \
                               for i in range(Ntypesets))
-        TYPESET_MATCHES_ARGLIST = ','.join(("t" + str(i)) for i in range(Ninputs_and_outputs))
+        TYPESET_MATCHES_ARGLIST = ','.join(('t' + str(i)) for i in range(Ninputs_and_outputs))
         def parened_type_list(l, Ninputs):
             r'''Converts list of types to string
 

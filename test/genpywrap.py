@@ -60,52 +60,56 @@ m.function( "identity",
 m.function( "inner",
             "Inner-product pywrapped with npsp",
 
-            args_input       = ("a", "b"),
+            args_input       = ('a', 'b'),
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
+            const int N = dims__a[0];
             ((double*)data__output)[0] =
               inner_double((double*)data__a,
-                    (double*)data__b,
-                    strides__a[0],
-                    strides__b[0],
-                    dims__a[0]);
+                           (double*)data__b,
+                           strides__a[0],
+                           strides__b[0],
+                           N);
             return true;
 ''',
                  np.int64:
                  r'''
+            const int N = dims__a[0];
             ((int64_t*)data__output)[0] =
               inner_int64_t((int64_t*)data__a,
-                    (int64_t*)data__b,
-                    strides__a[0],
-                    strides__b[0],
-                    dims__a[0]);
+                            (int64_t*)data__b,
+                            strides__a[0],
+                            strides__b[0],
+                            N);
             return true;
 ''',
                  np.int32:
                  r'''
+            const int N = dims__a[0];
             ((int32_t*)data__output)[0] =
               inner_int32_t((int32_t*)data__a,
-                    (int32_t*)data__b,
-                    strides__a[0],
-                    strides__b[0],
-                    dims__a[0]);
+                            (int32_t*)data__b,
+                            strides__a[0],
+                            strides__b[0],
+                            N);
             return true;
 '''})
 
 m.function( "outer",
             "Outer-product pywrapped with npsp",
 
-            args_input       = ("a", "b"),
+            args_input       = ('a', 'b'),
             prototype_input  = (('n',), ('n',)),
             prototype_output = ('n', 'n'),
 
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
+            int N = dims__a[0];
             outer((double*)data__output,
                   strides__output[0],
                   strides__output[1],
@@ -113,26 +117,27 @@ m.function( "outer",
                   (double*)data__b,
                   strides__a[0],
                   strides__b[0],
-                  dims__a[0]);
+                  N);
             return true;
 '''})
 
 m.function( "innerouter",
             "Inner and outer products pywrapped with npsp",
 
-            args_input       = ("a", "b"),
+            args_input       = ('a', 'b'),
             prototype_input  = (('n',), ('n',)),
             prototype_output = ((), ('n', 'n')),
 
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
+            int N = dims__a[0];
             *(double*)data__output0 =
                  innerouter((double*)data__output1,
                      (double*)data__a,
                      (double*)data__b,
                      *scale,
-                     dims__a[0]);
+                     N);
             return true;
 '''},
             VALIDATE_code = r'''
@@ -145,7 +150,7 @@ m.function( "innerouter",
 m.function( "sorted_indices",
             "Return the sorted element indices",
 
-            args_input       = ("x",),
+            args_input       = ('x',),
             prototype_input  = (('n',),),
             prototype_output = ('n',),
 
@@ -173,7 +178,7 @@ m.function( "sorted_indices",
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('n', -1),
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -183,7 +188,7 @@ else:   raise Exception("Expected error didn't happen")
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), (-1,)),
                 prototype_output = ('n', 'n'),
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -193,7 +198,7 @@ else:   raise Exception("Expected error didn't happen")
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',-1)),
                 prototype_output = (),
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -203,7 +208,7 @@ else:   raise Exception("Expected error didn't happen: input dims must >=0")
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (-1,),
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -213,7 +218,7 @@ else:   raise Exception("Expected error didn't happen: output dims must >=0")
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('m', ()),
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -223,7 +228,7 @@ else:   raise Exception("Expected error didn't happen: output dims must be integ
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = 'n',
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -233,7 +238,7 @@ else:   raise Exception("Expected error didn't happen: output dims must be a tup
 try:
     m.function( "outer_broken",
                 "Outer-product pywrapped with npsp",
-                args_input       = ("a", "b"),
+                args_input       = ('a', 'b'),
                 prototype_input  = (('n',), 'n'),
                 prototype_output = 'n',
                 FUNCTION__slice_code = {np.float64: 'return true;'})
@@ -243,7 +248,7 @@ else:   raise Exception("Expected error didn't happen: output dims must be a tup
 try:
     m.function( "sorted_indices_broken",
                 "Return the sorted element indices",
-                args_input       = ("x",),
+                args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
                 FUNCTION__slice_code = { np.float64: 'return true;' })
@@ -252,7 +257,7 @@ except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
 try:
     m.function( "sorted_indices_broken2",
                 "Return the sorted element indices",
-                args_input       = ("x",),
+                args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
                 FUNCTION__slice_code = { np.float64: 'return true;', np.int32: 'return true;' })
@@ -261,7 +266,7 @@ except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
 try:
     m.function( "sorted_indices_broken3",
                 "Return the sorted element indices",
-                args_input       = ("x",),
+                args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
                 FUNCTION__slice_code = { (np.float64, np.int32): 'return true;', np.int32: 'return true;' })
@@ -270,7 +275,7 @@ except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
 try:
     m.function( "sorted_indices_broken4",
                 "Return the sorted element indices",
-                args_input       = ("x",),
+                args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
                 FUNCTION__slice_code = { (np.float64, np.int32, np.int32): 'return true;', np.int32: 'return true;' })
