@@ -4,11 +4,11 @@ import numpy as np
 from numpysane import NumpysaneError
 import os
 
-# Technically I'm supported to use some "resource extractor" something to
-# unbreak setuptools. But I'm instead assuming that this was installed via
-# Debian or by using the eager_resources tag in setup(). This allows files to
-# remain files, and to appear in a "normal" directory, where this script can
-# grab them and use them
+# Technically I'm supposed to use some "resource extractor" something to unbreak
+# setuptools. But I'm instead assuming that this was installed via Debian or by
+# using the eager_resources tag in setup(). This allows files to remain files,
+# and to appear in a "normal" directory, where this script can grab them and use
+# them
 #
 # Aand I try two different directories, in case I'm running in-place
 
