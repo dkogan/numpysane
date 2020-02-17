@@ -385,7 +385,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                   {EXTRA_ARGUMENTS_ARGLIST})
                 )
             {
-                PyErr_Format(PyExc_RuntimeError, "__{FUNCTION_NAME}__slice failed!");
+                if(PyErr_Occurred() == NULL)
+                    PyErr_Format(PyExc_RuntimeError, "__{FUNCTION_NAME}__slice failed!");
             }
             else
                 __py__result__ = (PyObject*)__py__output__arg;
@@ -462,8 +463,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                   {EXTRA_ARGUMENTS_ARGLIST})
                 )
             {
-                PyErr_Format(PyExc_RuntimeError,
-                             "__{FUNCTION_NAME}__slice failed!");
+                if(PyErr_Occurred() == NULL)
+                    PyErr_Format(PyExc_RuntimeError,
+                                 "__{FUNCTION_NAME}__slice failed!");
                 goto done;
             }
 
