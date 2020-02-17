@@ -383,6 +383,7 @@ class module:
         }
         int i=0;
         OUTPUTS(PULL_OUT_OUTPUT_ARRAYS)
+#undef PULL_OUT_OUTPUT_ARRAYS
     }
 '''.replace('{Noutputs}', str(Noutputs))
 

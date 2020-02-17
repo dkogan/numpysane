@@ -85,6 +85,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // new arrays later, and those will have the right type
 #define DEFINE_OUTPUT_TYPENUM(name) int selected_typenum__ ## name;
         OUTPUTS(DEFINE_OUTPUT_TYPENUM);
+#undef DEFINE_OUTPUT_TYPENUM
         slice_function_t* slice_function;
 
 #define TYPE_MATCHES_ARGLIST(name) int typenum__ ## name,
@@ -367,6 +368,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
             goto done;
         }
+#undef ARGLIST_VALIDATION
 
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
@@ -491,7 +493,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 }
 
 #undef ARG_DEFINE
-#undef PULL_OUT_OUTPUT_ARRAYS
 #undef NAMELIST
 #undef PARSECODE
 #undef PARSEARG
