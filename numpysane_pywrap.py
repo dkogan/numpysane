@@ -361,14 +361,14 @@ class module:
         if( !PySequence_Check(__py__output__arg) )
         {
             PyErr_Format(PyExc_RuntimeError,
-                         "Given output expected to be a sequence of length %d, but a non-sequence was given",
+                         "Have multiple outputs. The given 'out' argument is expected to be a sequence of length %d, but a non-sequence was given",
                          {Noutputs});
             goto done;
         }
         if( PySequence_Size(__py__output__arg) != {Noutputs} )
         {
             PyErr_Format(PyExc_RuntimeError,
-                         "Given output expected to be a sequence of length %d, but a sequence of length %d was given",
+                         "Have multiple outputs. The given 'out' argument is expected to be a sequence of length %d, but a sequence of length %d was given",
                          {Noutputs}, PySequence_Size(__py__output__arg));
             goto done;
         }
@@ -378,7 +378,7 @@ class module:
         if(__py__ ## name == NULL || !PyArray_Check(__py__ ## name))                                         \
         {                                                                                                    \
             PyErr_SetString(PyExc_RuntimeError,                                                              \
-                            "Given output array MUST contain pre-allocated arrays. " #name " is not an array"); \
+                            "Have multiple outputs. The given 'out' array MUST contain pre-allocated arrays, but " #name " is not an array"); \
             goto done;                                                                                       \
         }
         int i=0;
