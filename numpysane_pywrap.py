@@ -517,38 +517,34 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             ' && '.join( "CHECK_CONTIGUOUS_AND_SETERROR__"+name+"()" for name in slice_args) + \
             '\n'
 
-        # The validation function. Evaluated once. For each argument and
-        # output, we pass in the dimensions and the strides (we do NOT pass
-        # in data pointers)
-        validation_arglist = [ arg for n in slice_args for arg in \
-                               ("const int Ndims_full__"          + n + " __attribute__((unused))",
-                                "const npy_intp* dims_full__"     + n + " __attribute__((unused))",
-                                "const npy_intp* strides_full__"  + n + " __attribute__((unused))",
-                                "const int Ndims_slice__"         + n + " __attribute__((unused))",
-                                "const npy_intp* dims_slice__"    + n + " __attribute__((unused))",
-                                "const npy_intp* strides_slice__" + n + " __attribute__((unused))",
-                                "npy_intp sizeof_element__"       + n + " __attribute__((unused))")] + \
-                             EXTRA_ARGUMENTS_ARGLIST_DEFINE
-        VALIDATION_ARGUMENTS = '\n  ' + ',\n  '.join(validation_arglist)
+        # The user provides two sets of C code that we include verbatim in
+        # static functions:
+        #
+        # - The validation function. Evaluated once to check the input for
+        #   validity. This is in addition to the broadcasting shape and type
+        #   compatibility checks. Probably the user won't be looking at the data
+        #   pointer
+        # - The slice function. Evaluated once per broadcasted slice to actually
+        #   perform the computation. Probably the user will be looking at just
+        #   the _slice data, not the _full data
+        #
+        # These functions have identical prototypes
+        arglist = [ arg for n in slice_args for arg in \
+                    ("const int Ndims_full__"          + n + " __attribute__((unused))",
+                     "const npy_intp* dims_full__"     + n + " __attribute__((unused))",
+                     "const npy_intp* strides_full__"  + n + " __attribute__((unused))",
+                     "const int Ndims_slice__"         + n + " __attribute__((unused))",
+                     "const npy_intp* dims_slice__"    + n + " __attribute__((unused))",
+                     "const npy_intp* strides_slice__" + n + " __attribute__((unused))",
+                     "npy_intp sizeof_element__"       + n + " __attribute__((unused))",
+                     "void* {DATA_ARGNAME}__"          + n + " __attribute__((unused))")] + \
+                  EXTRA_ARGUMENTS_ARGLIST_DEFINE
+        arglist_string = '\n  ' + ',\n  '.join(arglist)
         text += \
             _substitute(function_template,
                         FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
-                        ARGUMENTS     = VALIDATION_ARGUMENTS,
+                        ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data"),
                         FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
-
-        slice_arglist = [arg for n in slice_args
-                         for arg in
-                         ("const int Ndims_full__"          + n + " __attribute__((unused))",
-                          "const npy_intp* dims_full__"     + n + " __attribute__((unused))",
-                          "const npy_intp* strides_full__"  + n + " __attribute__((unused))",
-                          "const int Ndims_slice__"         + n + " __attribute__((unused))",
-                          "const npy_intp* dims_slice__"    + n + " __attribute__((unused))",
-                          "const npy_intp* strides_slice__" + n + " __attribute__((unused))",
-                          "npy_intp sizeof_element__"       + n + " __attribute__((unused))",
-                          "void* data_slice__"              + n + " __attribute__((unused))")] + \
-                          EXTRA_ARGUMENTS_ARGLIST_DEFINE
-
-        SLICE_ARGUMENTS = '\n  ' + ',\n  '.join(slice_arglist)
 
         for i in range(Ntypesets):
             # The evaluation function for one slice
@@ -556,7 +552,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             text += \
                 _substitute(function_template,
                             FUNCTION_NAME = slice_functions[i],
-                            ARGUMENTS     = SLICE_ARGUMENTS,
+                            ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data_slice"),
                             FUNCTION_BODY = FUNCTION__slice_code[typeset_indices[i]])
 
 

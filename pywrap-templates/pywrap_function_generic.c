@@ -350,45 +350,38 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // Each output variable is now an allocated array, and each one has a
         // reference. The argument __py__output__arg ALSO has a reference
 
-#define ARGLIST_VALIDATION(name)                \
-        __ndim__mounted__       ## name ,                                     \
-        __dims__mounted__       ## name,                                      \
-        __strides__mounted__    ## name,                                      \
-        __ndim__mounted__       ## name - Ndims_extra__mounted__ ## name,     \
-        &__dims__mounted__      ## name[  Ndims_extra__mounted__ ## name ],   \
-        &__strides__mounted__   ## name[  Ndims_extra__mounted__ ## name ],   \
-        PyArray_ITEMSIZE(__py__ ## name),
+#define ARGLIST_CALL_USER_CALLBACK(name)                                \
+        __ndim__mounted__       ## name ,                               \
+        __dims__mounted__       ## name,                                \
+        __strides__mounted__    ## name,                                \
+        __ndim__mounted__       ## name - Ndims_extra__mounted__ ## name, \
+        &__dims__mounted__      ## name[  Ndims_extra__mounted__ ## name ], \
+        &__strides__mounted__   ## name[  Ndims_extra__mounted__ ## name ], \
+        PyArray_ITEMSIZE(__py__ ## name),                               \
+        (void*)data_argument__  ## name,
 
+#define DEFINE_DATA_ARGUMENT(name) char* data_argument__ ## name;
+#define INIT_DATA_ARGUMENT(name) data_argument__ ## name = PyArray_DATA(__py__ ## name);
 
-        if( ! __{FUNCTION_NAME}__validate(OUTPUTS(  ARGLIST_VALIDATION)
-                                          ARGUMENTS(ARGLIST_VALIDATION)
+        ARGUMENTS(DEFINE_DATA_ARGUMENT);
+        OUTPUTS(  DEFINE_DATA_ARGUMENT);
+        ARGUMENTS(INIT_DATA_ARGUMENT);
+        OUTPUTS(  INIT_DATA_ARGUMENT);
+
+        if( ! __{FUNCTION_NAME}__validate(OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
+                                          ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
                                           {EXTRA_ARGUMENTS_ARGLIST}) )
         {
             if(PyErr_Occurred() == NULL)
                 PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
             goto done;
         }
-#undef ARGLIST_VALIDATION
 
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
         {
-#define DEFINE_SLICE(name) char* slice_ ## name = PyArray_DATA(__py__ ## name);
-            ARGUMENTS(DEFINE_SLICE);
-            OUTPUTS(  DEFINE_SLICE);
-
-#define ARGLIST_SLICE(name)                                             \
-  __ndim__mounted__       ## name ,                                     \
-  __dims__mounted__       ## name,                                      \
-  __strides__mounted__    ## name,                                      \
-  __ndim__mounted__       ## name - Ndims_extra__mounted__ ## name,     \
-  &__dims__mounted__      ## name[  Ndims_extra__mounted__ ## name ],   \
-  &__strides__mounted__   ## name[  Ndims_extra__mounted__ ## name ],   \
-  PyArray_ITEMSIZE(__py__ ## name),                                     \
-  (void*)slice_           ## name,
-
-            if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
-                                  ARGUMENTS(ARGLIST_SLICE)
+            if( ! slice_function( OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
+                                  ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
                                   {EXTRA_ARGUMENTS_ARGLIST})
                 )
             {
@@ -443,25 +436,29 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         }
         do
         {
-            ARGUMENTS(DEFINE_SLICE);
-            OUTPUTS(  DEFINE_SLICE);
+            // This loop is awkward. I don't update the slice data pointer
+            // incrementally with each slice, but advance each dimension for
+            // each slice. There should be a better way
+            ARGUMENTS(INIT_DATA_ARGUMENT);
+            OUTPUTS(  INIT_DATA_ARGUMENT);
+#undef DEFINE_DATA_ARGUMENT
+#undef INIT_DATA_ARGUMENT
 
             for( int i_dim=-1;
                  i_dim >= -Ndims_extra;
                  i_dim--)
             {
-
 #define ADVANCE_SLICE(name)                         \
                 if(i_dim + Ndims_extra__mounted__ ## name >= 0 &&                 \
                    __dims__mounted__ ## name[i_dim + Ndims_extra__mounted__ ## name] != 1) \
-                    slice_ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra__mounted__ ## name];
+                    data_argument__ ## name += idims_extra[i_dim + Ndims_extra]*__strides__ ## name[i_dim + Ndims_extra__mounted__ ## name];
 
                 ARGUMENTS(ADVANCE_SLICE);
                 OUTPUTS(  ADVANCE_SLICE);
             }
 
-            if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
-                                  ARGUMENTS(ARGLIST_SLICE)
+            if( ! slice_function( OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
+                                  ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
                                   {EXTRA_ARGUMENTS_ARGLIST})
                 )
             {
@@ -502,8 +499,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #undef SLICE_ARG
 #undef INPUT_PERCENT_S
 #undef INPUT_TYPEOBJ
-#undef DEFINE_SLICE
-#undef ARGLIST_SLICE
+#undef ARGLIST_CALL_USER_CALLBACK
 #undef ADVANCE_SLICE
 #undef FREE_PYARRAY
 #undef CHECK_DIMS_NAMED_KNOWN
