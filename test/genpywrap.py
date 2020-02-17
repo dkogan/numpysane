@@ -34,7 +34,7 @@ m.function( "identity3",
                  r'''
     for(int i=0; i<3; i++)
         for(int j=0; j<3; j++)
-            ((double*)(data__output + i*strides__output[0] + j*strides__output[1]))[0] =
+            ((double*)(data_slice__output + i*strides_slice__output[0] + j*strides_slice__output[1]))[0] =
                  (i==j) ? 1.0 : 0.0;
     return true;
 '''})
@@ -49,10 +49,10 @@ m.function( "identity",
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
-    int N = dims__output[0];
+    int N = dims_slice__output[0];
     for(int i=0; i<N; i++)
         for(int j=0; j<N; j++)
-            ((double*)(data__output + i*strides__output[0] + j*strides__output[1]))[0] =
+            ((double*)(data_slice__output + i*strides_slice__output[0] + j*strides_slice__output[1]))[0] =
                  (i==j) ? 1.0 : 0.0;
     return true;
 '''},)
@@ -67,34 +67,34 @@ m.function( "inner",
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
-            const int N = dims__a[0];
-            ((double*)data__output)[0] =
-              inner_double((double*)data__a,
-                           (double*)data__b,
-                           strides__a[0],
-                           strides__b[0],
+            const int N = dims_slice__a[0];
+            ((double*)data_slice__output)[0] =
+              inner_double((double*)data_slice__a,
+                           (double*)data_slice__b,
+                           strides_slice__a[0],
+                           strides_slice__b[0],
                            N);
             return true;
 ''',
                  np.int64:
                  r'''
-            const int N = dims__a[0];
-            ((int64_t*)data__output)[0] =
-              inner_int64_t((int64_t*)data__a,
-                            (int64_t*)data__b,
-                            strides__a[0],
-                            strides__b[0],
+            const int N = dims_slice__a[0];
+            ((int64_t*)data_slice__output)[0] =
+              inner_int64_t((int64_t*)data_slice__a,
+                            (int64_t*)data_slice__b,
+                            strides_slice__a[0],
+                            strides_slice__b[0],
                             N);
             return true;
 ''',
                  np.int32:
                  r'''
-            const int N = dims__a[0];
-            ((int32_t*)data__output)[0] =
-              inner_int32_t((int32_t*)data__a,
-                            (int32_t*)data__b,
-                            strides__a[0],
-                            strides__b[0],
+            const int N = dims_slice__a[0];
+            ((int32_t*)data_slice__output)[0] =
+              inner_int32_t((int32_t*)data_slice__a,
+                            (int32_t*)data_slice__b,
+                            strides_slice__a[0],
+                            strides_slice__b[0],
                             N);
             return true;
 '''})
@@ -109,14 +109,14 @@ m.function( "outer",
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
-            int N = dims__a[0];
-            outer((double*)data__output,
-                  strides__output[0],
-                  strides__output[1],
-                  (double*)data__a,
-                  (double*)data__b,
-                  strides__a[0],
-                  strides__b[0],
+            int N = dims_slice__a[0];
+            outer((double*)data_slice__output,
+                  strides_slice__output[0],
+                  strides_slice__output[1],
+                  (double*)data_slice__a,
+                  (double*)data_slice__b,
+                  strides_slice__a[0],
+                  strides_slice__b[0],
                   N);
             return true;
 '''})
@@ -131,11 +131,11 @@ m.function( "innerouter",
             FUNCTION__slice_code = \
                 {np.float64:
                  r'''
-            int N = dims__a[0];
-            *(double*)data__output0 =
-                 innerouter((double*)data__output1,
-                     (double*)data__a,
-                     (double*)data__b,
+            int N = dims_slice__a[0];
+            *(double*)data_slice__output0 =
+                 innerouter((double*)data_slice__output1,
+                     (double*)data_slice__a,
+                     (double*)data_slice__b,
                      *scale,
                      N);
             return true;
@@ -157,17 +157,17 @@ m.function( "sorted_indices",
             FUNCTION__slice_code = \
                 {(np.float32, np.int32):
                  r'''
-                 sorted_indices_float((int*)data__output,
-                     (float*)data__x,
-                     dims__x[0]);
+                 sorted_indices_float((int*)data_slice__output,
+                     (float*)data_slice__x,
+                     dims_slice__x[0]);
                  return true;
 ''',
 
                  (np.float64, np.int32):
                  r'''
-                 sorted_indices_double((int*)data__output,
-                     (double*)data__x,
-                     dims__x[0]);
+                 sorted_indices_double((int*)data_slice__output,
+                     (double*)data_slice__x,
+                     dims_slice__x[0]);
                  return true;
 '''},
             VALIDATE_code = 'return CHECK_CONTIGUOUS_AND_SETERROR__x();' )

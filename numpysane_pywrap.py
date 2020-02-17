@@ -483,41 +483,26 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
         text = ''
         contiguous_macro_template = r'''
-#define CHECK_CONTIGUOUS__{name}()                                                \
+#define _CHECK_CONTIGUOUS__{name}(seterror)                                       \
 ({                                                                                \
   bool result = true;                                                             \
   int Nelems_slice = 1;                                                           \
-  const int Ndims_slice = Ndims__{name} - Ndims_extra__{name};                    \
-  for(int i=-1; i>=-Ndims_slice; i--)                                             \
+  for(int i=-1; i>=-Ndims_slice__{name}; i--)                                     \
   {                                                                               \
-      if(strides__{name}[i+Ndims__{name}] != sizeof_element__{name}*Nelems_slice) \
+      if(strides_slice__{name}[i+Ndims_slice__{name}] != sizeof_element__{name}*Nelems_slice) \
       {                                                                           \
           result = false;                                                         \
+          if(seterror)                                                            \
+            PyErr_Format(PyExc_RuntimeError,                                      \
+                         "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
           break;                                                                  \
       }                                                                           \
-      Nelems_slice *= dims__{name}[i+Ndims__{name}];                              \
+      Nelems_slice *= dims_slice__{name}[i+Ndims_slice__{name}];                  \
   }                                                                               \
   result;                                                                         \
 })
-
-#define CHECK_CONTIGUOUS_AND_SETERROR__{name}()                                   \
-({                                                                                \
-  bool result = true;                                                             \
-  int Nelems_slice = 1;                                                           \
-  const int Ndims_slice = Ndims__{name} - Ndims_extra__{name};                    \
-  for(int i=-1; i>=-Ndims_slice; i--)                                             \
-  {                                                                               \
-      if(strides__{name}[i+Ndims__{name}] != sizeof_element__{name}*Nelems_slice) \
-      {                                                                           \
-          result = false;                                                         \
-          PyErr_Format(PyExc_RuntimeError,                                        \
-                       "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
-          break;                                                                  \
-      }                                                                           \
-      Nelems_slice *= dims__{name}[i+Ndims__{name}];                              \
-  }                                                                               \
-  result;                                                                         \
-})
+#define CHECK_CONTIGUOUS__{name}()              _CHECK_CONTIGUOUS__{name}(false)
+#define CHECK_CONTIGUOUS_AND_SETERROR__{name}() _CHECK_CONTIGUOUS__{name}(true)
 
 '''
         for n in slice_args:
@@ -535,11 +520,13 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         # output, we pass in the dimensions and the strides (we do NOT pass
         # in data pointers)
         validation_arglist = [ arg for n in slice_args for arg in \
-                               ("const int Ndims__"         + n + " __attribute__((unused))",
-                                "const int Ndims_extra__"   + n + " __attribute__((unused))",
-                                "const npy_intp* dims__"    + n + " __attribute__((unused))",
-                                "const npy_intp* strides__" + n + " __attribute__((unused))",
-                                "npy_intp sizeof_element__" + n + " __attribute__((unused))") ] + \
+                               ("const int Ndims_full__"          + n + " __attribute__((unused))",
+                                "const npy_intp* dims_full__"     + n + " __attribute__((unused))",
+                                "const npy_intp* strides_full__"  + n + " __attribute__((unused))",
+                                "const int Ndims_slice__"         + n + " __attribute__((unused))",
+                                "const npy_intp* dims_slice__"    + n + " __attribute__((unused))",
+                                "const npy_intp* strides_slice__" + n + " __attribute__((unused))",
+                                "npy_intp sizeof_element__"       + n + " __attribute__((unused))")] + \
                              EXTRA_ARGUMENTS_ARGLIST_DEFINE
         VALIDATION_ARGUMENTS = '\n  ' + ',\n  '.join(validation_arglist)
         text += \
@@ -548,6 +535,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         ARGUMENTS     = VALIDATION_ARGUMENTS,
                         FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
         for n in slice_args:
+            text += '#undef _CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
             text += '#undef CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
             text += '#undef CHECK_CONTIGUOUS_AND_SETERROR__{name}\n'.replace('{name}', n)
         text += '#undef CHECK_CONTIGUOUS_ALL\n'
@@ -555,9 +543,14 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
         slice_arglist = [arg for n in slice_args
                          for arg in
-                         ("void* data__"              + n + " __attribute__((unused))",
-                          "const npy_intp* dims__"    + n + " __attribute__((unused))",
-                          "const npy_intp* strides__" + n + " __attribute__((unused))")] + \
+                         ("const int Ndims_full__"          + n + " __attribute__((unused))",
+                          "const npy_intp* dims_full__"     + n + " __attribute__((unused))",
+                          "const npy_intp* strides_full__"  + n + " __attribute__((unused))",
+                          "const int Ndims_slice__"         + n + " __attribute__((unused))",
+                          "const npy_intp* dims_slice__"    + n + " __attribute__((unused))",
+                          "const npy_intp* strides_slice__" + n + " __attribute__((unused))",
+                          "npy_intp sizeof_element__"       + n + " __attribute__((unused))",
+                          "void* data_slice__"              + n + " __attribute__((unused))")] + \
                           EXTRA_ARGUMENTS_ARGLIST_DEFINE
 
         SLICE_ARGUMENTS = '\n  ' + ',\n  '.join(slice_arglist)

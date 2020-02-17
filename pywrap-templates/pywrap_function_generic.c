@@ -3,10 +3,18 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                     PyObject* args,
                                     PyObject* kwargs)
 {
-#define SLICE_ARG(name) \
-    void*           data__    ## name, \
-    const npy_intp* dims__    ## name, \
-    const npy_intp* strides__ ## name,
+#define SLICE_ARG(name)                         \
+                                                \
+    const int       Ndims_full__     ## name,   \
+    const npy_intp* dims_full__      ## name,   \
+    const npy_intp* strides_full__   ## name,   \
+                                                \
+    const int       Ndims_slice__    ## name,   \
+    const npy_intp* dims_slice__     ## name,   \
+    const npy_intp* strides_slice__  ## name,   \
+                                                \
+    npy_intp        sizeof_element__ ## name,   \
+    void*           data_slice__     ## name,
 
 
     typedef bool (slice_function_t)(OUTPUTS(SLICE_ARG) ARGUMENTS(SLICE_ARG) {EXTRA_ARGUMENTS_SLICE_ARG});
@@ -342,10 +350,12 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // reference. The argument __py__output__arg ALSO has a reference
 
 #define ARGLIST_VALIDATION(name)                \
-        __ndim__mounted__       ## name ,       \
-        Ndims_extra__mounted__  ## name ,       \
-        __dims__mounted__       ## name ,       \
-        __strides__mounted__    ## name ,       \
+        __ndim__mounted__       ## name ,                                     \
+        __dims__mounted__       ## name,                                      \
+        __strides__mounted__    ## name,                                      \
+        __ndim__mounted__       ## name - Ndims_extra__mounted__ ## name,     \
+        &__dims__mounted__      ## name[  Ndims_extra__mounted__ ## name ],   \
+        &__strides__mounted__   ## name[  Ndims_extra__mounted__ ## name ],   \
         PyArray_ITEMSIZE(__py__ ## name),
 
 
@@ -365,10 +375,15 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             ARGUMENTS(DEFINE_SLICE);
             OUTPUTS(  DEFINE_SLICE);
 
-#define ARGLIST_SLICE(name) \
-  (void*)slice_         ## name,                                   \
-  &__dims__mounted__    ## name[ Ndims_extra__mounted__ ## name ], \
-  &__strides__mounted__ ## name[ Ndims_extra__mounted__ ## name ],
+#define ARGLIST_SLICE(name)                                             \
+  __ndim__mounted__       ## name ,                                     \
+  __dims__mounted__       ## name,                                      \
+  __strides__mounted__    ## name,                                      \
+  __ndim__mounted__       ## name - Ndims_extra__mounted__ ## name,     \
+  &__dims__mounted__      ## name[  Ndims_extra__mounted__ ## name ],   \
+  &__strides__mounted__   ## name[  Ndims_extra__mounted__ ## name ],   \
+  PyArray_ITEMSIZE(__py__ ## name),                                     \
+  (void*)slice_           ## name,
 
             if( ! slice_function( OUTPUTS(  ARGLIST_SLICE)
                                   ARGUMENTS(ARGLIST_SLICE)
