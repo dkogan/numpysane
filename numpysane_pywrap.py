@@ -534,12 +534,6 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
                         ARGUMENTS     = VALIDATION_ARGUMENTS,
                         FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
-        for n in slice_args:
-            text += '#undef _CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
-            text += '#undef CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
-            text += '#undef CHECK_CONTIGUOUS_AND_SETERROR__{name}\n'.replace('{name}', n)
-        text += '#undef CHECK_CONTIGUOUS_ALL\n'
-        text += '#undef CHECK_CONTIGUOUS_AND_SETERROR_ALL\n'
 
         slice_arglist = [arg for n in slice_args
                          for arg in
@@ -584,6 +578,12 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         TYPESET_MATCHES_ARGLIST    = TYPESET_MATCHES_ARGLIST,
                         TYPESETS_NAMES             = TYPESETS_NAMES)
 
+        for n in slice_args:
+            text += '#undef _CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
+            text += '#undef CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
+            text += '#undef CHECK_CONTIGUOUS_AND_SETERROR__{name}\n'.replace('{name}', n)
+        text += '#undef CHECK_CONTIGUOUS_ALL\n'
+        text += '#undef CHECK_CONTIGUOUS_AND_SETERROR_ALL\n'
 
         self.functions.append( (FUNCTION_NAME,
                                 _quote(FUNCTION_DOCSTRING, convert_newlines=True),
