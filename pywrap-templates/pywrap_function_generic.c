@@ -298,7 +298,10 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // length-1 dimensions. I can't communicate this to the validation and
         // slice functions. So I explicitly make copies of the dimension and
         // stride arrays, making any implicit length-1 dimensions explicit. The
-        // callbacks then see all the dimension data in memory
+        // callbacks then see all the dimension data in memory.
+        //
+        // Most of the time we won't have any implicit dimensions, so these
+        // mounted shapes would then be copies of the normal ones
 #define MAKE_MOUNTED_COPIES(name)                                       \
         int __ndim__mounted__ ## name = __ndim__ ## name;               \
         if( __ndim__ ## name < PROTOTYPE_LEN_ ## name )                 \
@@ -310,6 +313,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             int i_dim = -1;                                             \
             for(; i_dim >= -__ndim__ ## name; i_dim--)                  \
                 {                                                       \
+                    /* copies of the original shapes */                 \
                     __dims__mounted__   ## name[i_dim + __ndim__mounted__ ## name] = __dims__    ## name[i_dim + __ndim__ ## name]; \
                     __strides__mounted__## name[i_dim + __ndim__mounted__ ## name] = __strides__ ## name[i_dim + __ndim__ ## name]; \
                 }                                                       \
