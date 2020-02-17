@@ -59,7 +59,7 @@ with open('README.org', 'w') as f_target_org:
             # the org version neeeds massaging
             f = f_target_org
 
-            in_quote = None # can be None or 'example' or 'src'
+            in_quote = False
             queued_blanks = 0
             indent_size = 4
 
@@ -68,7 +68,7 @@ with open('README.org', 'w') as f_target_org:
             sio = StringIO(s)
             for l in sio:
 
-                if in_quote is None:
+                if not in_quote:
                     if len(l) <= 1:
                         # blank line
                         f.write(l)
@@ -92,12 +92,8 @@ with open('README.org', 'w') as f_target_org:
                         continue
 
                     # start of quote. What kind?
-                    if re.match('    >>>', l):
-                        in_quote = 'example'
-                        f.write('#+BEGIN_EXAMPLE\n')
-                    else:
-                        in_quote = 'src'
-                        f.write('#+BEGIN_SRC python\n')
+                    in_quote = True
+                    f.write('#+BEGIN_EXAMPLE\n')
 
                     f.write(l[indent_size:])
                     continue
@@ -115,17 +111,15 @@ with open('README.org', 'w') as f_target_org:
                     continue
 
                 # not in quote anymore
-                if in_quote == 'example': f.write('#+END_EXAMPLE\n')
-                else:                     f.write('#+END_SRC\n')
+                f.write('#+END_EXAMPLE\n')
                 f.write( '\n'*queued_blanks)
                 f.write(l)
                 queued_blanks = 0
-                in_quote = None
+                in_quote      = False
                 prev_indented = False
 
             f.write('\n')
-            if   in_quote == 'example': f.write('#+END_EXAMPLE\n')
-            elif in_quote == 'src':     f.write('#+END_SRC\n')
+            if in_quote: f.write('#+END_EXAMPLE\n')
 
 
 
