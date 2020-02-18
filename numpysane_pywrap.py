@@ -548,6 +548,10 @@ Now I can optionally scale the result:
                               scale = 2.0))
     [28. 76.]
 
+** Examples
+For some sample usage, see the wrapper-generator used in the test suite:
+https://github.com/dkogan/numpysane/blob/master/test/genpywrap.py
+
 ** Planned functionality
 Currently, each broadcasted slice is computed sequentially. But since the slices
 are inherently independent, this is a natural place to add parallelism. And

@@ -607,6 +607,16 @@ Now I can optionally scale the result:
 [28. 76.]
 #+END_EXAMPLE
 
+** Examples
+For some sample usage, see the wrapper-generator used in the test suite:
+https://github.com/dkogan/numpysane/blob/master/test/genpywrap.py
+
+** Planned functionality
+Currently, each broadcasted slice is computed sequentially. But since the slices
+are inherently independent, this is a natural place to add parallelism. And
+implemention this with something like OpenMP should be straightforward. I'll get
+around to doing this eventually, but in the meantime, patches are welcome.
+
 * INTERFACE
 * COMPATIBILITY
 
