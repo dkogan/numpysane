@@ -548,6 +548,12 @@ Now I can optionally scale the result:
                               scale = 2.0))
     [28. 76.]
 
+** Planned functionality
+Currently, each broadcasted slice is computed sequentially. But since the slices
+are inherently independent, this is a natural place to add parallelism. And
+implemention this with something like OpenMP should be straightforward. I'll get
+around to doing this eventually, but in the meantime, patches are welcome.
+
 '''
 
 import sys
