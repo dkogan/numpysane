@@ -135,20 +135,23 @@ with open(readmeorg, 'w') as f_target_org:
         write_orgized(inspect.getdoc(mod))
         write( '\n' )
 
-        write('* INTERFACE\n')
+        functions = list(dirmod())
 
-        for func in dirmod():
-            if re.match('_', func):
-                continue
+        if len(functions):
+            write('* INTERFACE\n')
 
-            if not inspect.isfunction(mod.__dict__[func]):
-                continue
+            for func in functions:
+                if re.match('_', func):
+                    continue
 
-            doc = inspect.getdoc(mod.__dict__[func])
-            if doc:
-                write('** {}()\n'.format(func))
-                write_orgized( doc )
-                write( '\n' )
+                if not inspect.isfunction(mod.__dict__[func]):
+                    continue
+
+                doc = inspect.getdoc(mod.__dict__[func])
+                if doc:
+                    write('** {}()\n'.format(func))
+                    write_orgized( doc )
+                    write( '\n' )
 
         with open(readmefooterorg, 'r') as f_footer:
             write( f_footer.read() )
