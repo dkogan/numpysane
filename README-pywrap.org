@@ -103,19 +103,23 @@ To create the wrappers we
 The sources can then be built and executed normally, as any other python
 extension module. The resulting functions are called as one would expect:
 
-   output                  = f_one_output      (input0, input1, ...)
-   (output0, output1, ...) = f_multiple_outputs(input0, input1, ...)
+#+BEGIN_EXAMPLE
+output                  = f_one_output      (input0, input1, ...)
+(output0, output1, ...) = f_multiple_outputs(input0, input1, ...)
+#+END_EXAMPLE
 
 depending on whether we declared a single output, or multiple outputs (see
 below). It is also possible to pre-allocate the output array(s), and call the
 functions like this (see below):
 
-   output = np.zeros(...)
-   f_one_output      (input0, input1, ..., out = output)
+#+BEGIN_EXAMPLE
+output = np.zeros(...)
+f_one_output      (input0, input1, ..., out = output)
 
-   output0 = np.zeros(...)
-   output1 = np.zeros(...)
-   f_multiple_outputs(input0, input1, ..., out = (output0, output1))
+output0 = np.zeros(...)
+output1 = np.zeros(...)
+f_multiple_outputs(input0, input1, ..., out = (output0, output1))
+#+END_EXAMPLE
 
 Each wrapped function is broadcasting-aware. The normal numpy broadcasting rules
 (as described in 'broadcast_define' and on the numpy website:

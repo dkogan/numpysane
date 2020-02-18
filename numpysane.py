@@ -98,16 +98,12 @@ inputs.
 
 *** What about the stock broadcasting support?
 The numpy documentation dedicates a whole page explaining the broadcasting
-rules, but since very few numpy functions support broadcasting (and the docs are
-usually silent on the topic), there's very little user expectation that any
-given function supports it, and most users thus haven't even heard of it. And on
-top of THAT, broadcasting rules state that an array of dimensions (n,m) is
-functionally identical to one of dimensions (1,1,1,....1,n,m), but numpy does
-not respect its own broadcasting rules, and many functions have special-case
-logic to create different behaviors for inputs with different numbers of
-dimensions. The effect of all this is a messy situation where the user is often
-not sure of the exact behavior of the functions they're calling, and trial and
-error is required to make the system do what one wants.
+rules, but only a tiny number of numpy functions provide any broadcasting
+support at all. And the documentation doesn't clearly state what does or does
+not support broadcasting, so the general user assumption is that there is no
+stock broadcasting support. Or, more precisely, BECAUSE there is no stock
+broadcasting support, there's little user awareness that broadcasting even
+exists.
 
 *** What this module provides
 This module contains functionality to make any arbitrary function broadcastable,
@@ -173,7 +169,7 @@ The numpysane_pywrap module generates C code to wrap arbitrary C code in a
 broadcasting-aware wrapper callable from python. This is an analogue of PDL::PP
 (http://pdl.perl.org/PDLdocs/PP.html). This generated code is compiled and
 linked into a python extension module. This functionality is provided by the
-numpysane_pywrap module documented separately:
+numpysane_pywrap module, documented separately:
 https://github.com/dkogan/numpysane/blob/master/README-pywrap.org
 
 ** Core routine improvements
