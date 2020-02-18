@@ -1,0 +1,624 @@
+* NAME
+numpysane_pywrap: Python-wrap C code with broadcasting awareness
+
+* SYNOPSIS
+
+Let's implement a broadcastable and type-checked inner product that is
+
+- Written in C (i.e. it is fast)
+- Callable from python using numpy arrays (i.e. it is convenient)
+
+We write a bit of python to generate the wrapping code. "genpywrap.py":
+
+#+BEGIN_EXAMPLE
+import numpy     as np
+import numpysane as nps
+import numpysane_pywrap as npsp
+
+m = npsp.module( MODULE_NAME      = "innerlib",
+                 MODULE_DOCSTRING = "An inner product module in C")
+m.function( "inner",
+            "Inner product pywrapped with npsp",
+
+            args_input       = ('a', 'b'),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = (),
+
+            FUNCTION__slice_code =                     {np.float64:
+                 r"""
+                   double* out = (double*)data_slice__output;
+                   const int N = dims_slice__a[0];
+
+                   *out = 0.0;
+
+                   for(int i=0; i<N; i++)
+                     *out += *(const double*)(data_slice__a +
+                                              i*strides_slice__a[0]) *
+                             *(const double*)(data_slice__b +
+                                              i*strides_slice__b[0]);
+                   return true;""" })
+m.write()
+#+END_EXAMPLE
+
+We run this, and save the output to "inner_pywrap.c":
+
+#+BEGIN_EXAMPLE
+python3 genpywrap.py > inner_pywrap.c
+#+END_EXAMPLE
+
+We build this into a python module:
+
+#+BEGIN_EXAMPLE
+COMPILE=(`python3 -c "
+import sysconfig
+conf = sysconfig.get_config_vars()
+print('{} {} {} -I{}'.format(*[conf[x] for x in ('CC',
+                                                 'CFLAGS',
+                                                 'CCSHARED',
+                                                 'INCLUDEPY')]))"`)
+LINK=(`python3 -c "
+import sysconfig
+conf = sysconfig.get_config_vars()
+print('{} {} {}'.format(*[conf[x] for x in ('BLDSHARED',
+                                            'BLDLIBRARY',
+                                            'LDFLAGS')]))"`)
+EXT_SUFFIX=`python3 -c "
+import sysconfig
+print(sysconfig.get_config_vars('EXT_SUFFIX')[0])"`
+
+${COMPILE[@]} -c -o inner_pywrap.o inner_pywrap.c
+${LINK[@]} -o innerlib$EXT_SUFFIX inner_pywrap.o
+#+END_EXAMPLE
+
+Here we used the build commands directly. This could be done with
+setuptools/distutils instead; it's a normal extension module. And now we can
+compute broadcasted inner products from a python script "tst.py":
+
+#+BEGIN_EXAMPLE
+import numpy as np
+import innerlib
+print(innerlib.inner( np.arange(4, dtype=float),
+                      np.arange(8, dtype=float).reshape( 2,4)))
+#+END_EXAMPLE
+
+Running it to compute inner([0,1,2,3],[0,1,2,3]) and inner([0,1,2,3],[4,5,6,7]):
+
+#+BEGIN_EXAMPLE
+$ python3 tst.py
+[14. 38.]
+#+END_EXAMPLE
+
+* DESCRIPTION
+This module provides routines to python-wrap existing C code by generating C
+sources that define the wrapper python extension module.
+
+To create the wrappers we
+
+1. Instantiate a new numpysane_pywrap.module class
+2. Call module.function() for each wrapper function we want to add to this
+   module
+3. Call module.write() to write the C sources defining this module to standard
+   output
+
+The sources can then be built and executed normally, as any other python
+extension module. The resulting functions are called as one would expect:
+
+   output                  = f_one_output      (input0, input1, ...)
+   (output0, output1, ...) = f_multiple_outputs(input0, input1, ...)
+
+depending on whether we declared a single output, or multiple outputs (see
+below). It is also possible to pre-allocate the output array(s), and call the
+functions like this (see below):
+
+   output = np.zeros(...)
+   f_one_output      (input0, input1, ..., out = output)
+
+   output0 = np.zeros(...)
+   output1 = np.zeros(...)
+   f_multiple_outputs(input0, input1, ..., out = (output0, output1))
+
+Each wrapped function is broadcasting-aware. The normal numpy broadcasting rules
+(as described in 'broadcast_define' and on the numpy website:
+http://docs.scipy.org/doc/numpy/user/basics.broadcasting.html) apply. In
+summary:
+
+- Dimensions are aligned at the end of the shape list, and must match the
+  prototype
+
+- Extra dimensions left over at the front must be consistent for all the
+  input arguments, meaning:
+
+  - All dimensions of length != 1 must match
+  - Dimensions of length 1 match corresponding dimensions of any length in
+    other arrays
+  - Missing leading dimensions are implicitly set to length 1
+
+- The output(s) have a shape where
+  - The trailing dimensions match the prototype
+  - The leading dimensions come from the extra dimensions in the inputs
+
+When we create a wrapper function, we only define how to compute a single
+broadcasted slice. If the generated function is called with higher-dimensional
+inputs, this slice code will be called multiple times. This broadcast loop is
+produced by the numpysane_pywrap generator automatically. The generated code
+also
+
+- parses the python arguments
+- generates python return values
+- validates the inputs (and any pre-allocated outputs) to make sure the given
+  shapes and types all match the declared shapes and types. For instance,
+  computing an inner product of a 5-vector and a 3-vector is illegal
+- creates the output arrays as necessary
+
+This code-generator module does NOT produce any code to implicitly make copies
+of the input. If the inputs fail validation (unknown types given, contiguity
+checks failed, etc) then an exception is raised. Copying the input is
+potentially slow, so we require the user to do that, if necessary.
+
+** Explicated example
+
+In the synopsis we declared the wrapper module like this:
+
+#+BEGIN_EXAMPLE
+m = npsp.module( MODULE_NAME      = "innerlib",
+                 MODULE_DOCSTRING = "An inner product module in C")
+#+END_EXAMPLE
+
+This produces a module named "innerlib". Note that the python importer will look
+for this module in a file called "innerlib$EXT_SUFFIX" where EXT_SUFFIX comes
+from the python configuration. This is normal behavior for python extension
+modules.
+
+A module can contain many wrapper functions. Each one is added by calling
+'m.function()'. We did this:
+
+#+BEGIN_EXAMPLE
+m.function( "inner",
+            "Inner product pywrapped with numpysane_pywrap",
+
+            args_input       = ('a', 'b'),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = (),
+
+            FUNCTION__slice_code =                     {np.float64:
+                 r"""
+                   double* out = (double*)data_slice__output;
+                   const int N = dims_slice__a[0];
+
+                   *out = 0.0;
+
+                   for(int i=0; i<N; i++)
+                     *out += *(const double*)(data_slice__a +
+                                              i*strides_slice__a[0]) *
+                             *(const double*)(data_slice__b +
+                                              i*strides_slice__b[0]);
+                   return true;""" })
+#+END_EXAMPLE
+
+We declared:
+
+- A function "inner" with the given docstring
+- two inputs to this function: named 'a' and 'b'. Each is a 1-dimensional array
+  of length 'n', same 'n' for both arrays
+- one output: a scalar
+- how to compute a single inner product where all inputs and outputs are 64-bit
+  floating-point values: this snippet of C is included in the generated sources
+  verbatim
+
+It is possible to support multiple sets of types by passing more key/value
+combinations in 'FUNCTION__slice_code'. Each set of types requires a different C
+snippet. If the input doesn't match any known type set, an exception will be
+thrown. More on the type matching below.
+
+The length of the inner product is defined by the length of the input, in this
+case 'dims_slice__a[0]'. I could have looked at 'dims_slice__b[0]' instead, but
+I know it's identical: the 'prototype_input' says that both 'a' and 'b' have
+length 'n', and if we're running the slice code snippet, we know that the inputs
+have already been checked, and have compatible dimensionality. More on this
+below.
+
+I did not assume the data is contiguous, so I use 'strides_slice__a' and
+'strides_slice__b' to index the input arrays. We could add a validation function
+that accepts only contiguous input; if we did that, the slice code snippet could
+assume contiguous data and ignore the strides. More on that below.
+
+Once all the functions have been added, we write out the generated code to
+standard output by invoking
+
+#+BEGIN_EXAMPLE
+m.write()
+#+END_EXAMPLE
+
+** Dimension specification
+The shapes of the inputs and outputs are given in the 'prototype_input' and
+'prototype_output' arguments respectively. This is similar to how this is done
+in 'numpysane.broadcast_define()': each prototype is a tuple of shapes, one for
+each argument. Each shape is given as a tuple of sizes for each expected
+dimension. Each size can be either
+
+- a positive integer if we know the expected dimension size beforehand, and only
+  those sizes are accepted
+
+- a string that names the dimension. Any size could be accepted for a named
+  dimension, but for any given named dimension, the sizes must match across all
+  inputs and outputs
+
+Unlike 'numpysane.broadcast_define()', the shapes of both inputs and outputs
+must be defined here: the output shape may not be omitted.
+
+The common special case of a single output is supported: this one output is
+specified in 'prototype_output' as a single shape, instead of a tuple of shapes.
+This also affects whether the resulting python function returns the one output
+or a tuple of outputs.
+
+Examples:
+
+A function taking in some 2D vectors and the same number of 3D vectors:
+
+#+BEGIN_EXAMPLE
+prototype_input  = (('n',2), ('n',3))
+#+END_EXAMPLE
+
+A function producing a single 2D vector:
+
+#+BEGIN_EXAMPLE
+prototype_output = (2,)
+#+END_EXAMPLE
+
+A function producing 3 outputs: some number of 2D vectors, a single 3D vector
+and a scalar:
+
+#+BEGIN_EXAMPLE
+prototype_output = (('n',2), (3,), ())
+#+END_EXAMPLE
+
+Note that when creating new output arrays, all the dimensions must be known from
+the inputs. For instance, given this, we cannot create the output:
+
+#+BEGIN_EXAMPLE
+prototype_input  = ((2,), ('n',))
+prototype_output = (('m',), ('m', 'm'))
+#+END_EXAMPLE
+
+I have the inputs, so I know 'n', but I don't know 'm'. When calling a function
+like this, it is required to pass in pre-allocated output arrays instead of
+asking the wrapper code to create new ones. See below.
+
+** In-place outputs
+As with 'numpysane.broadcast_define()', the caller of the generated python
+function may pre-allocate the output and pass it in the 'out' kwarg to be
+filled-in. Sometimes this is required if we want to avoid extra copying of data.
+This is also required if the output prototypes have any named dimensions not
+present in the input prototypes: in this case we dont know how large the output
+arrays should be, so we can't create them.
+
+If a wrapped function is called this way, we check that the dimensions and types
+in the outputs match the prototype. Otherwise, we create a new output array with
+the correct type and shape.
+
+If we have multiple outputs, the in-place arrays are given as a tuple of arrays
+in the 'out' kwarg. If any outputs are pre-allocated, all of them must be.
+
+Example. Let's use the inner-product we defined earlier. We compute two sets of
+inner products. We make two calls to inner(), each one broadcasted to produce
+two inner products into a non-contiguous slice of an output array:
+
+#+BEGIN_EXAMPLE
+import numpy as np
+import innerlib
+
+out=np.zeros((2,2), dtype=float)
+innerlib.inner( np.arange(4, dtype=float),
+                np.arange(8, dtype=float).reshape( 2,4),
+                out=out[:,0] )
+innerlib.inner( 1+np.arange(4, dtype=float),
+                np.arange(8, dtype=float).reshape( 2,4),
+                out=out[:,1] )
+print(out)
+#+END_EXAMPLE
+
+The first two inner products end up in the first column of the output, and the
+next two inner products in the second column:
+
+#+BEGIN_EXAMPLE
+$ python3 tst.py
+
+[[14. 20.]
+ [38. 60.]]
+#+END_EXAMPLE
+
+If we have a function "f" that produces two outputs, we'd do this:
+
+#+BEGIN_EXAMPLE
+output0 = np.zeros(...)
+output1 = np.zeros(...)
+f( ..., out = (output0, output1) )
+#+END_EXAMPLE
+
+** Type checking
+Since C code is involved, we must be very explicit about the types of our
+arrays. These types are specified in the keys of the 'FUNCTION__slice_code'
+argument to 'function()'. For each type specification in a key, the
+corresponding value is a C code snippet to use for that type spec. The type
+specs can be either
+
+- A type known by python and acceptable to numpy as a valid dtype. In this usage
+  ALL inputs and ALL outputs must have this type
+- A tuple of types. The elements of this tuple correspond to each input, in
+  order, followed by each output, in order. This allows different arguments to
+  have different types
+  
+It is up to the user to make sure that the C snippet they provide matches the
+types that they declared.
+
+Example. Let's extend the inner product to know about 32-bit floats and also
+about producing a rounded integer inner product from 64-bit floats:
+
+#+BEGIN_EXAMPLE
+m = npsp.module( MODULE_NAME      = "innerlib",
+                 MODULE_DOCSTRING = "An inner product module in C",
+                 HEADER           = "#include <stdint.h>")
+m.function( "inner",
+            "Inner product pywrapped with numpysane_pywrap",
+
+            args_input       = ('a', 'b'),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = (),
+
+            FUNCTION__slice_code =                     {np.float64:
+                 r"""
+                   double* out = (double*)data_slice__output;
+                   const int N = dims_slice__a[0];
+
+                   *out = 0.0;
+
+                   for(int i=0; i<N; i++)
+                     *out += *(const double*)(data_slice__a +
+                                              i*strides_slice__a[0]) *
+                             *(const double*)(data_slice__b +
+                                              i*strides_slice__b[0]);
+                   return true;""",
+                 np.float32:
+                 r"""
+                   float* out = (float*)data_slice__output;
+                   const int N = dims_slice__a[0];
+
+                   *out = 0.0;
+
+                   for(int i=0; i<N; i++)
+                     *out += *(const float*)(data_slice__a +
+                                             i*strides_slice__a[0]) *
+                             *(const float*)(data_slice__b +
+                                             i*strides_slice__b[0]);
+                   return true;""",
+                 (np.float64, np.float64, np.int32):
+                 r"""
+                   double out = 0.0;
+                   const int N = dims_slice__a[0];
+
+                   for(int i=0; i<N; i++)
+                     out += *(const double*)(data_slice__a +
+                                             i*strides_slice__a[0]) *
+                            *(const double*)(data_slice__b +
+                                             i*strides_slice__b[0]);
+                   *(int32_t*)data_slice__output = (int32_t)round(out);
+                   return true;""" })
+#+END_EXAMPLE
+
+** Verbatim code snippets
+As we have seen, some functionality is passed to numpysane_pywrap as C code,
+included into the generated source verbatim. There are two areas where such C
+code is used: argument validation and slice computation.
+
+*** Argument validation
+After the wrapping code confirms that all the shapes and types match the
+prototype, it calls a user-provided validation routine once to flag any extra
+conditions that are required. A common use case: we're wrapping some C code that
+assumes the input data is stored contiguously in memory, so the validation
+routine checks that this is true.
+
+This code snippet is provided in the 'VALIDATE_code' argument to 'function()'.
+The result is returned as a boolean: if the checks pass, we return true. If the
+checks fail, we return false, which will result in an exception being thrown. If
+you want to throw your own, more informative exception, you can do that as usual
+(by calling something like PyErr_Format()) before returning false.
+
+If the 'VALIDATE_code' argument is omitted, no additional checks are performed,
+and we accept all calls that satisfied the broadcasting and type requirements.
+
+*** Slice computation
+This code is executed once for each broadcasted slice to actually do the thing
+we're wrapping. This code snippet is required, and is provided in values of the
+'FUNCTION__slice_code' dict passed to 'function()', as we have seen in the
+samples. This also returns a boolean: true on success, false on failure. If
+false is ever returned, all subsequent slices are abandoned, and an exception is
+thrown. As with the validation code, you can throw a better exception yourself
+prior to returning false.
+
+*** Arguments available to the code snippets
+Each of the user-supplied code blocks is placed into a separate function in the
+generated code, with identical arguments in both cases. These arguments describe
+the inputs and outputs, and are meant to be used by the user code. We have
+dimensionality information:
+
+#+BEGIN_EXAMPLE
+const int       Ndims_full__NAME
+const npy_intp* dims_full__NAME
+const int       Ndims_slice__NAME
+const npy_intp* dims_slice__NAME
+#+END_EXAMPLE
+
+where "NAME" is the name of the input or output. The input names are given in
+the 'args_input' argument to 'function()'. If we have a single output, the
+output name is "output". If we have multiple outputs, their names are "output0",
+"output1", ... The ...full... arguments describe the full array, that describes
+ALL the broadcasted slices. The ...slice... arguments describe each broadcasted
+slice separately. Under most usages, you want the ...slice... information
+because the C code we're wrapping only sees one slice at a time. Ndims...
+describes how many dimensions we have in the corresponding dims... arrays.
+npy_intp is a long integer used internally by numpy for dimension information.
+
+We have memory layout information:
+
+#+BEGIN_EXAMPLE
+const npy_intp* strides_full__NAME
+const npy_intp* strides_slice__NAME
+npy_intp        sizeof_element__NAME
+#+END_EXAMPLE
+
+NAME and full/slice and npy_intp have the same meanings as before. The
+strides... arrays each have length described by the corresponding dims... The
+strides contain the step size in bytes, of each dimension. sizeof_element...
+describes the size in bytes, of a single data element.
+
+Finally, I have a pointer to the data itself. The validation code gets a pointer
+to the start of the data array:
+
+#+BEGIN_EXAMPLE
+void*           data__NAME
+#+END_EXAMPLE
+
+but the computation code gets a pointer to the start of the slice we're
+currently looking at:
+
+#+BEGIN_EXAMPLE
+void*           data_slice__NAME
+#+END_EXAMPLE
+
+Example: I'm computing a broadcasted slice. An input array 'x' is a
+2-dimensional slice of dimension (3,4) of 64-bit floating-point values. I thus
+have Ndims_slice__x == 2 and dims_slice__x[] = {3,4} and sizeof_element__x == 8.
+An element of this array at i,j is
+
+#+BEGIN_EXAMPLE
+*((double*)(data_slice__a + i*strides_slice__a[0] + j*strides_slice__a[1]))
+#+END_EXAMPLE
+
+If I defined a validation function that makes sure that 'a' is stored in
+contiguous memory, the computation code doesn't need to look at the strides at
+all, and element at i,j can be found more simply:
+
+#+BEGIN_EXAMPLE
+((double*)data_slice__a)[ i*dims_slice__a[1] + j ]
+#+END_EXAMPLE
+
+*** Contiguity checking
+Since checking for memory contiguity is a very common use case for argument
+validation, there are convenience macros provided:
+
+#+BEGIN_EXAMPLE
+CHECK_CONTIGUOUS__NAME()
+CHECK_CONTIGUOUS_AND_SETERROR__NAME()
+
+CHECK_CONTIGUOUS_ALL()
+CHECK_CONTIGUOUS_AND_SETERROR_ALL()
+#+END_EXAMPLE
+
+The strictest, and most common usage will accept only those calls where ALL
+inputs and ALL outputs are stored in contiguous memory. This can be accomplished
+by defining the function like
+
+#+BEGIN_EXAMPLE
+m.function( ...,
+           VALIDATE_code = 'return CHECK_CONTIGUOUS_AND_SETERROR_ALL();' )
+#+END_EXAMPLE
+
+As before, "NAME" refers to each individual input or output, and "ALL" checks
+all of them. These all evaluate to true if the argument in questions IS
+contiguous. The ..._AND_SETERROR_... flavor does that, but ALSO raises an
+informative exception.
+
+Generally you want to do this in the validation routine only, since it runs only
+once. But there's nothing stopping you from checking this in the computation
+function too.
+
+Note that each broadcasted slice is processed separately, so the C code being
+wrapped usually only cares about each SLICE being contiguous. If the dimensions
+above each slice (those being broadcasted) are not contiguous, this doesn't
+break the underlying assumptions. Thus the CHECK_CONTIGUOUS_... functions only
+check and report the in-slice contiguity. If for some reason you need more than
+this, you should write the check yourself, using the strides_full__... and
+dims_full__... arrays.
+
+*** Extra arguments
+Sometimes it is desired to pass extra arguments to the python wrapper that
+aren't broadcasted in any way, but are just passed verbatim to the inner
+functions. We can do that with the 'extra_args' argument to 'function()'. This
+argument is an tuple of tuples of strings:
+
+#+BEGIN_EXAMPLE
+(c_type, name, default_value, parse_arg)
+#+END_EXAMPLE
+
+The "c_type" is the C type of the argument ("int", "double", etc). The "name" is
+the C name of the argument. This type and name will be available to the argument
+validation and slice computation routines as a pointer to the given c_type.
+
+When calling this function, passing these extra arguments is optional. If
+omitted, we use the "default_value". Finally, when interpreting the passed
+arguments we use PyArg_ParseTupleAndKeywords, and "parse_arg" is the code used
+by that function to interpret the argument.
+
+Example. Let's update our inner product example to accept a "scale" argument.
+
+#+BEGIN_EXAMPLE
+m.function( "inner",
+            "Inner product pywrapped with numpysane_pywrap",
+
+            args_input       = ('a', 'b'),
+            prototype_input  = (('n',), ('n',)),
+            prototype_output = (),
+            extra_args = (("double", "scale", "1", "d"),),
+
+            FUNCTION__slice_code =                     {np.float64:
+                 r"""
+                   double* out = (double*)data_slice__output;
+                   const int N = dims_slice__a[0];
+
+                   *out = 0.0;
+
+                   for(int i=0; i<N; i++)
+                     *out += *(const double*)(data_slice__a +
+                                              i*strides_slice__a[0]) *
+                             *(const double*)(data_slice__b +
+                                              i*strides_slice__b[0]);
+                   *out *= *scale;
+                   return true;""" })
+#+END_EXAMPLE
+
+Now I can optionally scale the result:
+
+#+BEGIN_EXAMPLE
+>>> print(innerlib.inner( np.arange(4, dtype=float),
+                          np.arange(8, dtype=float).reshape( 2,4)))
+[14. 38.]
+
+>>> print(innerlib.inner( np.arange(4, dtype=float),
+                          np.arange(8, dtype=float).reshape( 2,4),
+                          scale = 2.0))
+[28. 76.]
+#+END_EXAMPLE
+
+* INTERFACE
+* COMPATIBILITY
+
+Python 2 and Python 3 should both be supported. Please report a bug if either
+one doesn't work.
+
+* REPOSITORY
+
+https://github.com/dkogan/numpysane
+
+* AUTHOR
+
+Dima Kogan <dima@secretsauce.net>
+
+* LICENSE AND COPYRIGHT
+
+Copyright 2016-2017 Dima Kogan.
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License (any version) as published by
+the Free Software Foundation
+
+See https://www.gnu.org/licenses/lgpl.html
