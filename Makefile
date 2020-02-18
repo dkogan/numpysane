@@ -37,12 +37,14 @@ clean:
 
 ####### Everything non-extension-module related
 .DEFAULT_GOAL := all
-all: README README.org
+all: README README.org README-pywrap README-pywrap.org
 
 # a multiple-target pattern rule means that a single invocation of the command
 # builds all the targets, which is what I want here
 %EADME %EADME.org: numpysane.py README.footer.org extract_README.py
-	python3 extract_README.py numpysane
+	python3 extract_README.py numpysane README.org README README.footer.org
+%EADME-pywrap %EADME-pywrap.org: numpysane_pywrap.py README.footer.org extract_README.py
+	python3 extract_README.py numpysane_pywrap README-pywrap.org README-pywrap README.footer.org
 
 test:  test2  test3
 check: check2 check3

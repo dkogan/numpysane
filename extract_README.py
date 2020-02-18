@@ -16,9 +16,9 @@ The main module name must be passed in as the first cmdline argument.
 import sys
 
 try:
-    modname = sys.argv[1]
+    modname,readmeorg,readme,readmefooterorg = sys.argv[1:]
 except:
-    raise Exception("Need main module name as the first cmdline arg")
+    raise Exception("Usage: {} modulename readmeorg readme readmefooterorg".format(sys.argv[0]))
 
 exec( 'import {} as mod'.format(modname) )
 
@@ -37,8 +37,8 @@ def dirmod():
             if m:
                 yield m.group(1)
 
-with open('README.org', 'w') as f_target_org:
-    with open('README', 'w') as f_target:
+with open(readmeorg, 'w') as f_target_org:
+    with open(readme, 'w') as f_target:
 
         def write(s):
             f_target.    write(s)
@@ -150,5 +150,5 @@ with open('README.org', 'w') as f_target_org:
                 write_orgized( doc )
                 write( '\n' )
 
-        with open('README.footer.org', 'r') as f_footer:
+        with open(readmefooterorg, 'r') as f_footer:
             write( f_footer.read() )
