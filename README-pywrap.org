@@ -15,8 +15,8 @@ import numpy     as np
 import numpysane as nps
 import numpysane_pywrap as npsp
 
-m = npsp.module( MODULE_NAME      = "innerlib",
-                 MODULE_DOCSTRING = "An inner product module in C")
+m = npsp.module( name      = "innerlib",
+                 docstring = "An inner product module in C")
 m.function( "inner",
             "Inner product pywrapped with npsp",
 
@@ -165,8 +165,8 @@ potentially slow, so we require the user to do that, if necessary.
 In the synopsis we declared the wrapper module like this:
 
 #+BEGIN_EXAMPLE
-m = npsp.module( MODULE_NAME      = "innerlib",
-                 MODULE_DOCSTRING = "An inner product module in C")
+m = npsp.module( name      = "innerlib",
+                 docstring = "An inner product module in C")
 #+END_EXAMPLE
 
 This produces a module named "innerlib". Note that the python importer will look
@@ -361,9 +361,9 @@ Example. Let's extend the inner product to know about 32-bit floats and also
 about producing a rounded integer inner product from 64-bit floats:
 
 #+BEGIN_EXAMPLE
-m = npsp.module( MODULE_NAME      = "innerlib",
-                 MODULE_DOCSTRING = "An inner product module in C",
-                 HEADER           = "#include <stdint.h>")
+m = npsp.module( name      = "innerlib",
+                 docstring = "An inner product module in C",
+                 header    = "#include <stdint.h>")
 m.function( "inner",
             "Inner product pywrapped with numpysane_pywrap",
 

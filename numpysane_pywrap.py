@@ -13,8 +13,8 @@ We write a bit of python to generate the wrapping code. "genpywrap.py":
     import numpysane as nps
     import numpysane_pywrap as npsp
 
-    m = npsp.module( MODULE_NAME      = "innerlib",
-                     MODULE_DOCSTRING = "An inner product module in C")
+    m = npsp.module( name      = "innerlib",
+                     docstring = "An inner product module in C")
     m.function( "inner",
                 "Inner product pywrapped with npsp",
 
@@ -149,8 +149,8 @@ potentially slow, so we require the user to do that, if necessary.
 
 In the synopsis we declared the wrapper module like this:
 
-    m = npsp.module( MODULE_NAME      = "innerlib",
-                     MODULE_DOCSTRING = "An inner product module in C")
+    m = npsp.module( name      = "innerlib",
+                     docstring = "An inner product module in C")
 
 This produces a module named "innerlib". Note that the python importer will look
 for this module in a file called "innerlib$EXT_SUFFIX" where EXT_SUFFIX comes
@@ -325,9 +325,9 @@ types that they declared.
 Example. Let's extend the inner product to know about 32-bit floats and also
 about producing a rounded integer inner product from 64-bit floats:
 
-    m = npsp.module( MODULE_NAME      = "innerlib",
-                     MODULE_DOCSTRING = "An inner product module in C",
-                     HEADER           = "#include <stdint.h>")
+    m = npsp.module( name      = "innerlib",
+                     docstring = "An inner product module in C",
+                     header    = "#include <stdint.h>")
     m.function( "inner",
                 "Inner product pywrapped with numpysane_pywrap",
 
@@ -615,48 +615,47 @@ def _substitute(s, convert_newlines=False, **kwargs):
 
 
 class module:
-    def __init__(self, MODULE_NAME, MODULE_DOCSTRING, HEADER=''):
+    def __init__(self, name, docstring, header=''):
         r'''Initialize the python-wrapper-generator
 
         SYNOPSIS
 
             import numpysane_pywrap as npsp
-            m = npsp.module( MODULE_NAME      = "wrapped_library",
-                             MODULE_DOCSTRING = r"""A library wrapped by numpysane_pywrap
+            m = npsp.module( name      = "wrapped_library",
+                             docstring = r"""wrapped by numpysane_pywrap
 
-                                                Does this thing
-                                                And does that thing""",
-                             HEADER           = '#include "library.h"')
+                                         Does this thing and does that thing""",
+                             header    = '#include "library.h"')
 
         ARGUMENTS
 
-        - MODULE_NAME
+        - name
           The name of the python module we're creating
 
-        - MODULE_DOCSTRING
+        - docstring
           The docstring for this module
 
-        - HEADER
+        - header
           Optional, defaults to ''. C code to include verbatim. Any #includes or
           utility functions can go here
 
         '''
 
         with open( _module_header_filename, 'r') as f:
-            self.module_header = f.read() + "\n" + HEADER + "\n"
+            self.module_header = f.read() + "\n" + header + "\n"
 
         with open( _module_footer_filename, 'r') as f:
             self.module_footer = _substitute(f.read(),
-                                             MODULE_NAME      = MODULE_NAME,
-                                             MODULE_DOCSTRING = MODULE_DOCSTRING,
+                                             MODULE_NAME      = name,
+                                             MODULE_DOCSTRING = docstring,
                                              convert_newlines = True)
 
         self.functions = []
 
 
     def function(self,
-                 FUNCTION_NAME,
-                 FUNCTION_DOCSTRING,
+                 name,
+                 docstring,
                  args_input,
                  prototype_input,
                  prototype_output,
@@ -706,11 +705,11 @@ class module:
         A summary description of the arguments follows. See the numpysane_pywrap
         module docstring for detail.
 
-        - FUNCTION_NAME
+        - name
           The name of the function we're wrapping. A python function of this
           name will be generated in this module
 
-        - FUNCTION_DOCSTRING
+        - docstring
           The docstring for this function
 
         - args_input
@@ -959,7 +958,7 @@ class module:
 
 
         Ntypesets = len(Ccode_slice_eval)
-        slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(Ntypesets)]
+        slice_functions = [ "__{}__{}__slice".format(name,i) for i in range(Ntypesets)]
         # The keys of Ccode_slice_eval are either:
 
         # - a type: all inputs, outputs MUST have this type
@@ -1036,12 +1035,12 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         EXTRA_ARGUMENTS_ARGLIST        = []
         EXTRA_ARGUMENTS_ARGLIST_DEFINE = []
 
-        for _type, name, default_value, parsearg in extra_args:
-            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'.format(_type, name))
-            EXTRA_ARGUMENTS_ARG_DEFINE     += "{} {} = {};\n".format(_type, name, default_value)
-            EXTRA_ARGUMENTS_NAMELIST       += '"{}",'.format(name)
+        for _type, n, default_value, parsearg in extra_args:
+            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'.format(_type, n))
+            EXTRA_ARGUMENTS_ARG_DEFINE     += "{} {} = {};\n".format(_type, n, default_value)
+            EXTRA_ARGUMENTS_NAMELIST       += '"{}",'.format(n)
             EXTRA_ARGUMENTS_PARSECODES     += '"{}"'.format(parsearg)
-            EXTRA_ARGUMENTS_ARGLIST.append('&{}'.format(name))
+            EXTRA_ARGUMENTS_ARGLIST.append('&{}'.format(n))
         if len(extra_args) == 0:
             # no extra args. I need a dummy argument to make the C parser happy,
             # so I add a 0. This is because the template being filled-in is
@@ -1081,10 +1080,10 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         text +=                                                                                \
             '\n' +                                                                             \
             '#define CHECK_CONTIGUOUS_ALL() ' +                                                \
-            ' && '.join( "CHECK_CONTIGUOUS__"+name+"()" for name in slice_args) +              \
+            ' && '.join( "CHECK_CONTIGUOUS__"+n+"()" for n in slice_args) +                    \
             '\n' +                                                                             \
             '#define CHECK_CONTIGUOUS_AND_SETERROR_ALL() ' +                                   \
-            ' && '.join( "CHECK_CONTIGUOUS_AND_SETERROR__"+name+"()" for name in slice_args) + \
+            ' && '.join( "CHECK_CONTIGUOUS_AND_SETERROR__"+n+"()" for n in slice_args) +       \
             '\n'
 
         # The user provides two sets of C code that we include verbatim in
@@ -1112,7 +1111,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         arglist_string = '\n  ' + ',\n  '.join(arglist)
         text += \
             _substitute(function_template,
-                        FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
+                        FUNCTION_NAME = "__{}__validate".format(name),
                         ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data"),
                         FUNCTION_BODY = "return true;" if Ccode_validate is None else Ccode_validate)
 
@@ -1133,7 +1132,7 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             ' \\\n  '.join(OUTPUTS_LIST) + \
             '\n\n' + \
             _substitute(self.function_body,
-                        FUNCTION_NAME              = FUNCTION_NAME,
+                        FUNCTION_NAME              = name,
                         PROTOTYPE_DIM_DEFS         = PROTOTYPE_DIM_DEFS,
                         UNPACK_OUTPUTS             = UNPACK_OUTPUTS,
                         EXTRA_ARGUMENTS_SLICE_ARG  = EXTRA_ARGUMENTS_SLICE_ARG,
@@ -1152,8 +1151,8 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         text += '#undef CHECK_CONTIGUOUS_ALL\n'
         text += '#undef CHECK_CONTIGUOUS_AND_SETERROR_ALL\n'
 
-        self.functions.append( (FUNCTION_NAME,
-                                _quote(FUNCTION_DOCSTRING, convert_newlines=True),
+        self.functions.append( (name,
+                                _quote(docstring, convert_newlines=True),
                                 text) )
 
 

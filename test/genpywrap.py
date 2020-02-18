@@ -18,9 +18,9 @@ import numpysane as nps
 import numpysane_pywrap as npsp
 
 
-m = npsp.module( MODULE_NAME      = "testlib",
-                 MODULE_DOCSTRING = "Some functions to test the python wrapping",
-                 HEADER           = '#include "testlib.h"')
+m = npsp.module( name      = "testlib",
+                 docstring = "Some functions to test the python wrapping",
+                 header    = '#include "testlib.h"')
 
 m.function( "identity3",
             "Generates a 3x3 identity matrix",
@@ -29,7 +29,7 @@ m.function( "identity3",
             prototype_input  = (),
             prototype_output = (3,3),
 
-            FUNCTION__slice_code = \
+            Ccode_slice_eval = \
                 {np.float64:
                  r'''
     for(int i=0; i<3; i++)
@@ -46,7 +46,7 @@ m.function( "identity",
             prototype_input  = (),
             prototype_output = ('N', 'N'),
 
-            FUNCTION__slice_code = \
+            Ccode_slice_eval = \
                 {np.float64:
                  r'''
     int N = dims_slice__output[0];
@@ -64,7 +64,7 @@ m.function( "inner",
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
-            FUNCTION__slice_code = \
+            Ccode_slice_eval = \
                 {np.float64:
                  r'''
             const int N = dims_slice__a[0];
@@ -106,7 +106,7 @@ m.function( "outer",
             prototype_input  = (('n',), ('n',)),
             prototype_output = ('n', 'n'),
 
-            FUNCTION__slice_code = \
+            Ccode_slice_eval = \
                 {np.float64:
                  r'''
             int N = dims_slice__a[0];
@@ -128,7 +128,7 @@ m.function( "innerouter",
             prototype_input  = (('n',), ('n',)),
             prototype_output = ((), ('n', 'n')),
 
-            FUNCTION__slice_code = \
+            Ccode_slice_eval = \
                 {np.float64:
                  r'''
             int N = dims_slice__a[0];
@@ -140,7 +140,7 @@ m.function( "innerouter",
                      N);
             return true;
 '''},
-            VALIDATE_code = r'''
+            Ccode_validate = r'''
             return \
               *scale > 0.0       &&
               CHECK_CONTIGUOUS_AND_SETERROR_ALL();
@@ -154,7 +154,7 @@ m.function( "sorted_indices",
             prototype_input  = (('n',),),
             prototype_output = ('n',),
 
-            FUNCTION__slice_code = \
+            Ccode_slice_eval = \
                 {(np.float32, np.int32):
                  r'''
                  sorted_indices_float((int*)data_slice__output,
@@ -170,7 +170,7 @@ m.function( "sorted_indices",
                      dims_slice__x[0]);
                  return true;
 '''},
-            VALIDATE_code = 'return CHECK_CONTIGUOUS_AND_SETERROR__x();' )
+            Ccode_validate = 'return CHECK_CONTIGUOUS_AND_SETERROR__x();' )
 
 # Tests. Try to wrap functions using illegal output prototypes. The wrapper code
 # should barf
@@ -181,7 +181,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('n', -1),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
@@ -191,7 +191,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), (-1,)),
                 prototype_output = ('n', 'n'),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen")
 
@@ -201,7 +201,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',-1)),
                 prototype_output = (),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: input dims must >=0")
 
@@ -211,7 +211,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (-1,),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must >=0")
 
@@ -221,7 +221,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = ('m', ()),
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be integers or strings")
 
@@ -231,7 +231,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = 'n',
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
 
@@ -241,7 +241,7 @@ try:
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), 'n'),
                 prototype_output = 'n',
-                FUNCTION__slice_code = {np.float64: 'return true;'})
+                Ccode_slice_eval = {np.float64: 'return true;'})
 except: pass # known error
 else:   raise Exception("Expected error didn't happen: output dims must be a tuple")
 
@@ -251,8 +251,8 @@ try:
                 args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { np.float64: 'return true;' })
-except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
+                Ccode_slice_eval = { np.float64: 'return true;' })
+except: raise Exception("Valid usage of Ccode_slice_eval keys failed")
 
 try:
     m.function( "sorted_indices_broken2",
@@ -260,8 +260,8 @@ try:
                 args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { np.float64: 'return true;', np.int32: 'return true;' })
-except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
+                Ccode_slice_eval = { np.float64: 'return true;', np.int32: 'return true;' })
+except: raise Exception("Valid usage of Ccode_slice_eval keys failed")
 
 try:
     m.function( "sorted_indices_broken3",
@@ -269,8 +269,8 @@ try:
                 args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { (np.float64, np.int32): 'return true;', np.int32: 'return true;' })
-except: raise Exception("Valid usage of FUNCTION__slice_code keys failed")
+                Ccode_slice_eval = { (np.float64, np.int32): 'return true;', np.int32: 'return true;' })
+except: raise Exception("Valid usage of Ccode_slice_eval keys failed")
 
 try:
     m.function( "sorted_indices_broken4",
@@ -278,9 +278,9 @@ try:
                 args_input       = ('x',),
                 prototype_input  = (('n',),),
                 prototype_output = ('n',),
-                FUNCTION__slice_code = { (np.float64, np.int32, np.int32): 'return true;', np.int32: 'return true;' })
+                Ccode_slice_eval = { (np.float64, np.int32, np.int32): 'return true;', np.int32: 'return true;' })
 except: pass # known error
-else:   raise Exception("Expected invalid usage of FUNCTION__slice_code keys didn't fail!")
+else:   raise Exception("Expected invalid usage of Ccode_slice_eval keys didn't fail!")
 
 
 m.write()
