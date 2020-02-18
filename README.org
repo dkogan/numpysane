@@ -48,14 +48,17 @@ array([ 305, 1250])
 #+END_EXAMPLE
 
 * DESCRIPTION
+
 Numpy is a very widely used toolkit for numerical computation in Python. Despite
 its popularity, some of its core functionality is mysterious and/or incomplete.
-numpysane is a library to fill in those gaps by providing new routines for that
-functionality. The functions provided by this module fall into three broad
-categories, listed below.
+The numpysane library seeks to fill those gaps by providing its own replacement
+routines. Many of the replacement functions are direct translations from PDL
+(http://pdl.perl.org), a numerical computation library for perl. The functions
+provided by this module fall into three broad categories:
 
-Most of these functions are direct translations of analogous ones in PDL
-(http://pdl.perl.org), a numerical computation library for perl.
+- Broadcasting support
+- Nicer array manipulation
+- Basic linear algebra
 
 ** Broadcasting
 Numpy has a limited support for broadcasting
@@ -110,9 +113,9 @@ exists.
 
 *** What this module provides
 This module contains functionality to make any arbitrary function broadcastable,
-in either C or Python. In both cases, the input and output (required in C,
-optional in Python) prototypes are declared, and these are used for
-shape-checking and vectorization each time the function is called.
+in either C or Python. In both cases, the input and output prototypes are
+declared, and these are used for shape-checking and vectorization each time the
+function is called.
 
 The functions can have either
 
@@ -168,18 +171,17 @@ its usefulness. See the docstrings for 'broadcast_define' and
 
 *** Broadcasting in C
 The python broadcasting is useful, but it is a python loop, so the loop itself
-is computationally expensive if we have many iterations. It the function being
+is computationally expensive if we have many iterations. If the function being
 wrapped is available in C, we can apply broadcasting awareness in C, which makes
 a much faster loop.
 
-The numpysane_pywrap module generates C code to wrap arbitrary C code in a
+The "numpysane_pywrap" module generates code to wrap arbitrary C code in a
 broadcasting-aware wrapper callable from python. This is an analogue of PDL::PP
 (http://pdl.perl.org/PDLdocs/PP.html). This generated code is compiled and
-linked into a python extension module. This functionality is provided by the
-numpysane_pywrap module, documented separately:
-https://github.com/dkogan/numpysane/blob/master/README-pywrap.org
+linked into a python extension module, as usual. This functionality documented
+separately: https://github.com/dkogan/numpysane/blob/master/README-pywrap.org
 
-** Core routine improvements
+** Nicer array manipulation
 Numpy functions that move dimensions around and concatenate matrices are
 unintuitive. For instance, a simple concatenation of a row-vector or a
 column-vector to a matrix requires arcane knowledge to accomplish reliably. This
