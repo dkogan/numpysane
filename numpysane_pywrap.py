@@ -1,4 +1,4 @@
-'''Python-wrap C code with broadcasting awareness
+r'''Python-wrap C code with broadcasting awareness
 
 * SYNOPSIS
 

@@ -24,7 +24,8 @@ m.function( "inner",
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
-            FUNCTION__slice_code =                     {np.float64:
+            FUNCTION__slice_code = \
+                {np.float64:
                  r"""
                    double* out = (double*)data_slice__output;
                    const int N = dims_slice__a[0];
@@ -184,7 +185,8 @@ m.function( "inner",
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
-            FUNCTION__slice_code =                     {np.float64:
+            FUNCTION__slice_code = \
+                {np.float64:
                  r"""
                    double* out = (double*)data_slice__output;
                    const int N = dims_slice__a[0];
@@ -369,7 +371,8 @@ m.function( "inner",
             prototype_input  = (('n',), ('n',)),
             prototype_output = (),
 
-            FUNCTION__slice_code =                     {np.float64:
+            FUNCTION__slice_code = \
+                {np.float64:
                  r"""
                    double* out = (double*)data_slice__output;
                    const int N = dims_slice__a[0];
@@ -574,7 +577,8 @@ m.function( "inner",
             prototype_output = (),
             extra_args = (("double", "scale", "1", "d"),),
 
-            FUNCTION__slice_code =                     {np.float64:
+            FUNCTION__slice_code = \
+                {np.float64:
                  r"""
                    double* out = (double*)data_slice__output;
                    const int N = dims_slice__a[0];
