@@ -486,11 +486,19 @@ Generally you want to do this in the validation routine only, since it runs only
 once. But there's nothing stopping you from checking this in the computation
 function too.
 
+Note that each broadcasted slice is processed separately, so the C code being
+wrapped usually only cares about each SLICE being contiguous. If the dimensions
+above each slice (those being broadcasted) are not contiguous, this doesn't
+break the underlying assumptions. Thus the CHECK_CONTIGUOUS_... functions only
+check and report the in-slice contiguity. If for some reason you need more than
+this, you should write the check yourself, using the strides_full__... and
+dims_full__... arrays.
+
 *** Extra arguments
 Sometimes it is desired to pass extra arguments to the python wrapper that
 aren't broadcasted in any way, but are just passed verbatim to the inner
 functions. We can do that with the 'extra_args' argument to 'function()'. This
-argument is an iterable of tuples of strings:
+argument is an tuple of tuples of strings:
 
     (c_type, name, default_value, parse_arg)
 
@@ -539,6 +547,7 @@ Now I can optionally scale the result:
                               np.arange(8, dtype=float).reshape( 2,4),
                               scale = 2.0))
     [28. 76.]
+
 '''
 
 import sys
@@ -609,7 +618,17 @@ class module:
     def __init__(self, MODULE_NAME, MODULE_DOCSTRING, HEADER=''):
         r'''Initialize the python-wrapper-generator
 
-        Arguments:
+        SYNOPSIS
+
+            import numpysane_pywrap as npsp
+            m = npsp.module( MODULE_NAME      = "wrapped_library",
+                             MODULE_DOCSTRING = r"""A library wrapped by numpysane_pywrap
+
+                                                Does this thing
+                                                And does that thing""",
+                             HEADER           = '#include "library.h"')
+
+        ARGUMENTS
 
         - MODULE_NAME
           The name of the python module we're creating
@@ -618,9 +637,8 @@ class module:
           The docstring for this module
 
         - HEADER
-
-          C code to include verbatim. Any #includes or utility functions can go
-          here
+          Optional, defaults to ''. C code to include verbatim. Any #includes or
+          utility functions can go here
 
         '''
 
@@ -645,103 +663,112 @@ class module:
                  FUNCTION__slice_code,
                  VALIDATE_code = None,
                  extra_args    = ()):
-        r'''Add a function to the python module we're creating
+        r'''Add a wrapper function to the module we're creating
 
         SYNOPSIS
 
-        If we're wrapping a simple inner product you can do this:
+        We can wrap a C function inner() like this:
 
-        function( "inner",
-                  "Inner-product pywrapped with npsp",
+        m.function( "inner",
+                    "Inner product pywrapped with npsp",
 
-                  prototype_input  = (('n',), ('n',)),
-                  prototype_output = (),
+                    args_input       = ('a', 'b'),
+                    prototype_input  = (('n',), ('n',)),
+                    prototype_output = (),
 
-                  FUNCTION__slice_code = r"""
-                  output.data[0] = inner(a.data,
-                                         b.data,
-                                         a.strides[0],
-                                         b.strides[0],
-                                         a.shape[0]);
-                  return true;
-                  """,
+                    FUNCTION__slice_code = \
+                        {np.float64:
+                         r"""
+                           double* out = (double*)data_slice__output;
+                           const int N = dims_slice__a[0];
 
-                  "a", "b'")
+                           *out = 0.0;
 
-        Here we generate code to wrap a chunk of C code. The main chunk of
-        user-supplied glue code is passed-in with FUNCTION__slice_code. This
-        function is given all the input and output buffers, and it's the job of
-        the glue code to read and write them.
+                           for(int i=0; i<N; i++)
+                             *out += *(const double*)(data_slice__a +
+                                                      i*strides_slice__a[0]) *
+                                     *(const double*)(data_slice__b +
+                                                      i*strides_slice__b[0]);
+                           return true;""" })
+
+        DESCRIPTION
+
+        'function()' is the main workhorse of numpysane_pywrap python wrapping.
+        For each C function we want to wrap, 'function()' should be called to
+        generate the wrapper code. In the call to 'function()' the user
+        specifies how the wrapper should compute a single broadcasted slice, and
+        numpysane_pywrap generates the code to do everything else. See the
+        numpysane_pywrap module docstring for lots of detail.
 
 
         ARGUMENTS
 
+        A summary description of the arguments follows. See the numpysane_pywrap
+        module docstring for detail.
+
         - FUNCTION_NAME
-          The name of this function
+          The name of the function we're wrapping. A python function of this
+          name will be generated in this module
 
         - FUNCTION_DOCSTRING
           The docstring for this function
 
         - args_input
-          The names of the arguments. Must have the same number of elements as
-          prototype_input
+          The names of the arguments. This is an tuple of strings. Must have
+          the same number of elements as prototype_input
 
         - prototype_input
-          An iterable defining the shapes of the inputs. Each element describes
-          the trailing shape of each argument. Each element of this shape
-          definition is either an integer (if this dimension of the broadcasted
-          slice MUST have this size) or a string (naming this dimension; any
-          size is allowed, but the sizes of all dimensions with this name must
-          match)
+          An tuple of tuples that defines the shapes of the inputs. Must have
+          the same number of elements as args_input. Each element of the outer
+          tuple describes the shape of the corresponding input. Each shape is
+          given as an tuple describing the length of each dimension. Each length
+          is either
+
+          - a positive integer if we know the expected dimension size
+            beforehand, and only those sizes are accepted
+
+          - a string that names the dimension. Any size could be accepted for a
+            named dimension, but for any given named dimension, the sizes must
+            match across all inputs and outputs
 
         - prototype_output
-          A single shape definition. Similar to prototype_input, but there's
-          just one. Named dimensions in prototype_input must match the ones here
+          Similar to prototype_input: describes the dimensions of each output.
+          In the special case that we have only one output, this can be given as
+          a shape tuple instead of a tuple of shape tuples.
 
         - FUNCTION__slice_code
+          This argument contains the snippet of C code used to execute the
+          operation being wrapped. This argument is a dict mapping a type
+          specification to code snippets: different data types require different
+          C code to work with them. The type specification is either
 
-          This is a dict from numpy type objects to code snippets that form the
-          body of a slice_function_t function. This is C code that will be
-          included verbatim into the python-wrapping code. For instance, if
-          we're wrapping a function called FUNCTION that works on 64-bit
-          floating-point values, here we specify the way we call this function.
+          - a numpy type (np.float64, np.int32, etc). We'll use the given code
+            if ALL the inputs and ALL the outputs are of this type
 
-            typedef struct
-            {
-                void*           data;
-                const npy_intp* strides;
-                const npy_intp* shape;
-            } nps_slice_t;
-            bool __FUNCTION__float64_slice( nps_slice_t output,
-                                            nps_slice_t a,
-                                            nps_slice_t b )
-            {
-               // THE PASSED-IN STRING FOR THE 'float' KEY ENDS UP HERE
-               ...
-               ...
-               // This string eventually contains a FUNCTION() call
-               FUNCTION(...);
-            }
+          - a tuple of numpy types. These correspond to the inputs and outputs,
+            in order. This allows us to use different data types for the various
+            inputs and outputs
 
-          This function is called for each broadcasting slice. The number of
-          arguments and their names are generated from the "prototype_input" and
-          "args_input" arguments. The strides and shape define the memory layout
-          of the data in memory for this slice. The 'shape' is only knowable at
-          runtime because of named dimensions. The inner slice function returns
-          true on success.
-
-          Currently any number of data types are supported, but ALL of the
-          inputs AND the output MUST share a single, consistent type. No
-          implicit type conversions are performed, but the system does check
-          for, and report type mismatches
+          The corresponding code snippet is a string of C code that's inserted
+          into the generated sources verbatim. Please see the numpysane_pywrap
+          module docstring for more detail.
 
         - VALIDATE_code
+          A string of C code inserted into the generated sources verbatim. This
+          is used to validate the input/output arguments prior to actually
+          performing the computation. This runs after we made the broadcasting
+          shape checks and type checks. If those checks are all we need, this
+          argument may be omitted, and no more checks are made. The most common
+          use case is rejecting inputs that are not stored contiguously in
+          memory. Please see the numpysane_pywrap module docstring for more
+          detail.
 
-          C code that will be included verbatim into the python-wrapping code.
-          Any special variable-validation code can be specified here.
-          Dimensionality checks against the prototypes are generated
-          automatically, but things like stride or type checking can be done
-          here.
+        - extra_args
+          Defines extra arguments to accept in the validation and slice
+          computation functions. These extra arguments are not broadcast or
+          interpreted in any way; they're simply passed down from the python
+          caller to these functions. Please see the numpysane_pywrap module
+          docstring for more detail.
 
         '''
 
@@ -1131,10 +1158,20 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 
 
     def write(self, file=sys.stdout):
-        r'''Write out the module definition to stdout
+        r'''Write out the generated C code
 
-        Call this after the constructor and all the function() calls
+        DESCRIPTION
 
+        Once we defined all of the wrapper functions in this module by calling
+        'function()' for each one, we're ready to write out the generated C
+        source that defines this module. write() writes out the C source to
+        standard output by default.
+
+        ARGUMENTS
+
+        - file
+          The python file object to write the output to. Defaults to standard
+          output
         '''
 
         # Get shellquote from the right place in python2 and python3
