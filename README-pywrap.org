@@ -617,7 +617,6 @@ are inherently independent, this is a natural place to add parallelism. And
 implemention this with something like OpenMP should be straightforward. I'll get
 around to doing this eventually, but in the meantime, patches are welcome.
 
-* INTERFACE
 * COMPATIBILITY
 
 Python 2 and Python 3 should both be supported. Please report a bug if either
