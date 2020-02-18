@@ -164,35 +164,17 @@ its usefulness. See the docstrings for 'broadcast_define' and
 'broadcast_generate' in the INTERFACE section below for usage details.
 
 *** Broadcasting in C
+The python broadcasting is useful, but it is a python loop, so the loop itself
+is computationally expensive if we have many iterations. It the function being
+wrapped is available in C, we can apply broadcasting awareness in C, which makes
+a much faster loop.
 
-A C-level flavor of broadcast_define() is available. It wraps C code in C loops.
-This is an analogue of PDL::PP (http://pdl.perl.org/PDLdocs/PP.html). Here the
-numpysane_pywrap module is used to produce C code that is compiled and linked
-into a python extension module. This takes more effort than python-level
-broadcasting, but the results have much less overhead, and run much faster.
-Please see the sample
-(https://github.com/dkogan/numpysane/blob/master/pywrap-sample).
-
-This is relatively new, so please let me know if you try it, and stuff does or
-does not work.
-
-*** New planned functionality
-
-The C broadcasting is functional, but a few more features are on the roadmap:
-
-- It should be possible for some inputs/output to contain different data types
-
-- Different inputs/outputs should support different types
-
-- The prototype specification is not flexible enough. Maybe there's some
-  relationship between named dimensions that is known. If so, this should be
-  specify-able
-
-*** New planned functionality
-
-- Parallelization for broadcasted slices. Since each broadcasting loop is
-  independent, this is a natural place to add parallelism. This should be
-  straightforward with OpenMP.
+The numpysane_pywrap module generates C code to wrap arbitrary C code in a
+broadcasting-aware wrapper callable from python. This is an analogue of PDL::PP
+(http://pdl.perl.org/PDLdocs/PP.html). This generated code is compiled and
+linked into a python extension module. This functionality is provided by the
+numpysane_pywrap module documented separately:
+https://github.com/dkogan/numpysane/blob/master/README-pywrap.org
 
 ** Core routine improvements
 Numpy functions that move dimensions around and concatenate matrices are
@@ -688,6 +670,7 @@ dimensions:
 
     >>> numpy.inner( arr(4,5,2,3), 3).shape
     (4, 5, 2, 3) <--- 0D special case. This is a scaling.
+
 '''
 
 import numpy as np
