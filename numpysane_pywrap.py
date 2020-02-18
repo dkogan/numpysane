@@ -22,7 +22,7 @@ We write a bit of python to generate the wrapping code. "genpywrap.py":
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (),
 
-                FUNCTION__slice_code = \
+                Ccode_slice_eval = \
                     {np.float64:
                      r"""
                        double* out = (double*)data_slice__output;
@@ -167,7 +167,7 @@ A module can contain many wrapper functions. Each one is added by calling
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (),
 
-                FUNCTION__slice_code = \
+                Ccode_slice_eval = \
                     {np.float64:
                      r"""
                        double* out = (double*)data_slice__output;
@@ -193,7 +193,7 @@ We declared:
   verbatim
 
 It is possible to support multiple sets of types by passing more key/value
-combinations in 'FUNCTION__slice_code'. Each set of types requires a different C
+combinations in 'Ccode_slice_eval'. Each set of types requires a different C
 snippet. If the input doesn't match any known type set, an exception will be
 thrown. More on the type matching below.
 
@@ -308,7 +308,7 @@ If we have a function "f" that produces two outputs, we'd do this:
 
 ** Type checking
 Since C code is involved, we must be very explicit about the types of our
-arrays. These types are specified in the keys of the 'FUNCTION__slice_code'
+arrays. These types are specified in the keys of the 'Ccode_slice_eval'
 argument to 'function()'. For each type specification in a key, the
 corresponding value is a C code snippet to use for that type spec. The type
 specs can be either
@@ -318,7 +318,7 @@ specs can be either
 - A tuple of types. The elements of this tuple correspond to each input, in
   order, followed by each output, in order. This allows different arguments to
   have different types
-  
+
 It is up to the user to make sure that the C snippet they provide matches the
 types that they declared.
 
@@ -335,7 +335,7 @@ about producing a rounded integer inner product from 64-bit floats:
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (),
 
-                FUNCTION__slice_code = \
+                Ccode_slice_eval = \
                     {np.float64:
                      r"""
                        double* out = (double*)data_slice__output;
@@ -387,19 +387,19 @@ conditions that are required. A common use case: we're wrapping some C code that
 assumes the input data is stored contiguously in memory, so the validation
 routine checks that this is true.
 
-This code snippet is provided in the 'VALIDATE_code' argument to 'function()'.
+This code snippet is provided in the 'Ccode_validate' argument to 'function()'.
 The result is returned as a boolean: if the checks pass, we return true. If the
 checks fail, we return false, which will result in an exception being thrown. If
 you want to throw your own, more informative exception, you can do that as usual
 (by calling something like PyErr_Format()) before returning false.
 
-If the 'VALIDATE_code' argument is omitted, no additional checks are performed,
+If the 'Ccode_validate' argument is omitted, no additional checks are performed,
 and we accept all calls that satisfied the broadcasting and type requirements.
 
 *** Slice computation
 This code is executed once for each broadcasted slice to actually do the thing
 we're wrapping. This code snippet is required, and is provided in values of the
-'FUNCTION__slice_code' dict passed to 'function()', as we have seen in the
+'Ccode_slice_eval' dict passed to 'function()', as we have seen in the
 samples. This also returns a boolean: true on success, false on failure. If
 false is ever returned, all subsequent slices are abandoned, and an exception is
 thrown. As with the validation code, you can throw a better exception yourself
@@ -475,7 +475,7 @@ inputs and ALL outputs are stored in contiguous memory. This can be accomplished
 by defining the function like
 
     m.function( ...,
-               VALIDATE_code = 'return CHECK_CONTIGUOUS_AND_SETERROR_ALL();' )
+               Ccode_validate = 'return CHECK_CONTIGUOUS_AND_SETERROR_ALL();' )
 
 As before, "NAME" refers to each individual input or output, and "ALL" checks
 all of them. These all evaluate to true if the argument in questions IS
@@ -521,7 +521,7 @@ Example. Let's update our inner product example to accept a "scale" argument.
                 prototype_output = (),
                 extra_args = (("double", "scale", "1", "d"),),
 
-                FUNCTION__slice_code = \
+                Ccode_slice_eval = \
                     {np.float64:
                      r"""
                        double* out = (double*)data_slice__output;
@@ -660,8 +660,8 @@ class module:
                  args_input,
                  prototype_input,
                  prototype_output,
-                 FUNCTION__slice_code,
-                 VALIDATE_code = None,
+                 Ccode_slice_eval,
+                 Ccode_validate = None,
                  extra_args    = ()):
         r'''Add a wrapper function to the module we're creating
 
@@ -676,7 +676,7 @@ class module:
                     prototype_input  = (('n',), ('n',)),
                     prototype_output = (),
 
-                    FUNCTION__slice_code = \
+                    Ccode_slice_eval = \
                         {np.float64:
                          r"""
                            double* out = (double*)data_slice__output;
@@ -736,7 +736,7 @@ class module:
           In the special case that we have only one output, this can be given as
           a shape tuple instead of a tuple of shape tuples.
 
-        - FUNCTION__slice_code
+        - Ccode_slice_eval
           This argument contains the snippet of C code used to execute the
           operation being wrapped. This argument is a dict mapping a type
           specification to code snippets: different data types require different
@@ -753,7 +753,7 @@ class module:
           into the generated sources verbatim. Please see the numpysane_pywrap
           module docstring for more detail.
 
-        - VALIDATE_code
+        - Ccode_validate
           A string of C code inserted into the generated sources verbatim. This
           is used to validate the input/output arguments prior to actually
           performing the computation. This runs after we made the broadcasting
@@ -958,9 +958,9 @@ class module:
 '''.replace('{Noutputs}', str(Noutputs))
 
 
-        Ntypesets = len(FUNCTION__slice_code)
+        Ntypesets = len(Ccode_slice_eval)
         slice_functions = [ "__{}__{}__slice".format(FUNCTION_NAME,i) for i in range(Ntypesets)]
-        # The keys of FUNCTION__slice_code are either:
+        # The keys of Ccode_slice_eval are either:
 
         # - a type: all inputs, outputs MUST have this type
         # - a list of types: the types in this list correspond to the inputs and
@@ -968,7 +968,7 @@ class module:
         #
         # I convert the known-type list to the one-type-per-element form for
         # consistent processing
-        known_types = list(FUNCTION__slice_code.keys())
+        known_types = list(Ccode_slice_eval.keys())
         Ninputs_and_outputs = Ninputs + (1 if Noutputs is None else Noutputs)
         for i in range(len(known_types)):
             if isinstance(known_types[i], type):
@@ -979,7 +979,7 @@ class module:
                 # already a list of types. we're good
                 pass
             else:
-                raise NumpysaneError("Each of FUNCTION__slice_code.keys() MUST be either a type, or a list of types (one per input, output in order)")
+                raise NumpysaneError("Each of Ccode_slice_eval.keys() MUST be either a type, or a list of types (one per input, output in order)")
 
         # {TYPESETS} is _(11, 15, 17, 0) _(13, 15, 17, 1)
         # {TYPESET_MATCHES_ARGLIST} is t0,t1,t2
@@ -1114,16 +1114,16 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             _substitute(function_template,
                         FUNCTION_NAME = "__{}__validate".format(FUNCTION_NAME),
                         ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data"),
-                        FUNCTION_BODY = "return true;" if VALIDATE_code is None else VALIDATE_code)
+                        FUNCTION_BODY = "return true;" if Ccode_validate is None else Ccode_validate)
 
         for i in range(Ntypesets):
             # The evaluation function for one slice
-            typeset_indices = tuple(FUNCTION__slice_code.keys())
+            typeset_indices = tuple(Ccode_slice_eval.keys())
             text += \
                 _substitute(function_template,
                             FUNCTION_NAME = slice_functions[i],
                             ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data_slice"),
-                            FUNCTION_BODY = FUNCTION__slice_code[typeset_indices[i]])
+                            FUNCTION_BODY = Ccode_slice_eval[typeset_indices[i]])
 
 
 
