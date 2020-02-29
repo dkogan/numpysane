@@ -82,7 +82,7 @@ In short:
   a,b,c), with as many or as few leading dimensions as desired.
 - The extra leading dimensions must be compatible across all the inputs. This
   means that each leading dimension must either
-  - equal to 1
+  - equal 1
   - be missing (thus assumed to equal 1)
   - equal to some positive integer >1, consistent across all arguments
 - The output is collected into an array that's sized as a superset of the
@@ -103,13 +103,13 @@ output slice. Note again that the prototype dictates the TRAILING shape of the
 inputs.
 
 *** What about the stock broadcasting support?
+
 The numpy documentation dedicates a whole page explaining the broadcasting
-rules, but only a tiny number of numpy functions provide any broadcasting
-support at all. And the documentation doesn't clearly state what does or does
-not support broadcasting, so the general user assumption is that there is no
-stock broadcasting support. Or, more precisely, BECAUSE there is no stock
-broadcasting support, there's little user awareness that broadcasting even
-exists.
+rules, but only a small number of numpy functions provide any broadcasting
+support. It's fairly inconsistent, and most functions have no broadcasting
+support and no mention of it in the documentation. And as a result, this is not
+a prominent part of the numpy ecosystem and there's little user awareness that
+it exists.
 
 *** What this module provides
 This module contains functionality to make any arbitrary function broadcastable,
