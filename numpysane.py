@@ -174,6 +174,12 @@ broadcasting-aware wrapper callable from python. This is an analogue of PDL::PP
 linked into a python extension module, as usual. This functionality documented
 separately: https://github.com/dkogan/numpysane/blob/master/README-pywrap.org
 
+After I wrote this, I realized there is some support for this in stock numpy:
+
+https://docs.scipy.org/doc/numpy-1.13.0/reference/c-api.ufunc.html
+
+Note: I have not tried using these APIs.
+
 ** Nicer array manipulation
 Numpy functions that move dimensions around and concatenate matrices are
 unintuitive. For instance, a simple concatenation of a row-vector or a
