@@ -1,3 +1,6 @@
+* TALK
+I just gave a talk about this at [[https://www.socallinuxexpo.org/scale/18x][SCaLE 18x]]. Presentation lives [[https://github.com/dkogan/talk-numpysane-gnuplotlib/raw/master/numpysane-gnuplotlib.pdf][here]].
+
 * NAME
 numpysane_pywrap: Python-wrap C code with broadcasting awareness
 
@@ -632,7 +635,7 @@ Dima Kogan <dima@secretsauce.net>
 
 * LICENSE AND COPYRIGHT
 
-Copyright 2016-2017 Dima Kogan.
+Copyright 2016-2020 Dima Kogan.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License (any version) as published by

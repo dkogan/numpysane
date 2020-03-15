@@ -168,7 +168,7 @@ function, it returns a generator that produces tuples from a set of arguments
 according to a given prototype.
 
 Stock numpy has some rudimentary support for all this with its vectorize()
-function, but it assumes only scalar inputs and outputs, which severaly limits
+function, but it assumes only scalar inputs and outputs, which severely limits
 its usefulness. See the docstrings for 'broadcast_define' and
 'broadcast_generate' in the INTERFACE section below for usage details.
 
