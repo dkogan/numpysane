@@ -1,3 +1,14 @@
+numpysane (0.22)
+
+  * broadcast_define() and the generated function checks its arguments for
+    validity more thoroughly
+  * outer() doesn't require identically-dimensioned input
+  * mass rewrite of the documentation
+  * Added C-level broadcasting
+  * License change: any version of the LGPL instead of LGPL-3+
+
+ -- Dima Kogan <dkogan@debian.org>  Sat, 14 Mar 2020 23:40:29 -0700
+
 numpysane (0.20)
 
   * nps.matmult(..., out=out) produces in-place results when one of the
