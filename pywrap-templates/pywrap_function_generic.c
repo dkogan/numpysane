@@ -377,6 +377,15 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             goto done;
         }
 
+        // if the extra dimensions are degenerate, just return the empty array
+        // we have
+        for(int i=0; i<Ndims_extra; i++)
+            if(dims_extra[i] == 0)
+            {
+                __py__result__ = (PyObject*)__py__output__arg;
+                goto done;
+            }
+
         // if no broadcasting involved, just call the function
         if(Ndims_extra == 0)
         {
