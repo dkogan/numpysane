@@ -1,3 +1,10 @@
+numpysane (0.23)
+
+  * Bug fix: C broadcasting doesn't write to uninitialized memory when
+    given a size-0 matrix
+
+ -- Dima Kogan <dkogan@debian.org>  Fri, 12 Jun 2020 19:16:25 -0700
+
 numpysane (0.22)
 
   * broadcast_define() and the generated function checks its arguments for
