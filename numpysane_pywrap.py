@@ -495,24 +495,44 @@ this, you should write the check yourself, using the strides_full__... and
 dims_full__... arrays.
 
 *** Extra arguments
-Sometimes it is desired to pass extra arguments to the python wrapper that
-aren't broadcasted in any way, but are just passed verbatim to the inner
-functions. We can do that with the 'extra_args' argument to 'function()'. This
-argument is an tuple of tuples of strings:
+
+Sometimes it is desired to pass "cookies" to the C code: extra arguments that
+aren't broadcasted in any way, but are just passed verbatim by the wrapping code
+down to the inner C code. We can do that with the 'extra_args' argument to
+'function()'. This argument is an tuple of tuples, where each inner tuple
+represents an extra argument:
 
     (c_type, arg_name, default_value, parse_arg)
 
-The "c_type" is the C type of the argument ("int", "double", etc). The
-"arg_name" is the C name of the argument. This type and name will be available
-to the argument validation and slice computation routines as a pointer to the
-given c_type.
+Each element is a string.
 
-When calling this function, passing these extra arguments is optional. If
-omitted, we use the "default_value". Finally, when interpreting the passed
-arguments we use PyArg_ParseTupleAndKeywords, and "parse_arg" is the code used
-by that function to interpret the argument.
+- the "c_type" is the C type of the argument; something like "int" or "double",
+  or "const char*"
 
-Example. Let's update our inner product example to accept a "scale" argument.
+- the "arg_name" is the name of the argument, used in both the Python and the C
+  levels
+
+- the "default_value" is the value the C wrapping code will use if this argument
+  is omitted in the Python call. Note that this is a string used in generating
+  the C code, so if we have an integer with a default value of 0, we use a
+  string "0" and not the integer 0
+
+- the "parse_arg" is the code used in the PyArg_ParseTupleAndKeywords() call.
+  See the documentation for that function.
+
+These extra arguments are expected to be read-only, and are passed as a const*
+to the validation routines and the slice computation routines. If the C type is
+already a pointer (most notably if it is a string), then we do NOT dereference
+it a second time.
+
+The generated code for parsing of Python arguments sets all of these extra
+arguments as being optional, using the default_value if an argument is omitted.
+If one of these arguments is actually required, the corresponding logic goes
+into the validation function.
+
+This is most clearly explained with an example. Let's update our inner product
+example to accept a "scale" numerical argument and a "scale_string" string
+argument:
 
     m.function( "inner",
                 "Inner product pywrapped with numpysane_pywrap",
@@ -520,8 +540,8 @@ Example. Let's update our inner product example to accept a "scale" argument.
                 args_input       = ('a', 'b'),
                 prototype_input  = (('n',), ('n',)),
                 prototype_output = (),
-                extra_args = (("double", "scale", "1", "d"),),
-
+                extra_args = (("double",      "scale",          "1",    "d"),
+                              ("const char*", "scale_string",   "NULL", "s")),
                 Ccode_slice_eval = \
                     {np.float64:
                      r"""
@@ -536,6 +556,9 @@ Example. Let's update our inner product example to accept a "scale" argument.
                                  *(const double*)(data_slice__b +
                                                   i*strides_slice__b[0]);
                        *out *= *scale;
+                       if(scale_string != NULL)
+                         *out *= atof(scale_string);
+
                        return true;""" })
 
 Now I can optionally scale the result:
@@ -546,8 +569,9 @@ Now I can optionally scale the result:
 
     >>> print(innerlib.inner( np.arange(4, dtype=float),
                               np.arange(8, dtype=float).reshape( 2,4),
-                              scale = 2.0))
-    [28. 76.]
+                              scale        = 2.0,
+                              scale_string = "10.0"))
+    [280. 760.]
 
 ** Examples
 For some sample usage, see the wrapper-generator used in the test suite:
@@ -566,6 +590,7 @@ import time
 import numpy as np
 from numpysane import NumpysaneError
 import os
+import re
 
 # Technically I'm supposed to use some "resource extractor" something to unbreak
 # setuptools. But I'm instead assuming that this was installed via Debian or by
@@ -1040,27 +1065,54 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         else:
             slice_args = tuple("output{}".format(i) for i in range(Noutputs))+args_input
 
-        EXTRA_ARGUMENTS_ARG_DEFINE     = ''
-        EXTRA_ARGUMENTS_NAMELIST       = ''
-        EXTRA_ARGUMENTS_PARSECODES     = ''
-        EXTRA_ARGUMENTS_ARGLIST        = []
-        EXTRA_ARGUMENTS_ARGLIST_DEFINE = []
+        EXTRA_ARGUMENTS_ARG_DEFINE          = ''
+        EXTRA_ARGUMENTS_NAMELIST            = ''
+        EXTRA_ARGUMENTS_PARSECODES          = ''
+        EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = []
+        EXTRA_ARGUMENTS_ARGLIST_CALL_C      = []
+        EXTRA_ARGUMENTS_ARGLIST_DEFINE      = []
 
         for c_type, arg_name, default_value, parse_arg in extra_args:
-            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'.format(c_type, arg_name))
+
+            # I strip from the c_type and leading "const " and any trailing "*".
+            # The intent is that I can take "const char*" strings, and pass them
+            # onto the inner functions using the same pointer, without
+            # dereferencing it a second time
+            m = re.match("\s*const\s+(.*?)$", c_type)
+            if m is not None:
+                c_type_no_leading_const = m.group(1)
+            else:
+                c_type_no_leading_const = c_type
+            m = re.search("(.*)\*\s*$", c_type_no_leading_const)
+            if m is not None:
+                c_type_did_strip_pointer = True
+                c_type_no_leading_const_no_pointer = m.group(1)
+            else:
+                c_type_did_strip_pointer = False
+                c_type_no_leading_const_no_pointer = c_type_no_leading_const
+
+            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'. \
+                                                  format(c_type_no_leading_const_no_pointer,
+                                                         arg_name))
             EXTRA_ARGUMENTS_ARG_DEFINE     += "{} {} = {};\n".format(c_type, arg_name, default_value)
             EXTRA_ARGUMENTS_NAMELIST       += '"{}",'.format(arg_name)
             EXTRA_ARGUMENTS_PARSECODES     += '"{}"'.format(parse_arg)
-            EXTRA_ARGUMENTS_ARGLIST.append('&{}'.format(arg_name))
+            EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG.append('&' + arg_name)
+            if c_type_did_strip_pointer:
+                EXTRA_ARGUMENTS_ARGLIST_CALL_C.append(arg_name)
+            else:
+                EXTRA_ARGUMENTS_ARGLIST_CALL_C.append('&' + arg_name)
         if len(extra_args) == 0:
             # no extra args. I need a dummy argument to make the C parser happy,
             # so I add a 0. This is because the template being filled-in is
             # f(....., EXTRA_ARGUMENTS_ARGLIST). A blank EXTRA_ARGUMENTS_ARGLIST
             # would leave a trailing ,
-            EXTRA_ARGUMENTS_ARGLIST        = ['0']
-            EXTRA_ARGUMENTS_ARGLIST_DEFINE = ['int __dummy __attribute__((unused))']
-        EXTRA_ARGUMENTS_SLICE_ARG = ', '.join(EXTRA_ARGUMENTS_ARGLIST_DEFINE)
-        EXTRA_ARGUMENTS_ARGLIST   = ', '.join(EXTRA_ARGUMENTS_ARGLIST)
+            EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = ['0']
+            EXTRA_ARGUMENTS_ARGLIST_CALL_C      = ['0']
+            EXTRA_ARGUMENTS_ARGLIST_DEFINE      = ['int __dummy __attribute__((unused))']
+        EXTRA_ARGUMENTS_SLICE_ARG           = ', '.join(EXTRA_ARGUMENTS_ARGLIST_DEFINE)
+        EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = ', '.join(EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG)
+        EXTRA_ARGUMENTS_ARGLIST_CALL_C      = ', '.join(EXTRA_ARGUMENTS_ARGLIST_CALL_C)
 
         text = ''
         contiguous_macro_template = r'''
@@ -1150,7 +1202,8 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         EXTRA_ARGUMENTS_ARG_DEFINE = EXTRA_ARGUMENTS_ARG_DEFINE,
                         EXTRA_ARGUMENTS_NAMELIST   = EXTRA_ARGUMENTS_NAMELIST,
                         EXTRA_ARGUMENTS_PARSECODES = EXTRA_ARGUMENTS_PARSECODES,
-                        EXTRA_ARGUMENTS_ARGLIST    = EXTRA_ARGUMENTS_ARGLIST,
+                        EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG,
+                        EXTRA_ARGUMENTS_ARGLIST_CALL_C      = EXTRA_ARGUMENTS_ARGLIST_CALL_C,
                         TYPESETS                   = TYPESETS,
                         TYPESET_MATCHES_ARGLIST    = TYPESET_MATCHES_ARGLIST,
                         TYPESETS_NAMES             = TYPESETS_NAMES)

@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 
 // Test C library being wrapped by numpysane_pywrap. This library can compute
@@ -43,12 +44,14 @@ void outer(double* out,
 }
 
 // inner and outer product together. Only contiguous data is supported. "double"
-// only. non-broadcasted "scale" argument scales the output
+// only. non-broadcasted "scale" argument scales the output. Similarly, the
+// floating-point number in scale_string scales the output, if non-NULL
 double innerouter(double* out,
 
                   const double* a,
                   const double* b,
                   double scale,
+                  const char* scale_string,
                   int n)
 {
     outer(out,
@@ -56,6 +59,8 @@ double innerouter(double* out,
           a, b,
           sizeof(double), sizeof(double),
           n);
+    if(scale_string != NULL)
+        scale *= atof(scale_string);
     for(int i=0; i<n*n; i++)
         out[i] *= scale;
 

@@ -28,12 +28,14 @@ void outer(double* out,
            int n);
 
 // inner and outer product together. Only contiguous data is supported. "double"
-// only. non-broadcasted "scale" argument scales the output
+// only. non-broadcasted "scale" argument scales the output. Similarly, the
+// floating-point number in scale_string scales the output, if non-NULL
 double innerouter(double* out,
 
                   const double* a,
                   const double* b,
                   double scale,
+                  const char* scale_string,
                   int n);
 
 // Assumes that indices_order[] has room for at least N values

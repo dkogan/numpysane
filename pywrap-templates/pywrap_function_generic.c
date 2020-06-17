@@ -41,7 +41,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                      keywords,
                                      ARGUMENTS(PARSEARG)
                                      &__py__output__arg,
-                                     {EXTRA_ARGUMENTS_ARGLIST},
+                                     {EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG},
                                      NULL))
         goto done;
 
@@ -370,7 +370,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
         if( ! __{FUNCTION_NAME}__validate(OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
                                           ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
-                                          {EXTRA_ARGUMENTS_ARGLIST}) )
+                                          {EXTRA_ARGUMENTS_ARGLIST_CALL_C}) )
         {
             if(PyErr_Occurred() == NULL)
                 PyErr_SetString(PyExc_RuntimeError, "User-provided validation failed!");
@@ -391,7 +391,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         {
             if( ! slice_function( OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
                                   ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
-                                  {EXTRA_ARGUMENTS_ARGLIST})
+                                  {EXTRA_ARGUMENTS_ARGLIST_CALL_C})
                 )
             {
                 if(PyErr_Occurred() == NULL)
@@ -469,7 +469,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
             if( ! slice_function( OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
                                   ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
-                                  {EXTRA_ARGUMENTS_ARGLIST})
+                                  {EXTRA_ARGUMENTS_ARGLIST_CALL_C})
                 )
             {
                 if(PyErr_Occurred() == NULL)

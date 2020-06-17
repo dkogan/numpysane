@@ -359,7 +359,7 @@ def test_innerouter():
         confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter produced correct outer.shape")
         confirm_equal(o,       ref_outer,       msg="broadcasted in-place innerouter produced correct outer")
 
-    # in-place with scaling
+    # in-place with float scaling
     try:
         i = np.empty(ref_inner.shape, dtype=float)
         o = np.empty(ref_outer.shape, dtype=float)
@@ -372,6 +372,20 @@ def test_innerouter():
         confirm_equal(i,       ref_inner * 3.5, msg="broadcasted in-place innerouter with scaling produced correct inner")
         confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter with scaling produced correct outer.shape")
         confirm_equal(o,       ref_outer * 3.5, msg="broadcasted in-place innerouter with scaling produced correct outer")
+
+    # in-place with float scaling and string scaling
+    try:
+        i = np.empty(ref_inner.shape, dtype=float)
+        o = np.empty(ref_outer.shape, dtype=float)
+        testlib.innerouter(arr(2,3,5, dtype=float), arr(4,1,3,5, dtype=float), out=(i,o), scale=3.5, scale_string="10.0")
+    except:
+        confirm(False, msg="broadcasted in-place innerouter succeeded")
+    else:
+        confirm(True, msg="broadcasted in-place innerouter succeeded")
+        confirm_equal(i.shape, ref_inner.shape, msg="broadcasted in-place innerouter with float and string scaling produced correct inner.shape")
+        confirm_equal(i,       ref_inner * 35., msg="broadcasted in-place innerouter with float and string scaling produced correct inner")
+        confirm_equal(o.shape, ref_outer.shape, msg="broadcasted in-place innerouter with float and string scaling produced correct outer.shape")
+        confirm_equal(o,       ref_outer * 35., msg="broadcasted in-place innerouter with float and string scaling produced correct outer")
 
     # in-place, with some extra dummy dimensions in the output. Not allowed
     i = np.empty((1,) + ref_inner.shape, dtype=float)

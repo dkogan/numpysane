@@ -137,6 +137,7 @@ m.function( "innerouter",
                      (double*)data_slice__a,
                      (double*)data_slice__b,
                      *scale,
+                     scale_string,
                      N);
             return true;
 '''},
@@ -145,7 +146,9 @@ m.function( "innerouter",
               *scale > 0.0       &&
               CHECK_CONTIGUOUS_AND_SETERROR_ALL();
 ''',
-            extra_args = (("double", "scale", "1", "d"),), )
+            extra_args = (("double",      "scale",          "1",    "d"),
+                          ("const char*", "scale_string",   "NULL", "s"))
+           )
 
 m.function( "sorted_indices",
             "Return the sorted element indices",

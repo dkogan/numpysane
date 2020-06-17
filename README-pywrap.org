@@ -557,12 +557,13 @@ functions. We can do that with the 'extra_args' argument to 'function()'. This
 argument is an tuple of tuples of strings:
 
 #+BEGIN_EXAMPLE
-(c_type, name, default_value, parse_arg)
+(c_type, arg_name, default_value, parse_arg)
 #+END_EXAMPLE
 
-The "c_type" is the C type of the argument ("int", "double", etc). The "name" is
-the C name of the argument. This type and name will be available to the argument
-validation and slice computation routines as a pointer to the given c_type.
+The "c_type" is the C type of the argument ("int", "double", etc). The
+"arg_name" is the C name of the argument. This type and name will be available
+to the argument validation and slice computation routines as a pointer to the
+given c_type.
 
 When calling this function, passing these extra arguments is optional. If
 omitted, we use the "default_value". Finally, when interpreting the passed
