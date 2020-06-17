@@ -500,11 +500,12 @@ aren't broadcasted in any way, but are just passed verbatim to the inner
 functions. We can do that with the 'extra_args' argument to 'function()'. This
 argument is an tuple of tuples of strings:
 
-    (c_type, name, default_value, parse_arg)
+    (c_type, arg_name, default_value, parse_arg)
 
-The "c_type" is the C type of the argument ("int", "double", etc). The "name" is
-the C name of the argument. This type and name will be available to the argument
-validation and slice computation routines as a pointer to the given c_type.
+The "c_type" is the C type of the argument ("int", "double", etc). The
+"arg_name" is the C name of the argument. This type and name will be available
+to the argument validation and slice computation routines as a pointer to the
+given c_type.
 
 When calling this function, passing these extra arguments is optional. If
 omitted, we use the "default_value". Finally, when interpreting the passed
@@ -1045,12 +1046,12 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         EXTRA_ARGUMENTS_ARGLIST        = []
         EXTRA_ARGUMENTS_ARGLIST_DEFINE = []
 
-        for _type, n, default_value, parsearg in extra_args:
-            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'.format(_type, n))
-            EXTRA_ARGUMENTS_ARG_DEFINE     += "{} {} = {};\n".format(_type, n, default_value)
-            EXTRA_ARGUMENTS_NAMELIST       += '"{}",'.format(n)
-            EXTRA_ARGUMENTS_PARSECODES     += '"{}"'.format(parsearg)
-            EXTRA_ARGUMENTS_ARGLIST.append('&{}'.format(n))
+        for c_type, arg_name, default_value, parse_arg in extra_args:
+            EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('const {}* {} __attribute__((unused))'.format(c_type, arg_name))
+            EXTRA_ARGUMENTS_ARG_DEFINE     += "{} {} = {};\n".format(c_type, arg_name, default_value)
+            EXTRA_ARGUMENTS_NAMELIST       += '"{}",'.format(arg_name)
+            EXTRA_ARGUMENTS_PARSECODES     += '"{}"'.format(parse_arg)
+            EXTRA_ARGUMENTS_ARGLIST.append('&{}'.format(arg_name))
         if len(extra_args) == 0:
             # no extra args. I need a dummy argument to make the C parser happy,
             # so I add a 0. This is because the template being filled-in is
