@@ -478,7 +478,7 @@ by defining the function like
                Ccode_validate = 'return CHECK_CONTIGUOUS_AND_SETERROR_ALL();' )
 
 As before, "NAME" refers to each individual input or output, and "ALL" checks
-all of them. These all evaluate to true if the argument in questions IS
+all of them. These all evaluate to true if the argument in question IS
 contiguous. The ..._AND_SETERROR_... flavor does that, but ALSO raises an
 informative exception.
 
@@ -489,7 +489,7 @@ function too.
 Note that each broadcasted slice is processed separately, so the C code being
 wrapped usually only cares about each SLICE being contiguous. If the dimensions
 above each slice (those being broadcasted) are not contiguous, this doesn't
-break the underlying assumptions. Thus the CHECK_CONTIGUOUS_... functions only
+break the underlying assumptions. Thus the CHECK_CONTIGUOUS_... macros only
 check and report the in-slice contiguity. If for some reason you need more than
 this, you should write the check yourself, using the strides_full__... and
 dims_full__... arrays.
@@ -532,7 +532,7 @@ into the validation function.
 
 This is most clearly explained with an example. Let's update our inner product
 example to accept a "scale" numerical argument and a "scale_string" string
-argument:
+argument, where the scale_string is required:
 
     m.function( "inner",
                 "Inner product pywrapped with numpysane_pywrap",
@@ -555,16 +555,24 @@ argument:
                                                   i*strides_slice__a[0]) *
                                  *(const double*)(data_slice__b +
                                                   i*strides_slice__b[0]);
-                       *out *= *scale;
-                       if(scale_string != NULL)
-                         *out *= atof(scale_string);
+                       *out *= *scale * atof(scale_string);
 
-                       return true;""" })
+                       return true;""" },
+                Ccode_validate = r"""
+                    if(scale_string == NULL)
+                    {
+                        PyErr_Format(PyExc_RuntimeError,
+                            "The 'scale_string' argument is required" );
+                        return false;
+                    }
+                    return true; """
+    )
 
 Now I can optionally scale the result:
 
     >>> print(innerlib.inner( np.arange(4, dtype=float),
-                              np.arange(8, dtype=float).reshape( 2,4)))
+                              np.arange(8, dtype=float).reshape( 2,4)),
+                              scale_string = "1.0")
     [14. 38.]
 
     >>> print(innerlib.inner( np.arange(4, dtype=float),
