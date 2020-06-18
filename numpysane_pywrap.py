@@ -707,8 +707,10 @@ class module:
                  prototype_input,
                  prototype_output,
                  Ccode_slice_eval,
-                 Ccode_validate = None,
-                 extra_args    = ()):
+                 Ccode_validate       = None,
+                 Ccode_cookie_struct  = '',
+                 Ccode_cookie_cleanup = '',
+                 extra_args           = ()):
         r'''Add a wrapper function to the module we're creating
 
         SYNOPSIS
@@ -782,6 +784,31 @@ class module:
           In the special case that we have only one output, this can be given as
           a shape tuple instead of a tuple of shape tuples.
 
+        - Ccode_cookie_struct
+          A string of C code inserted into the generated sources verbatim.
+          XXXXXXXXXXXXXXXXX Please see the numpysane_pywrap module docstring for
+          more detail.
+
+        - Ccode_cookie_cleanup
+          XXXXXXXXXXXXXXXXX
+
+        - extra_args
+          Defines extra arguments to accept in the validation and slice
+          computation functions. These extra arguments are not broadcast or
+          interpreted in any way; they're simply passed down from the python
+          caller to these functions. Please see the numpysane_pywrap module
+          docstring for more detail.
+
+        - Ccode_validate
+          A string of C code inserted into the generated sources verbatim. This
+          is used to validate the input/output arguments prior to actually
+          performing the computation. This runs after we made the broadcasting
+          shape checks and type checks. If those checks are all we need, this
+          argument may be omitted, and no more checks are made. The most common
+          use case is rejecting inputs that are not stored contiguously in
+          memory. Please see the numpysane_pywrap module docstring for more
+          detail.
+
         - Ccode_slice_eval
           This argument contains the snippet of C code used to execute the
           operation being wrapped. This argument is a dict mapping a type
@@ -798,23 +825,6 @@ class module:
           The corresponding code snippet is a string of C code that's inserted
           into the generated sources verbatim. Please see the numpysane_pywrap
           module docstring for more detail.
-
-        - Ccode_validate
-          A string of C code inserted into the generated sources verbatim. This
-          is used to validate the input/output arguments prior to actually
-          performing the computation. This runs after we made the broadcasting
-          shape checks and type checks. If those checks are all we need, this
-          argument may be omitted, and no more checks are made. The most common
-          use case is rejecting inputs that are not stored contiguously in
-          memory. Please see the numpysane_pywrap module docstring for more
-          detail.
-
-        - extra_args
-          Defines extra arguments to accept in the validation and slice
-          computation functions. These extra arguments are not broadcast or
-          interpreted in any way; they're simply passed down from the python
-          caller to these functions. Please see the numpysane_pywrap module
-          docstring for more detail.
 
         '''
 
@@ -1113,17 +1123,13 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                 EXTRA_ARGUMENTS_ARGLIST_CALL_C.append(arg_name)
             else:
                 EXTRA_ARGUMENTS_ARGLIST_CALL_C.append('&' + arg_name)
-        if len(extra_args) == 0:
-            # no extra args. I need a dummy argument to make the C parser happy,
-            # so I add a 0. This is because the template being filled-in is
-            # f(....., EXTRA_ARGUMENTS_ARGLIST). A blank EXTRA_ARGUMENTS_ARGLIST
-            # would leave a trailing ,
-            EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = ['0']
-            EXTRA_ARGUMENTS_ARGLIST_CALL_C      = ['0']
-            EXTRA_ARGUMENTS_ARGLIST_DEFINE      = ['int __dummy __attribute__((unused))']
-        EXTRA_ARGUMENTS_SLICE_ARG           = ', '.join(EXTRA_ARGUMENTS_ARGLIST_DEFINE)
-        EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = ', '.join(EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG)
-        EXTRA_ARGUMENTS_ARGLIST_CALL_C      = ', '.join(EXTRA_ARGUMENTS_ARGLIST_CALL_C)
+
+        EXTRA_ARGUMENTS_ARGLIST_DEFINE.append('__{FUNCTION_NAME}__cookie_t* cookie __attribute__((unused))'.format(FUNCTION_NAME=name))
+        EXTRA_ARGUMENTS_ARGLIST_CALL_C.append('cookie')
+
+        EXTRA_ARGUMENTS_SLICE_ARG           = ','.join(EXTRA_ARGUMENTS_ARGLIST_DEFINE)
+        EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = ''.join([s+',' for s in EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG])
+        EXTRA_ARGUMENTS_ARGLIST_CALL_C      = ','.join(EXTRA_ARGUMENTS_ARGLIST_CALL_C)
 
         text = ''
         contiguous_macro_template = r'''
@@ -1159,6 +1165,12 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             '#define CHECK_CONTIGUOUS_AND_SETERROR_ALL() ' +                                   \
             ' && '.join( "CHECK_CONTIGUOUS_AND_SETERROR__"+n+"()" for n in slice_args) +       \
             '\n'
+
+        text += _substitute('''
+typedef struct { {COOKIE_STRUCT_CONTENTS} } __{FUNCTION_NAME}__cookie_t;
+''',
+                            FUNCTION_NAME          = name,
+                            COOKIE_STRUCT_CONTENTS = Ccode_cookie_struct)
 
         # The user provides two sets of C code that we include verbatim in
         # static functions:
@@ -1198,8 +1210,6 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                             ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data_slice"),
                             FUNCTION_BODY = Ccode_slice_eval[typeset_indices[i]])
 
-
-
         text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
             '\n\n' + \
@@ -1217,7 +1227,8 @@ bool {FUNCTION_NAME}({ARGUMENTS})
                         EXTRA_ARGUMENTS_ARGLIST_CALL_C      = EXTRA_ARGUMENTS_ARGLIST_CALL_C,
                         TYPESETS                   = TYPESETS,
                         TYPESET_MATCHES_ARGLIST    = TYPESET_MATCHES_ARGLIST,
-                        TYPESETS_NAMES             = TYPESETS_NAMES)
+                        TYPESETS_NAMES             = TYPESETS_NAMES,
+                        COOKIE_CLEANUP             = Ccode_cookie_cleanup)
 
         for n in slice_args:
             text += '#undef _CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)

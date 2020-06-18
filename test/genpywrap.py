@@ -20,7 +20,10 @@ import numpysane_pywrap as npsp
 
 m = npsp.module( name      = "testlib",
                  docstring = "Some functions to test the python wrapping",
-                 header    = '#include "testlib.h"')
+                 header    = '''
+#include <stdlib.h>
+#include "testlib.h"
+''')
 
 m.function( "identity3",
             "Generates a 3x3 identity matrix",
@@ -128,6 +131,23 @@ m.function( "innerouter",
             prototype_input  = (('n',), ('n',)),
             prototype_output = ((), ('n', 'n')),
 
+            Ccode_cookie_struct = '''
+            double scale; /* from BOTH scale arguments: "scale", "scale_string" */
+            char*  ptr;   /* to demo resource allocation/release */
+            ''',
+
+            extra_args = (("double",      "scale",          "1",    "d"),
+                          ("const char*", "scale_string",   "NULL", "s")),
+
+            Ccode_validate = r'''
+            if(! (*scale > 0.0       &&
+                  CHECK_CONTIGUOUS_AND_SETERROR_ALL() ) )
+                return false;
+            cookie->scale = *scale * (scale_string ? atof(scale_string) : 1.0);
+            cookie->ptr   = malloc(1000);
+            return cookie->ptr != NULL;
+''',
+
             Ccode_slice_eval = \
                 {np.float64:
                  r'''
@@ -136,18 +156,11 @@ m.function( "innerouter",
                  innerouter((double*)data_slice__output1,
                      (double*)data_slice__a,
                      (double*)data_slice__b,
-                     *scale,
-                     scale_string,
+                     cookie->scale,
                      N);
             return true;
 '''},
-            Ccode_validate = r'''
-            return \
-              *scale > 0.0       &&
-              CHECK_CONTIGUOUS_AND_SETERROR_ALL();
-''',
-            extra_args = (("double",      "scale",          "1",    "d"),
-                          ("const char*", "scale_string",   "NULL", "s"))
+            Ccode_cookie_cleanup = 'if(cookie->ptr != NULL) free(cookie->ptr);'
            )
 
 m.function( "sorted_indices",

@@ -17,6 +17,17 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     void*           data_slice__     ## name,
 
 
+    // The cookie we compute BEFORE computing any slices. This is available to
+    // the slice-computation function to do whatever they please. I initialize
+    // the cookie to all-zeros. If any cleanup is needed, the COOKIE_CLEANUP
+    // code at the end of this function should include an "inited" flag in the
+    // cookie in order to know whether the cookie was inited in the first place,
+    // and whether any cleanup is actually required
+    __{FUNCTION_NAME}__cookie_t  _cookie = {};
+    // I'd like to access the "cookie" here in a way identical to how I access
+    // it inside the functions, so it must be a cookie_t* cookie
+    __{FUNCTION_NAME}__cookie_t* cookie = &_cookie;
+
     typedef bool (slice_function_t)(OUTPUTS(SLICE_ARG) ARGUMENTS(SLICE_ARG) {EXTRA_ARGUMENTS_SLICE_ARG});
 
 
@@ -41,7 +52,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                      keywords,
                                      ARGUMENTS(PARSEARG)
                                      &__py__output__arg,
-                                     {EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG},
+                                     {EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG}
                                      NULL))
         goto done;
 
@@ -391,8 +402,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         {
             if( ! slice_function( OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
                                   ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
-                                  {EXTRA_ARGUMENTS_ARGLIST_CALL_C})
-                )
+                                  {EXTRA_ARGUMENTS_ARGLIST_CALL_C}) )
             {
                 if(PyErr_Occurred() == NULL)
                     PyErr_Format(PyExc_RuntimeError, "__{FUNCTION_NAME}__slice failed!");
@@ -469,8 +479,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 
             if( ! slice_function( OUTPUTS(  ARGLIST_CALL_USER_CALLBACK)
                                   ARGUMENTS(ARGLIST_CALL_USER_CALLBACK)
-                                  {EXTRA_ARGUMENTS_ARGLIST_CALL_C})
-                )
+                                  {EXTRA_ARGUMENTS_ARGLIST_CALL_C}) )
             {
                 if(PyErr_Occurred() == NULL)
                     PyErr_Format(PyExc_RuntimeError,
@@ -495,6 +504,10 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // An error occurred. I'm not returning an output, so release that too
         Py_XDECREF(__py__output__arg);
     }
+
+    // If we allocated any resource into the cookie earlier, we can clean it up
+    // now
+    {COOKIE_CLEANUP}
 
     RESET_SIGINT();
     return __py__result__;
