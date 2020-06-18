@@ -530,6 +530,9 @@ arguments as being optional, using the default_value if an argument is omitted.
 If one of these arguments is actually required, the corresponding logic goes
 into the validation function.
 
+When calling the resulting Python function, the extra arguments MUST be
+passed-in as kwargs. These will NOT work as positional arguments.
+
 This is most clearly explained with an example. Let's update our inner product
 example to accept a "scale" numerical argument and a "scale_string" string
 argument, where the scale_string is required:
