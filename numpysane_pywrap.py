@@ -375,12 +375,7 @@ about producing a rounded integer inner product from 64-bit floats:
                        *(int32_t*)data_slice__output = (int32_t)round(out);
                        return true;""" })
 
-** Verbatim code snippets
-As we have seen, some functionality is passed to numpysane_pywrap as C code,
-included into the generated source verbatim. There are two areas where such C
-code is used: argument validation and slice computation.
-
-*** Argument validation
+** Argument validation
 After the wrapping code confirms that all the shapes and types match the
 prototype, it calls a user-provided validation routine once to flag any extra
 conditions that are required. A common use case: we're wrapping some C code that
@@ -396,16 +391,52 @@ you want to throw your own, more informative exception, you can do that as usual
 If the 'Ccode_validate' argument is omitted, no additional checks are performed,
 and we accept all calls that satisfied the broadcasting and type requirements.
 
-*** Slice computation
-This code is executed once for each broadcasted slice to actually do the thing
-we're wrapping. This code snippet is required, and is provided in values of the
-'Ccode_slice_eval' dict passed to 'function()', as we have seen in the
-samples. This also returns a boolean: true on success, false on failure. If
-false is ever returned, all subsequent slices are abandoned, and an exception is
-thrown. As with the validation code, you can throw a better exception yourself
-prior to returning false.
+** Contiguity checking
+Since checking for memory contiguity is a very common use case for argument
+validation, there are convenience macros provided:
 
-*** Arguments available to the code snippets
+    CHECK_CONTIGUOUS__NAME()
+    CHECK_CONTIGUOUS_AND_SETERROR__NAME()
+
+    CHECK_CONTIGUOUS_ALL()
+    CHECK_CONTIGUOUS_AND_SETERROR_ALL()
+
+The strictest, and most common usage will accept only those calls where ALL
+inputs and ALL outputs are stored in contiguous memory. This can be accomplished
+by defining the function like
+
+    m.function( ...,
+               Ccode_validate = 'return CHECK_CONTIGUOUS_AND_SETERROR_ALL();' )
+
+As before, "NAME" refers to each individual input or output, and "ALL" checks
+all of them. These all evaluate to true if the argument in question IS
+contiguous. The ..._AND_SETERROR_... flavor does that, but ALSO raises an
+informative exception.
+
+Generally you want to do this in the validation routine only, since it runs only
+once. But there's nothing stopping you from checking this in the computation
+function too.
+
+Note that each broadcasted slice is processed separately, so the C code being
+wrapped usually only cares about each SLICE being contiguous. If the dimensions
+above each slice (those being broadcasted) are not contiguous, this doesn't
+break the underlying assumptions. Thus the CHECK_CONTIGUOUS_... macros only
+check and report the in-slice contiguity. If for some reason you need more than
+this, you should write the check yourself, using the strides_full__... and
+dims_full__... arrays.
+
+** Slice computation
+The code to evaluate each broadcasted slice is provided in the required
+'Ccode_slice_eval' argument to 'function()'. This argument is a dict, specifying
+different flavors of the available computation, with each code snippet present
+in the values of this dict. Each code snippet is wrapped into a function which
+returns a boolean: true on success, false on failure. If false is ever returned,
+all subsequent slices are abandoned, and an exception is thrown. As with the
+validation code, you can just return false, and a generic Exception will be
+thrown. Or you can throw a more informative exception yourself prior to
+returning false.
+
+** Arguments available to the code snippets
 Each of the user-supplied code blocks is placed into a separate function in the
 generated code, with identical arguments in both cases. These arguments describe
 the inputs and outputs, and are meant to be used by the user code. We have
@@ -460,45 +491,11 @@ all, and element at i,j can be found more simply:
 
     ((double*)data_slice__a)[ i*dims_slice__a[1] + j ]
 
-*** Contiguity checking
-Since checking for memory contiguity is a very common use case for argument
-validation, there are convenience macros provided:
+** Specifying extra, non-broadcasted arguments
 
-    CHECK_CONTIGUOUS__NAME()
-    CHECK_CONTIGUOUS_AND_SETERROR__NAME()
-
-    CHECK_CONTIGUOUS_ALL()
-    CHECK_CONTIGUOUS_AND_SETERROR_ALL()
-
-The strictest, and most common usage will accept only those calls where ALL
-inputs and ALL outputs are stored in contiguous memory. This can be accomplished
-by defining the function like
-
-    m.function( ...,
-               Ccode_validate = 'return CHECK_CONTIGUOUS_AND_SETERROR_ALL();' )
-
-As before, "NAME" refers to each individual input or output, and "ALL" checks
-all of them. These all evaluate to true if the argument in question IS
-contiguous. The ..._AND_SETERROR_... flavor does that, but ALSO raises an
-informative exception.
-
-Generally you want to do this in the validation routine only, since it runs only
-once. But there's nothing stopping you from checking this in the computation
-function too.
-
-Note that each broadcasted slice is processed separately, so the C code being
-wrapped usually only cares about each SLICE being contiguous. If the dimensions
-above each slice (those being broadcasted) are not contiguous, this doesn't
-break the underlying assumptions. Thus the CHECK_CONTIGUOUS_... macros only
-check and report the in-slice contiguity. If for some reason you need more than
-this, you should write the check yourself, using the strides_full__... and
-dims_full__... arrays.
-
-*** Extra arguments
-
-Sometimes it is desired to pass "cookies" to the C code: extra arguments that
-aren't broadcasted in any way, but are just passed verbatim by the wrapping code
-down to the inner C code. We can do that with the 'extra_args' argument to
+Sometimes it is desired to pass extra arguments to the C code; ones that aren't
+broadcasted in any way, but are just passed verbatim by the wrapping code down
+to the inner C code. We can do that with the 'extra_args' argument to
 'function()'. This argument is an tuple of tuples, where each inner tuple
 represents an extra argument:
 
@@ -545,6 +542,14 @@ argument, where the scale_string is required:
                 prototype_output = (),
                 extra_args = (("double",      "scale",          "1",    "d"),
                               ("const char*", "scale_string",   "NULL", "s")),
+                Ccode_validate = r"""
+                    if(scale_string == NULL)
+                    {
+                        PyErr_Format(PyExc_RuntimeError,
+                            "The 'scale_string' argument is required" );
+                        return false;
+                    }
+                    return true; """,
                 Ccode_slice_eval = \
                     {np.float64:
                      r"""
@@ -560,15 +565,7 @@ argument, where the scale_string is required:
                                                   i*strides_slice__b[0]);
                        *out *= *scale * atof(scale_string);
 
-                       return true;""" },
-                Ccode_validate = r"""
-                    if(scale_string == NULL)
-                    {
-                        PyErr_Format(PyExc_RuntimeError,
-                            "The 'scale_string' argument is required" );
-                        return false;
-                    }
-                    return true; """
+                       return true;""" }
     )
 
 Now I can optionally scale the result:
@@ -583,6 +580,91 @@ Now I can optionally scale the result:
                               scale        = 2.0,
                               scale_string = "10.0"))
     [280. 760.]
+
+** Precomputing a cookie outside the slice computation
+Sometimes it is useful to generate some resource once, before any of the
+broadcasted slices were evaluated. The slice evaluation code could then make use
+of this resource. Example: allocating memory, opening files. This is supported
+using a 'cookie'. We define a structure that contains data that will be
+available to all the generated functions. This structure is initialized at the
+beginning, used by the slice computation functions, and then cleaned up at the
+end. This is most easily described with an example. The scaled inner product
+demonstrated immediately above has an inefficiency: we compute
+'atof(scale_string)' once for every slice, even though the string does not
+change. We should compute the atof() ONCE, and use the resulting value each
+time. And we can:
+
+    m.function( "inner",
+                "Inner product pywrapped with numpysane_pywrap",
+
+                args_input       = ('a', 'b'),
+                prototype_input  = (('n',), ('n',)),
+                prototype_output = (),
+                extra_args = (("double",      "scale",          "1",    "d"),
+                              ("const char*", "scale_string",   "NULL", "s")),
+                Ccode_cookie_struct = r"""
+                  double scale; /* from BOTH scale arguments: "scale", "scale_string" */
+                """,
+                Ccode_validate = r"""
+                    if(scale_string == NULL)
+                    {
+                        PyErr_Format(PyExc_RuntimeError,
+                            "The 'scale_string' argument is required" );
+                        return false;
+                    }
+                    cookie->scale = *scale * (scale_string ? atof(scale_string) : 1.0);
+                    return true; """,
+                Ccode_slice_eval = \
+                    {np.float64:
+                     r"""
+                       double* out = (double*)data_slice__output;
+                       const int N = dims_slice__a[0];
+
+                       *out = 0.0;
+
+                       for(int i=0; i<N; i++)
+                         *out += *(const double*)(data_slice__a +
+                                                  i*strides_slice__a[0]) *
+                                 *(const double*)(data_slice__b +
+                                                  i*strides_slice__b[0]);
+                       *out *= cookie->scale;
+
+                       return true;""" },
+
+                // Cleanup, such as free() or close() goes here
+                Ccode_cookie_cleanup = ''
+    )
+
+We defined a cookie structure that contains one element: 'double scale'. We
+compute the scale factor (from BOTH of the extra arguments) before any of the
+slices are evaluated: in the validation function. Then we apply the
+already-computed scale with each slice. Both the validation and slice
+computation functions have the whole cookie structure available in '*cookie'. It
+is expected that the validation function will write something to the cookie, and
+the slice functions will read it, but this is not enforced: this structure is
+not const, and both functions can do whatever they like.
+
+If the cookie initialization did something that must be cleaned up (like a
+malloc() for instance), the cleanup code can be specified in the
+'Ccode_cookie_cleanup' argument to function(). Note: this cleanup code is ALWAYS
+executed, even if there were errors that raise an exception, EVEN if we haven't
+initialized the cookie yet. When the cookie object is first initialized, it is
+filled with 0, so the cleanup code can detect whether the cookie has been
+initialized or not:
+
+    m.function( ...
+                Ccode_cookie_struct = r"""
+                  ...
+                  bool initialized;
+                """,
+                Ccode_validate = r"""
+                  ...
+                  cookie->initialized = true;
+                  return true;
+                """,
+                Ccode_cookie_cleanup = r"""
+                  if(cookie->initialized) cleanup();
+                """ )
 
 ** Examples
 For some sample usage, see the wrapper-generator used in the test suite:
@@ -784,20 +866,31 @@ class module:
           In the special case that we have only one output, this can be given as
           a shape tuple instead of a tuple of shape tuples.
 
-        - Ccode_cookie_struct
-          A string of C code inserted into the generated sources verbatim.
-          XXXXXXXXXXXXXXXXX Please see the numpysane_pywrap module docstring for
-          more detail.
-
-        - Ccode_cookie_cleanup
-          XXXXXXXXXXXXXXXXX
-
         - extra_args
           Defines extra arguments to accept in the validation and slice
           computation functions. These extra arguments are not broadcast or
           interpreted in any way; they're simply passed down from the python
           caller to these functions. Please see the numpysane_pywrap module
           docstring for more detail.
+
+        - Ccode_cookie_struct
+          A string of C code inserted into the generated sources verbatim. This
+          defines contents of a structure that can be precomputed once before
+          any broadcasted slice is evaluated. The slice computation can then use
+          the results in this structure. The cookie is evaluated in the
+          validation function (once per call), used by the slice-computation
+          function (many times), and cleaned up at the end of the call. This
+          argument is optional. If omitted, the cookie structure will be empty,
+          and unused. Please see the numpysane_pywrap module docstring for more
+          detail.
+
+        - Ccode_cookie_cleanup
+          If we're precomputing a cookie defined in the Ccode_cookie_struct, any
+          necessary cleanup can be handled by code specified in this argument.
+          Example: if we allocated some memory and opened files when
+          constructing the cookie, the memory should be freed and the files
+          should be closed by placing that code into this argument. Please see
+          the numpysane_pywrap module docstring for more detail.
 
         - Ccode_validate
           A string of C code inserted into the generated sources verbatim. This
