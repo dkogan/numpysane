@@ -1128,7 +1128,7 @@ class module:
                 # already a list of types. we're good
                 pass
             else:
-                raise NumpysaneError("Each of Ccode_slice_eval.keys() MUST be either a type, or a list of types (one per input, output in order)")
+                raise NumpysaneError("Each of Ccode_slice_eval.keys() MUST be either a type, or a list of types (one for each input followed by one for each output in order; {} + {} = {} total)".format(Ninputs, Ninputs_and_outputs-Ninputs, Ninputs_and_outputs))
 
         # {TYPESETS} is _(11, 15, 17, 0) _(13, 15, 17, 1)
         # {TYPESET_MATCHES_ARGLIST} is t0,t1,t2
