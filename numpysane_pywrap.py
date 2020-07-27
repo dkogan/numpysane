@@ -723,7 +723,7 @@ def _quote(s, convert_newlines=False):
 def _substitute(s, convert_newlines=False, **kwargs):
     r'''format() with specific semantics
 
-    - {xxx} substitutions founc in kwargs are made
+    - {xxx} substitutions found in kwargs are made
     - {xxx} expressions not found in kwargs are left as is
     - {{ }} escaping is not respected: any '{xxx}' is replaced
     - \ and " and \n are handled for C strings
