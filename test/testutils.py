@@ -12,7 +12,7 @@ import os
 import re
 from inspect import currentframe
 
-Nchecks = 0
+Nchecks       = 0
 NchecksFailed = 0
 
 # no line breaks. Useful for test reporting. Yes, this sets global state, but
@@ -251,6 +251,8 @@ def assertValueShape(value_ref, s, f, *args, **kwargs):
         res = f(*args, **kwargs)
     except Exception as e:
         print_red("FAILED: Exception \"{}\" calling \"{}\"".format(e,f))
+        global NchecksFailed
+        NchecksFailed += 1
         return
 
     if 'out' in kwargs:
