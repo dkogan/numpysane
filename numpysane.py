@@ -1939,8 +1939,9 @@ def transpose(x):
     '''
     return xchg( atleast_dims(x, -2), -1, -2)
 
-def dummy(x, axis=None):
-    r'''Adds a single length-1 dimension at the given position.
+
+def dummy(x, axis, *axes_rest):
+    r'''Adds length-1 dimensions at the given positions.
 
     SYNOPSIS
 
@@ -1963,6 +1964,9 @@ def dummy(x, axis=None):
         >>> nps.dummy(a, -2).shape
         (2, 3, 1, 4)
 
+        >>> nps.dummy(a, -2, -2).shape
+        (2, 3, 1, 1, 4)
+
         >>> nps.dummy(a, -5).shape
         (1, 1, 2, 3, 4)
 
@@ -1972,14 +1976,21 @@ def dummy(x, axis=None):
     are added.
 
     '''
-    need_ndim = axis+1 if axis >= 0 else -axis
-    if x.ndim >= need_ndim:
-        # referring to an axis that already exists. expand_dims() thus works
-        return np.expand_dims(x, axis)
 
-    # referring to a non-existing axis. I simply add sufficient new axes, and
-    # I'm done
-    return atleast_dims(x, axis)
+    def dummy_inner(x, axis):
+        need_ndim = axis+1 if axis >= 0 else -axis
+        if x.ndim >= need_ndim:
+            # referring to an axis that already exists. expand_dims() thus works
+            return np.expand_dims(x, axis)
+
+        # referring to a non-existing axis. I simply add sufficient new axes, and
+        # I'm done
+        return atleast_dims(x, axis)
+
+    axes = (axis,) + axes_rest
+    for axis in axes: x = dummy_inner(x, axis)
+    return x
+
 
 def reorder(x, *dims):
     r'''Reorders the dimensions of an array.

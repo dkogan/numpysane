@@ -913,6 +913,7 @@ def test_dimension_manipulation():
     assertValueShape( None, (2,1,3,4),   nps.dummy,        arr(2,3,4),  1 )
     assertValueShape( None, (2,3,4,1),   nps.dummy,        arr(2,3,4), -1 )
     assertValueShape( None, (2,3,1,4),   nps.dummy,        arr(2,3,4), -2 )
+    assertValueShape( None, (2,3,1,1,4), nps.dummy,        arr(2,3,4), -2, -2 )
     assertValueShape( None, (2,1,3,4),   nps.dummy,        arr(2,3,4), -3 )
     assertValueShape( None, (1,2,3,4),   nps.dummy,        arr(2,3,4), -4 )
     assertValueShape( None, (1,1,2,3,4), nps.dummy,        arr(2,3,4), -5 )

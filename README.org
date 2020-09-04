@@ -1443,7 +1443,7 @@ input of shape (n,) is interpreted as a 2D input of shape (1,n), and the
 transpose is 2 of shape (n,1).
 
 ** dummy()
-Adds a single length-1 dimension at the given position.
+Adds length-1 dimensions at the given positions.
 
 SYNOPSIS
 
@@ -1466,6 +1466,9 @@ SYNOPSIS
 
 >>> nps.dummy(a, -2).shape
 (2, 3, 1, 4)
+
+>>> nps.dummy(a, -2, -2).shape
+(2, 3, 1, 1, 4)
 
 >>> nps.dummy(a, -5).shape
 (1, 1, 2, 3, 4)
