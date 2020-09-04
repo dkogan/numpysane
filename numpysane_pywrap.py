@@ -720,24 +720,17 @@ def _quote(s, convert_newlines=False):
     return s
 
 
-def _substitute(s, convert_newlines=False, **kwargs):
+def _substitute(s, **kwargs):
     r'''format() with specific semantics
 
     - {xxx} substitutions found in kwargs are made
     - {xxx} expressions not found in kwargs are left as is
     - {{ }} escaping is not respected: any '{xxx}' is replaced
-    - \ and " and \n are handled for C strings
-    - if convert_newlines: newlines are converted to \n (useful for C strings).
       Otherwise they're left alone (useful for C code)
 
     '''
 
     for k in kwargs.keys():
-        v = kwargs[k]
-        if isinstance(v, str):
-            v = _quote(v, convert_newlines)
-        else:
-            v = str(v)
         s = s.replace('{' + k + '}', kwargs[k])
     return s
 
@@ -776,8 +769,7 @@ class module:
         with open( _module_footer_filename, 'r') as f:
             self.module_footer = _substitute(f.read(),
                                              MODULE_NAME      = name,
-                                             MODULE_DOCSTRING = docstring,
-                                             convert_newlines = True)
+                                             MODULE_DOCSTRING = docstring)
 
         self.functions = []
 
