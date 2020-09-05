@@ -1,3 +1,12 @@
+numpysane (0.25)
+
+  * nps.dummy() supports multiple axes given at once. So I can do
+    something like   nps.dummy(x, -2, -2)
+  * numpysane_pywrap: generated code can use ctype__NAME and item__NAME to
+    simplify handling of non-contiguous data
+
+ -- Dima Kogan <dkogan@debian.org>  Sat, 05 Sep 2020 13:52:19 -0700
+
 numpysane (0.24)
 
   * C broadcasting: I can pass strings in the extra, non-broadcastable
