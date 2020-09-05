@@ -37,8 +37,7 @@ m.function( "identity3",
                  r'''
     for(int i=0; i<3; i++)
         for(int j=0; j<3; j++)
-            ((double*)(data_slice__output + i*strides_slice__output[0] + j*strides_slice__output[1]))[0] =
-                 (i==j) ? 1.0 : 0.0;
+            item__output(i,j) = (i==j) ? 1.0 : 0.0;
     return true;
 '''})
 
@@ -55,8 +54,7 @@ m.function( "identity",
     int N = dims_slice__output[0];
     for(int i=0; i<N; i++)
         for(int j=0; j<N; j++)
-            ((double*)(data_slice__output + i*strides_slice__output[0] + j*strides_slice__output[1]))[0] =
-                 (i==j) ? 1.0 : 0.0;
+            item__output(i,j) = (i==j) ? 1.0 : 0.0;
     return true;
 '''},)
 
@@ -71,7 +69,7 @@ m.function( "inner",
                 {np.float64:
                  r'''
             const int N = dims_slice__a[0];
-            ((double*)data_slice__output)[0] =
+            item__output() =
               inner_double((double*)data_slice__a,
                            (double*)data_slice__b,
                            strides_slice__a[0],
@@ -82,7 +80,7 @@ m.function( "inner",
                  np.int64:
                  r'''
             const int N = dims_slice__a[0];
-            ((int64_t*)data_slice__output)[0] =
+            item__output() =
               inner_int64_t((int64_t*)data_slice__a,
                             (int64_t*)data_slice__b,
                             strides_slice__a[0],
@@ -93,7 +91,7 @@ m.function( "inner",
                  np.int32:
                  r'''
             const int N = dims_slice__a[0];
-            ((int32_t*)data_slice__output)[0] =
+            item__output() =
               inner_int32_t((int32_t*)data_slice__a,
                             (int32_t*)data_slice__b,
                             strides_slice__a[0],
@@ -152,7 +150,7 @@ m.function( "innerouter",
                 {np.float64:
                  r'''
             int N = dims_slice__a[0];
-            *(double*)data_slice__output0 =
+            item__output0() =
                  innerouter((double*)data_slice__output1,
                      (double*)data_slice__a,
                      (double*)data_slice__b,

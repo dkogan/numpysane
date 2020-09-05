@@ -436,7 +436,7 @@ validation code, you can just return false, and a generic Exception will be
 thrown. Or you can throw a more informative exception yourself prior to
 returning false.
 
-** Arguments available to the code snippets
+** Values available to the code snippets
 Each of the user-supplied code blocks is placed into a separate function in the
 generated code, with identical arguments in both cases. These arguments describe
 the inputs and outputs, and are meant to be used by the user code. We have
@@ -469,7 +469,7 @@ strides contain the step size in bytes, of each dimension. sizeof_element...
 describes the size in bytes, of a single data element.
 
 Finally, I have a pointer to the data itself. The validation code gets a pointer
-to the start of the data array:
+to the start of the whole data array:
 
     void*           data__NAME
 
@@ -478,18 +478,42 @@ currently looking at:
 
     void*           data_slice__NAME
 
+If the data in the arrays is representable as a basic C type (most integers,
+floats and complex numbers), then convenience macros are available to index
+elements in the sliced arrays and to conveniently access the C type of the data.
+These macros take into account the data type and the strides.
+
+    #define         ctype__NAME     ...
+    #define         item__NAME(...) ...
+
+For instance, if we have a 2D array 'x' containing 64-bit floats, we'll have
+this:
+
+    #define         ctype__x     npy_float64 /* "double" on most platforms */
+    #define         item__x(i,j) (*(ctype__x*)(data_slice__x + ...))
+
+For more complex types (objects, vectors, strings) you'll need to deal with the
+strides and the pointers yourself.
+
 Example: I'm computing a broadcasted slice. An input array 'x' is a
 2-dimensional slice of dimension (3,4) of 64-bit floating-point values. I thus
 have Ndims_slice__x == 2 and dims_slice__x[] = {3,4} and sizeof_element__x == 8.
-An element of this array at i,j is
+An element of this array at i,j can be accessed with either
 
     *((double*)(data_slice__a + i*strides_slice__a[0] + j*strides_slice__a[1]))
 
-If I defined a validation function that makes sure that 'a' is stored in
-contiguous memory, the computation code doesn't need to look at the strides at
-all, and element at i,j can be found more simply:
+    item__a(i,j)
+
+Both are identical. If I defined a validation function that makes sure that 'a'
+is stored in contiguous memory, the computation code doesn't need to look at the
+strides at all, and element at i,j can be found more simply:
 
     ((double*)data_slice__a)[ i*dims_slice__a[1] + j ]
+
+    item__a(i,j)
+
+As you can see, the item__...() macros are much simpler, less error-prone and
+are thus the preferred form.
 
 ** Specifying extra, non-broadcasted arguments
 
@@ -1165,9 +1189,12 @@ bool {FUNCTION_NAME}({ARGUMENTS})
 }
 '''
         if Noutputs is None:
-            slice_args = ("output",)+args_input
+            slice_args = ("output",) + args_input
         else:
             slice_args = tuple("output{}".format(i) for i in range(Noutputs))+args_input
+        slice_args_ndims = \
+            [ len(prototype) for prototype in prototype_outputs ] + \
+            [ len(prototype) for prototype in prototype_input   ]
 
         EXTRA_ARGUMENTS_ARG_DEFINE          = ''
         EXTRA_ARGUMENTS_NAMELIST            = ''
@@ -1213,6 +1240,22 @@ bool {FUNCTION_NAME}({ARGUMENTS})
         EXTRA_ARGUMENTS_SLICE_ARG           = ','.join(EXTRA_ARGUMENTS_ARGLIST_DEFINE)
         EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG = ''.join([s+',' for s in EXTRA_ARGUMENTS_ARGLIST_PARSE_PYARG])
         EXTRA_ARGUMENTS_ARGLIST_CALL_C      = ','.join(EXTRA_ARGUMENTS_ARGLIST_CALL_C)
+
+        def ctype_from_dtype(t):
+            f'''Get the corresponding C type from a numpy dtype
+
+If one does not exist, return None'''
+            t = np.dtype(t)
+            if not t.isnative or not (t.isbuiltin==1): return None
+
+            nbits = str(t.itemsize * 8)
+            if t.kind == 'f': return "npy_float"   + nbits
+            if t.kind == 'c': return "npy_complex" + nbits
+            if t.kind == 'i': return "npy_int"     + nbits
+            if t.kind == 'u': return "npy_uint"    + nbits
+            return None
+
+
 
         text = ''
         contiguous_macro_template = r'''
@@ -1290,11 +1333,38 @@ typedef struct { {COOKIE_STRUCT_CONTENTS} } __{FUNCTION_NAME}__cookie_t;
 
             slice_function = "__{}__{}__slice".format(name,i_typeset)
 
+            text += '\n'
+            text_undef = ''
+            for i_arg in range(len(slice_args)):
+                ctype = ctype_from_dtype(known_types[i_typeset][i_arg])
+                if ctype is None:
+                    continue
+
+                arg_name  = slice_args      [i_arg]
+                ndims     = slice_args_ndims[i_arg]
+                text_here = \
+                    '#define ctype__{name} {ctype}\n' +                                 \
+                    '#define item__{name}(' +                                           \
+                    ','.join([ "__ivar"+str(i) for i in range(ndims)]) +                \
+                    ') (*(ctype__{name}*)(data_slice__{name} ' +                        \
+                    ''.join(['+ __ivar' + str(i) + '*strides_slice__{name}['+str(i)+']' \
+                             for i in range(ndims)]) +                                  \
+                    '))\n'
+
+                text += _substitute(text_here,
+                                    name = arg_name,
+                                    ctype= ctype)
+                text_undef += '#undef item__{name}\n' .replace('{name}', arg_name)
+                text_undef += '#undef ctype__{name}\n'.replace('{name}', arg_name)
+
             text += \
                 _substitute(function_template,
                             FUNCTION_NAME = slice_function,
                             ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data_slice"),
                             FUNCTION_BODY = Ccode_slice_eval[known_typesets[i_typeset]])
+
+            text += text_undef
+
 
         text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
@@ -1320,6 +1390,8 @@ typedef struct { {COOKIE_STRUCT_CONTENTS} } __{FUNCTION_NAME}__cookie_t;
             text += '#undef _CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
             text += '#undef CHECK_CONTIGUOUS__{name}\n'.replace('{name}', n)
             text += '#undef CHECK_CONTIGUOUS_AND_SETERROR__{name}\n'.replace('{name}', n)
+
+        text += '\n'
         text += '#undef CHECK_CONTIGUOUS_ALL\n'
         text += '#undef CHECK_CONTIGUOUS_AND_SETERROR_ALL\n'
 
