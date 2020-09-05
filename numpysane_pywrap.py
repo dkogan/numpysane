@@ -1099,8 +1099,6 @@ class module:
 '''.replace('{Noutputs}', str(Noutputs))
 
 
-        Ntypesets = len(Ccode_slice_eval)
-        slice_functions = [ "__{}__{}__slice".format(name,i) for i in range(Ntypesets)]
         # The keys of Ccode_slice_eval are either:
 
         # - a type: all inputs, outputs MUST have this type
@@ -1128,7 +1126,7 @@ class module:
         #                         "   (float32,int32)\n"
         #                         "   (float64,int32)\n"
         TYPESETS = ' '.join( ("_(" + ','.join(tuple(str(np.dtype(t).num) for t in known_types[i]) + (str(i),)) + ')') \
-                              for i in range(Ntypesets))
+                              for i in range(len(known_types)))
         TYPESET_MATCHES_ARGLIST = ','.join(('t' + str(i)) for i in range(Ninputs_and_outputs))
         def parened_type_list(l, Ninputs):
             r'''Converts list of types to string
@@ -1286,14 +1284,17 @@ typedef struct { {COOKIE_STRUCT_CONTENTS} } __{FUNCTION_NAME}__cookie_t;
                         ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data"),
                         FUNCTION_BODY = "return true;" if Ccode_validate is None else Ccode_validate)
 
-        for i in range(Ntypesets):
-            # The evaluation function for one slice
-            typeset_indices = tuple(Ccode_slice_eval.keys())
+        # The evaluation function for one slice
+        known_typesets = list(Ccode_slice_eval.keys()) # known_types is the same, but tweaked
+        for i_typeset in range(len(known_typesets)):
+
+            slice_function = "__{}__{}__slice".format(name,i_typeset)
+
             text += \
                 _substitute(function_template,
-                            FUNCTION_NAME = slice_functions[i],
+                            FUNCTION_NAME = slice_function,
                             ARGUMENTS     = _substitute(arglist_string, DATA_ARGNAME="data_slice"),
-                            FUNCTION_BODY = Ccode_slice_eval[typeset_indices[i]])
+                            FUNCTION_BODY = Ccode_slice_eval[known_typesets[i_typeset]])
 
         text += \
             ' \\\n  '.join(ARGUMENTS_LIST) + \
