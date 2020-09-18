@@ -778,12 +778,8 @@ def test_concatenation():
     confirm_raises( lambda: nps.glue( arr(1,3), arr(2,3), axis=-4) )
     confirm_raises( lambda: nps.cat(  arr(1,3), arr(2,3)) )
 
-    # empty arrays are accepted and ignored
-    assertValueShape( None, (2,3),     nps.glue, np.array(()), arr(2,3),     axis=-2 )
-    assertValueShape( None, (1,2,3),   nps.glue, np.array(()), arr(2,3),     axis=-3 )
     assertValueShape( None, (3,),      nps.glue, arr(3),       np.array(()), axis=-1 )
-    assertValueShape( None, (1,3),     nps.glue, arr(3),       np.array(()), axis=-2 )
-    assertValueShape( None, (3,3),     nps.glue, arr(3),       arr(2,3), np.array(()), axis=-2 )
+    assertValueShape( None, (4,),      nps.glue, arr(3),       np.array(5),  axis=-1 )
 
     # zero-length arrays do the right thing
     confirm_raises( lambda: nps.glue( arr(0,3), arr(2,3),     axis=-1) )
@@ -812,19 +808,23 @@ def test_concatenation():
     confirm_raises( lambda: nps.glue( arr(2,0), arr(3,0),     axis=-1) )
     assertValueShape( None, (5,0),     nps.glue, arr(2,0), arr(3,0),     axis=-2 )
     confirm_raises( lambda: nps.glue( arr(2,0), arr(3,0),     axis=-3) )
+    assertValueShape( None, (2,0),     nps.glue, arr(1,0), arr(1,0),     axis=-2 )
+    assertValueShape( None, (2,0),     nps.glue, arr(0,),  arr(1,0),     axis=-2 )
+    assertValueShape( None, (2,0),     nps.glue, arr(1,0), arr(0,),      axis=-2 )
+    assertValueShape( None, (0,),      nps.glue, arr(0,),  arr(0,),      axis=-1 )
+    assertValueShape( None, (2,0),     nps.glue, arr(0,),  arr(0,),      axis=-2 )
+    assertValueShape( None, (2,1,1,0), nps.glue, arr(0,),  arr(0,),      axis=-4 )
 
     assertValueShape( None, (0,),      nps.glue, arr(0,),  arr(0,),      axis=-1 )
     assertValueShape( None, (2,),      nps.glue, arr(2,),  arr(0,),      axis=-1 )
     assertValueShape( None, (2,),      nps.glue, arr(0,),  arr(2,),      axis=-1 )
-    assertValueShape( None, (1,2,),    nps.glue, arr(2,),  arr(0,),      axis=-2 )
-    assertValueShape( None, (1,2,),    nps.glue, arr(0,),  arr(2,),      axis=-2 )
+    confirm_raises(   lambda: nps.glue( arr(2,),  arr(0,), axis=-2 ) )
+    confirm_raises(   lambda: nps.glue( arr(0,),  arr(2,), axis=-2 ) )
 
     # same as before, but np.array(()) instead of np.arange(0)
     assertValueShape( None, (0,),      nps.glue, np.array(()), np.array(()), axis=-1 )
     assertValueShape( None, (2,),      nps.glue, arr(2,),  np.array(()), axis=-1 )
     assertValueShape( None, (2,),      nps.glue, np.array(()),arr(2,),   axis=-1 )
-    assertValueShape( None, (1,2,),    nps.glue, arr(2,),  np.array(()), axis=-2 )
-    assertValueShape( None, (1,2,),    nps.glue, np.array(()),  arr(2,), axis=-2 )
 
     assertValueShape( None, (0,6),     nps.glue, arr(0,3), arr(0,3),     axis=-1 )
     assertValueShape( None, (0,3),     nps.glue, arr(0,3), arr(0,3),     axis=-2 )

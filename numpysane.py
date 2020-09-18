@@ -1572,11 +1572,6 @@ def glue(*args, **kwargs):
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
 
-    # ignore empty arrays( shape == (0,) ) but not scalars ( shape == ())
-    args = [ x for x in args if x.shape != (0,) ]
-    if not args:
-        return np.zeros((0,))
-
     # Legacy behavior: if no axis is given, add a new axis at the front, and
     # glue along it
     max_ndim = max( x.ndim for x in args )
