@@ -1259,23 +1259,38 @@ If one does not exist, return None'''
 
         text = ''
         contiguous_macro_template = r'''
-#define _CHECK_CONTIGUOUS__{name}(seterror)                                       \
-({                                                                                \
-  bool result = true;                                                             \
-  int Nelems_slice = 1;                                                           \
-  for(int i=-1; i>=-Ndims_slice__{name}; i--)                                     \
-  {                                                                               \
-      if(strides_slice__{name}[i+Ndims_slice__{name}] != sizeof_element__{name}*Nelems_slice) \
-      {                                                                           \
-          result = false;                                                         \
-          if(seterror)                                                            \
-            PyErr_Format(PyExc_RuntimeError,                                      \
-                         "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
-          break;                                                                  \
-      }                                                                           \
-      Nelems_slice *= dims_slice__{name}[i+Ndims_slice__{name}];                  \
-  }                                                                               \
-  result;                                                                         \
+#define _CHECK_CONTIGUOUS__{name}(seterror)                             \
+({                                                                      \
+  bool result     = true;                                               \
+  bool have_dim_0 = false;                                              \
+  /* If I have no data, just call the thing contiguous. This is useful */ \
+  /* because np.ascontiguousarray doesn't set contiguous alignment */   \
+  /* for empty arrays */                                                \
+  for(int i=0; i<Ndims_full__{name}; i++)                               \
+      if(dims_full__{name}[i] == 0)                                     \
+      {                                                                 \
+          result     = true;                                            \
+          have_dim_0 = true;                                            \
+          break;                                                        \
+      }                                                                 \
+                                                                        \
+  if(!have_dim_0)                                                       \
+  {                                                                     \
+      int Nelems_slice = 1;                                             \
+      for(int i=-1; i>=-Ndims_slice__{name}; i--)                       \
+      {                                                                 \
+          if(strides_slice__{name}[i+Ndims_slice__{name}] != sizeof_element__{name}*Nelems_slice) \
+          {                                                             \
+              result = false;                                           \
+              if(seterror)                                              \
+                PyErr_Format(PyExc_RuntimeError,                        \
+                             "Variable '{name}' must be contiguous in memory, and it isn't in (at least) dimension %d", i); \
+              break;                                                    \
+          }                                                             \
+          Nelems_slice *= dims_slice__{name}[i+Ndims_slice__{name}];    \
+      }                                                                 \
+  }                                                                     \
+  result;                                                               \
 })
 #define CHECK_CONTIGUOUS__{name}()              _CHECK_CONTIGUOUS__{name}(false)
 #define CHECK_CONTIGUOUS_AND_SETERROR__{name}() _CHECK_CONTIGUOUS__{name}(true)
