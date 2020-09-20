@@ -887,7 +887,6 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         >>> inner_product(a,b)
         array([ 305, 1250])
 
-
     The prototype defines the dimensionality of the inputs. In the inner product
     example above, the input is two 1D n-dimensional vectors. In particular, the
     'n' is the same for the two inputs. This function is intended to be used as
@@ -918,9 +917,9 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         returns
       - The leading dimensions come from the extra dimensions in the inputs
 
-    Calling a function wrapped with broadcast_define() with more positional
-    arguments than specified in the prototype passes these extra positional
-    arguments verbatim to the inner function. Same with keyword arguments.
+    Calling a function wrapped with broadcast_define() with extra arguments
+    (either positional or keyword), passes these verbatim to the inner function.
+    Only the arguments declared in the prototype are broadcast.
 
     Scalars are represented as 0-dimensional numpy arrays: arrays with shape (),
     and these broadcast as one would expect:
