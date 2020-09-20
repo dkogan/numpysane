@@ -1,3 +1,10 @@
+numpysane (0.26)
+
+  * glue() and cat() handles size-0 arrays better
+  * numpysane_pywrap: size-0 arrays are always deemed contiguous
+
+ -- Dima Kogan <dkogan@debian.org>  Sat, 19 Sep 2020 20:13:05 -0700
+
 numpysane (0.25)
 
   * nps.dummy() supports multiple axes given at once. So I can do
