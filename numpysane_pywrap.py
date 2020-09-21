@@ -1362,7 +1362,7 @@ typedef struct { {COOKIE_STRUCT_CONTENTS} } __{FUNCTION_NAME}__cookie_t;
                     '#define item__{name}(' +                                           \
                     ','.join([ "__ivar"+str(i) for i in range(ndims)]) +                \
                     ') (*(ctype__{name}*)(data_slice__{name} ' +                        \
-                    ''.join(['+ __ivar' + str(i) + '*strides_slice__{name}['+str(i)+']' \
+                    ''.join(['+ (__ivar' + str(i) + ')*strides_slice__{name}['+str(i)+']' \
                              for i in range(ndims)]) +                                  \
                     '))\n'
 
