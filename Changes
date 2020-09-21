@@ -1,3 +1,9 @@
+numpysane (0.27)
+
+  * numpysane_pywrap item__...() macro works with non-trivial arguments
+
+ -- Dima Kogan <dkogan@debian.org>  Mon, 21 Sep 2020 14:09:17 -0700
+
 numpysane (0.26)
 
   * glue() and cat() handles size-0 arrays better

@@ -685,7 +685,7 @@ import inspect
 from distutils.version import StrictVersion
 
 # setup.py assumes the version is a simple string in '' quotes
-__version__ = '0.26'
+__version__ = '0.27'
 
 def _product(l):
     r'''Returns product of all values in the given list'''
