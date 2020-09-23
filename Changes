@@ -1,3 +1,10 @@
+numpysane (0.28)
+
+  * more precise logic for size-0 concatenation
+    I can once again accumulate arrays from np.array(())
+
+ -- Dima Kogan <dkogan@debian.org>  Wed, 23 Sep 2020 13:06:08 -0700
+
 numpysane (0.27)
 
   * numpysane_pywrap item__...() macro works with non-trivial arguments
