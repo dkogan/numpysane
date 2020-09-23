@@ -819,7 +819,7 @@ def test_concatenation():
     assertValueShape( None, (2,),      nps.glue, arr(2,),  arr(0,),      axis=-1 )
     assertValueShape( None, (2,),      nps.glue, arr(0,),  arr(2,),      axis=-1 )
     confirm_raises(   lambda: nps.glue( arr(2,),  arr(0,), axis=-2 ) )
-    confirm_raises(   lambda: nps.glue( arr(0,),  arr(2,), axis=-2 ) )
+    assertValueShape( None, (2,),      nps.glue, arr(0,),  arr(2,),      axis=-2 )
 
     # same as before, but np.array(()) instead of np.arange(0)
     assertValueShape( None, (0,),      nps.glue, np.array(()), np.array(()), axis=-1 )

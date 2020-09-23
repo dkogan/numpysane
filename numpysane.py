@@ -1571,6 +1571,18 @@ def glue(*args, **kwargs):
     # deal with scalar (non-ndarray) args
     args = [ np.asarray(x) for x in args ]
 
+    # Special case to support this common idiom:
+    #
+    #   accum = np.array(())
+    #   while ...:
+    #      x     = ...
+    #      accum = nps.glue(accum, x,  axis = -2)
+    #
+    # Without special logic, this would throw an error since accum.shape starts
+    # at (0,), which is almost certainly not compatible with x.shape
+    if len(args) == 2 and args[0].shape == (0,) and args[1].size != 0:
+        return args[1]
+
     # Legacy behavior: if no axis is given, add a new axis at the front, and
     # glue along it
     max_ndim = max( x.ndim for x in args )
