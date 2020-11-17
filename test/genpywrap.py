@@ -18,15 +18,25 @@ import numpysane as nps
 import numpysane_pywrap as npsp
 
 
+docstring_module = r"""Some functions to test the python wrapping
+
+multiline docstring to stress-test this thing
+line
+line
+line
+"""
 m = npsp.module( name      = "testlib",
-                 docstring = "Some functions to test the python wrapping",
+                 docstring = docstring_module,
                  header    = '''
 #include <stdlib.h>
 #include "testlib.h"
 ''')
 
 m.function( "identity3",
-            "Generates a 3x3 identity matrix",
+            r"""Generates a 3x3 identity matrix
+
+multi-line docstring to make sure it works
+""",
 
             args_input       = (),
             prototype_input  = (),
