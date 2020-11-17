@@ -793,8 +793,7 @@ class module:
         with open( _module_footer_filename, 'r') as f:
             self.module_footer = _substitute(f.read(),
                                              MODULE_NAME      = name,
-                                             MODULE_DOCSTRING = docstring)
-
+                                             MODULE_DOCSTRING = _quote(docstring, convert_newlines=True))
         self.functions = []
 
 
