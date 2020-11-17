@@ -480,7 +480,7 @@ validation code, you can just return false, and a generic Exception will be
 thrown. Or you can throw a more informative exception yourself prior to
 returning false.
 
-** Arguments available to the code snippets
+** Values available to the code snippets
 Each of the user-supplied code blocks is placed into a separate function in the
 generated code, with identical arguments in both cases. These arguments describe
 the inputs and outputs, and are meant to be used by the user code. We have
@@ -517,7 +517,7 @@ strides contain the step size in bytes, of each dimension. sizeof_element...
 describes the size in bytes, of a single data element.
 
 Finally, I have a pointer to the data itself. The validation code gets a pointer
-to the start of the data array:
+to the start of the whole data array:
 
 #+BEGIN_EXAMPLE
 void*           data__NAME
@@ -530,22 +530,50 @@ currently looking at:
 void*           data_slice__NAME
 #+END_EXAMPLE
 
+If the data in the arrays is representable as a basic C type (most integers,
+floats and complex numbers), then convenience macros are available to index
+elements in the sliced arrays and to conveniently access the C type of the data.
+These macros take into account the data type and the strides.
+
+#+BEGIN_EXAMPLE
+#define         ctype__NAME     ...
+#define         item__NAME(...) ...
+#+END_EXAMPLE
+
+For instance, if we have a 2D array 'x' containing 64-bit floats, we'll have
+this:
+
+#+BEGIN_EXAMPLE
+#define         ctype__x     npy_float64 /* "double" on most platforms */
+#define         item__x(i,j) (*(ctype__x*)(data_slice__x + ...))
+#+END_EXAMPLE
+
+For more complex types (objects, vectors, strings) you'll need to deal with the
+strides and the pointers yourself.
+
 Example: I'm computing a broadcasted slice. An input array 'x' is a
 2-dimensional slice of dimension (3,4) of 64-bit floating-point values. I thus
 have Ndims_slice__x == 2 and dims_slice__x[] = {3,4} and sizeof_element__x == 8.
-An element of this array at i,j is
+An element of this array at i,j can be accessed with either
 
 #+BEGIN_EXAMPLE
 *((double*)(data_slice__a + i*strides_slice__a[0] + j*strides_slice__a[1]))
+
+item__a(i,j)
 #+END_EXAMPLE
 
-If I defined a validation function that makes sure that 'a' is stored in
-contiguous memory, the computation code doesn't need to look at the strides at
-all, and element at i,j can be found more simply:
+Both are identical. If I defined a validation function that makes sure that 'a'
+is stored in contiguous memory, the computation code doesn't need to look at the
+strides at all, and element at i,j can be found more simply:
 
 #+BEGIN_EXAMPLE
 ((double*)data_slice__a)[ i*dims_slice__a[1] + j ]
+
+item__a(i,j)
 #+END_EXAMPLE
+
+As you can see, the item__...() macros are much simpler, less error-prone and
+are thus the preferred form.
 
 ** Specifying extra, non-broadcasted arguments
 
