@@ -57,14 +57,22 @@ test-c-broadcasting: test/testlib$(PY_EXT_SUFFIX)
 
 .PHONY: check check2 check3 test test2 test3 test-c-broadcasting
 
+DIST_VERSION := $(or $(shell < numpysane.py perl -ne "if(/__version__ = '(.*)'/) { print \$$1; exit}"), $(error "Couldn't parse the distribution version"))
+
+DIST := dist/numpysane-$(DIST_VERSION).tar.gz
+$(DIST): README
+
 # make distribution tarball
-dist: README
+$(DIST):
 	python3 setup.py sdist
+.PHONY: $(DIST) # rebuild it unconditionally
+
+dist: $(DIST)
 .PHONY: dist
 
 # make and upload the distribution tarball
-dist_upload:
-	python3 setup.py sdist upload
+dist_upload: $(DIST)
+	twine upload --verbose $(DIST)
 .PHONY: dist_upload
 
 
