@@ -715,10 +715,22 @@ import re
 # and to appear in a "normal" directory, where this script can grab them and use
 # them
 #
-# Aand I try two different directories, in case I'm running in-place
+# And I try two different directories, in case I'm running in-place
+#
+# And pip does something yet different, which I support in a hacky way. This is
+# a mess
 
-_pywrap_path = ( os.path.dirname( __file__ ) + '/pywrap-templates',
-                 sys.prefix + '/share/python-numpysane/pywrap-templates' )
+_pywrap_path = [ # in-place: running from the source tree
+                 os.path.dirname( __file__ ) + '/pywrap-templates',
+
+                 # distro: /usr/share/...
+                 sys.prefix + '/share/python-numpysane/pywrap-templates' ]
+
+                 # pip: /home/whoever/.local/share/...
+_m = re.match("(/home/[^/]+/\.local)/lib/", __file__)
+if _m is not None:
+    _local_prefix = _m.group(1)
+    _pywrap_path.append( _local_prefix + '/share/python-numpysane/pywrap-templates')
 
 for p in _pywrap_path:
     _module_header_filename = p + '/pywrap_module_header.c'
