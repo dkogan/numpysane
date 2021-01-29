@@ -1019,6 +1019,13 @@ def test_mag():
     assertResult_inoutplace(  np.sqrt(nps.norm2(np.arange(5))),
                               nps.mag, arr(5, dtype=float) )
 
+    # input is a 1D array of integers, no output dtype specified. Output
+    # should be a floating-point scalar
+    assertResult_inoutplace(  np.sqrt(nps.norm2(np.arange(5))),
+                              nps.mag, arr(5, dtype=int),
+                              dtype             = np.float32,
+                              out_inplace_dtype = np.float32)
+
     # input is a 1D array of integers, output dtype=int. Output should be an
     # integer scalar
     output = np.empty((), dtype=int)

@@ -2176,7 +2176,7 @@ def norm2(a, **kwargs):
     '''
     return inner(a,a, **kwargs)
 
-def mag(a, out=None):
+def mag(a, out=None, dtype=None):
     r'''Magnitude of a vector. mag(x) is functionally identical to sqrt(inner(x,x))
 
     SYNOPSIS
@@ -2192,13 +2192,17 @@ def mag(a, out=None):
         2.23606797749979
 
     This is a convenience function to compute a magnitude of a vector, with full
-    broadcasting support. If an explicit "out" array isn't given, we produce
-    output of dtype=float. Otherwise "out" retains its dtype
+    broadcasting support.
+
+    In-place operation is available with the "out" kwarg. The output dtype can
+    be selected with the "dtype" kwarg. If omitted, dtype=float is selected.
 
     '''
 
     if out is None:
-        out = inner(a,a, dtype=float)
+        if dtype is None:
+            dtype = float
+        out = inner(a,a, dtype=dtype)
 
         if not isinstance(out, np.ndarray):
             # given two vectors, and without and 'out' array, inner() produces a
@@ -2206,7 +2210,9 @@ def mag(a, out=None):
             # return a copy
             return np.sqrt(out)
     else:
-        inner(a,a, out=out)
+        if dtype is None:
+            dtype = out.dtype
+        inner(a,a, out=out, dtype=dtype)
 
     # in-place sqrt
     np.sqrt.at(out,())

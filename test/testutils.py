@@ -266,7 +266,8 @@ def assertValueShape(value_ref, s, f, *args, **kwargs):
     if value_ref is not None:
         confirm_equal(value_ref, res, msg='value matches')
     if 'dtype' in kwargs:
-        confirm_equal(res.dtype, kwargs['dtype'], msg='matching dtype')
+        confirm_equal(np.dtype(res.dtype), np.dtype(kwargs['dtype']), msg='matching dtype')
+
 
 def assertResult_inoutplace( ref, func, *args, **kwargs ):
     r'''makes sure func(a,b) == ref.
