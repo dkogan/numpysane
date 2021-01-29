@@ -2055,10 +2055,15 @@ def dot(a, b, out=None, dtype=None):
         >>> nps.dot(a,b)
         20
 
-    this is identical to numpysane.inner(). for a conjugating version of this
-    function, use nps.vdot(). note that the numpy dot() has some special
-    handling when its dot() is given more than 1-dimensional input. this
-    function has no special handling: normal broadcasting rules are applied.
+    This is identical to numpysane.inner(). for a conjugating version of this
+    function, use nps.vdot(). Note that the stock numpy dot() has some special
+    handling when its dot() is given more than 1-dimensional input. THIS
+    function has no special handling: normal broadcasting rules are applied, as
+    expected.
+
+    In-place operation is available with the "out" kwarg. The output dtype can
+    be selected with the "dtype" kwarg. If omitted, the dtype of the input is
+    used
 
     '''
     if out is not None and dtype is not None and out.dtype != dtype:
@@ -2187,7 +2192,7 @@ def mag(a, out=None):
         2.23606797749979
 
     This is a convenience function to compute a magnitude of a vector, with full
-    broadcasting support. If and explicit "out" array isn't given, we produce
+    broadcasting support. If an explicit "out" array isn't given, we produce
     output of dtype=float. Otherwise "out" retains its dtype
 
     '''
