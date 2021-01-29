@@ -2069,7 +2069,11 @@ def dot(a, b, out=None, dtype=None):
     if out is not None and dtype is not None and out.dtype != dtype:
         raise NumpysaneError("'out' and 'dtype' given explicitly, but the dtypes are mismatched!")
 
-    v = np.sum(a*b, axis=-1, out=out, dtype=dtype )
+    if dtype is not None:
+        # Handle overflows. Cases that require this are checked in the tests
+        v = np.sum(a.astype(dtype)*b.astype(dtype), axis=-1, out=out, dtype=dtype )
+    else:
+        v = np.sum(a*b, axis=-1, out=out, dtype=dtype )
     if out is None:
         return v
     return out

@@ -1007,7 +1007,7 @@ def test_inner():
 
 
 def test_mag():
-    r'''Testing the broadcasted magnitude product'''
+    r'''Testing the broadcasted norm2, magnitude'''
 
     # input is a 1D array of integers, no output dtype specified. Output
     # should be a floating-point scalar
@@ -1069,6 +1069,16 @@ def test_mag():
     confirm_equal(np.sqrt(np.array(( nps.norm2(np.arange(5)),
                                      nps.norm2(np.arange(5,10))))),
                   output)
+
+    # Make sure overflows can be handled by specifying a dtype
+    r = np.array((-206, 10), dtype=np.int16)
+    confirm_equal(206.*206. + 10.*10.,
+                  nps.norm2(r, dtype=float),
+                  msg = "norm2 can handle overflows with a dtype")
+
+    confirm_equal(np.sqrt(206.*206. + 10.*10.),
+                  nps.mag(r, dtype=float),
+                  msg = "mag can handle overflows with a dtype")
 
 
 def test_outer():
