@@ -914,6 +914,7 @@ def func( ....., out):
     out[:] = result
 #+END_EXAMPLE
 
+When used this way, the return value of the broadcasted function is ignored.
 In order for broadcast_define() to pass such an output array to the inner
 function, this output array must be available, which means that it must be
 given to us somehow, or we must create it.
@@ -928,7 +929,6 @@ be made. This can be done like this:
 def inner_product(a, b, out):
     .....
     out.setfield(a.dot(b), out.dtype)
-    return out
 
 out = np.empty((2,4), np.float)
 inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), out=out)
@@ -955,7 +955,6 @@ pre-declared, and the dtype of the output should be known:
 def inner_product(a, b, out):
     .....
     out.setfield(a.dot(b), out.dtype)
-    return out
 
 out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), dtype=int)
 #+END_EXAMPLE
@@ -989,12 +988,12 @@ out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3))
 #+END_EXAMPLE
 
 Here we were slighly inefficient, but the ONLY required extra specification
-was out_kwarg: that's mostly all you need. Also it is important to note that
-in this case the inner function is called both with passing it an output
-array to fill in, and with asking it to create a new one (by passing
-out=None to the inner function). This inner function then must support both
-modes of operation. If the inner function does not support filling in an
-output array, none of these efficiency improvements are possible.
+was out_kwarg: that's all you need. Also it is important to note that in
+this case the inner function is called both with passing it an output array
+to fill in, and with asking it to create a new one (by passing out=None to
+the inner function). This inner function then must support both modes of
+operation. If the inner function does not support filling in an output
+array, none of these efficiency improvements are possible.
 
 It is possible for a function to return more than one output, and this is
 supported by broadcast_define(). This case works exactly like the one-output
@@ -1528,10 +1527,15 @@ array([5, 6, 7])
 20
 #+END_EXAMPLE
 
-this is identical to numpysane.inner(). for a conjugating version of this
-function, use nps.vdot(). note that the numpy dot() has some special
-handling when its dot() is given more than 1-dimensional input. this
-function has no special handling: normal broadcasting rules are applied.
+This is identical to numpysane.inner(). for a conjugating version of this
+function, use nps.vdot(). Note that the stock numpy dot() has some special
+handling when its dot() is given more than 1-dimensional input. THIS
+function has no special handling: normal broadcasting rules are applied, as
+expected.
+
+In-place operation is available with the "out" kwarg. The output dtype can
+be selected with the "dtype" kwarg. If omitted, the dtype of the input is
+used
 
 ** vdot()
 Conjugating dot product of two 1-dimensional n-long vectors.
@@ -1642,8 +1646,10 @@ array([0, 1, 2])
 #+END_EXAMPLE
 
 This is a convenience function to compute a magnitude of a vector, with full
-broadcasting support. If and explicit "out" array isn't given, we produce
-output of dtype=float. Otherwise "out" retains its dtype
+broadcasting support.
+
+In-place operation is available with the "out" kwarg. The output dtype can
+be selected with the "dtype" kwarg. If omitted, dtype=float is selected.
 
 ** trace()
 Broadcast-aware trace
