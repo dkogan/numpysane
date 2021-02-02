@@ -364,6 +364,12 @@ def test_broadcasting():
     confirm( f13(arr(5), arr(2,5)) is not None, msg='output count check' )
 
     # check output dimensionality with an 'out' kwarg
+    @nps.broadcast_define( (('n',), ('n',)), ('n', 'n'),
+                           out_kwarg = 'out')
+    def f14_oneoutput(a, b, out=None):
+        if out is None:
+            return nps.outer(a,b)
+        nps.outer(a,b,out=out)
     @nps.broadcast_define( (('n',), ('n',)), ((),('n', 'n')),
                            out_kwarg = 'out')
     def f14(a, b, out=None):
@@ -373,7 +379,6 @@ def test_broadcasting():
             raise Exception("'out' must be a tuple")
         nps.inner(a,b,out=out[0])
         nps.outer(a,b,out=out[1])
-        return out
 
     confirm( f14(arr(5), arr(  5)) is not None,
              msg='output dimensionality check with out_kwarg' )
@@ -409,7 +414,10 @@ def test_broadcasting():
                                 msg='output dimensionality check with out_kwarg' )
     confirm_raises( lambda: f14(a5, a5, out=(o,o55,o)),
                                 msg='output dimensionality check with out_kwarg' )
-    confirm( f14(a5, a5, out=(o,o55)) is not None,
+    confirm_does_not_raise( lambda: f14_oneoutput(a5, a5, out=o55),
+             msg='output dimensionality check with out_kwarg' )
+    confirm_equal(o55, np.outer(a5,a5), msg='in-place broadcasting computed the right value')
+    confirm_does_not_raise( lambda: f14(a5, a5, out=(o,o55)),
              msg='output dimensionality check with out_kwarg' )
     confirm_equal(o,   a5.dot(a5),      msg='in-place broadcasting computed the right value')
     confirm_equal(o55, np.outer(a5,a5), msg='in-place broadcasting computed the right value')
@@ -439,7 +447,7 @@ def test_broadcasting():
                                 msg='output dimensionality check with out_kwarg' )
     confirm_raises( lambda: f14(a5, a25, out=(o,o255)),
                                 msg='output dimensionality check with out_kwarg' )
-    confirm( f14(a5, a25, out=(o2,o255)) is not None,
+    confirm_does_not_raise( lambda: f14(a5, a25, out=(o2,o255)),
              msg='output dimensionality check with out_kwarg' )
     confirm_equal(o2,   nps.inner(a5,a25), msg='in-place broadcasting computed the right value')
     confirm_equal(o255, nps.outer(a5,a25), msg='in-place broadcasting computed the right value')

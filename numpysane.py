@@ -1013,6 +1013,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
             .....
             out[:] = result
 
+    When used this way, the return value of the broadcasted function is ignored.
     In order for broadcast_define() to pass such an output array to the inner
     function, this output array must be available, which means that it must be
     given to us somehow, or we must create it.
@@ -1026,7 +1027,6 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         def inner_product(a, b, out):
             .....
             out.setfield(a.dot(b), out.dtype)
-            return out
 
         out = np.empty((2,4), np.float)
         inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), out=out)
@@ -1051,7 +1051,6 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         def inner_product(a, b, out):
             .....
             out.setfield(a.dot(b), out.dtype)
-            return out
 
         out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3), dtype=int)
 
@@ -1082,12 +1081,12 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         out = inner_product( np.arange(3), np.arange(2*4*3).reshape(2,4,3))
 
     Here we were slighly inefficient, but the ONLY required extra specification
-    was out_kwarg: that's mostly all you need. Also it is important to note that
-    in this case the inner function is called both with passing it an output
-    array to fill in, and with asking it to create a new one (by passing
-    out=None to the inner function). This inner function then must support both
-    modes of operation. If the inner function does not support filling in an
-    output array, none of these efficiency improvements are possible.
+    was out_kwarg: that's all you need. Also it is important to note that in
+    this case the inner function is called both with passing it an output array
+    to fill in, and with asking it to create a new one (by passing out=None to
+    the inner function). This inner function then must support both modes of
+    operation. If the inner function does not support filling in an output
+    array, none of these efficiency improvements are possible.
 
     It is possible for a function to return more than one output, and this is
     supported by broadcast_define(). This case works exactly like the one-output
@@ -1153,16 +1152,18 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                 if not dims_extra:
                     sliced_args = args + args_passthru
                     result = func( *sliced_args, **kwargs )
-                    if isinstance(result, tuple):
-                        raise NumpysaneError("Only a single output expected, but a tuple was returned!")
-                    if prototype_output_expanded is not None and \
-                       np.array(result).shape != tuple(prototype_output_expanded):
-                        raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded,
+                    if not (out_kwarg             is not None and
+                            kwargs.get(out_kwarg) is not None):
+                        if isinstance(result, tuple):
+                            raise NumpysaneError("Only a single output expected, but a tuple was returned!")
+                        if prototype_output_expanded is not None and \
+                           np.array(result).shape != tuple(prototype_output_expanded):
+                            raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded,
                                                                                                                np.array(result).shape))
                     return result
 
                 # if the output was supposed to go to a particular place, set that
-                if out_kwarg and out_kwarg in kwargs:
+                if out_kwarg is not None and out_kwarg in kwargs:
                     output = kwargs[out_kwarg]
                     if prototype_output_expanded is not None:
                         expected_shape = dims_extra + prototype_output_expanded
@@ -1175,6 +1176,11 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                         kwargs_dtype['dtype'] = kwargs['dtype']
                     output = np.empty(dims_extra + prototype_output_expanded,
                                       **kwargs_dtype)
+                # else:
+                #   We don't have an output and we don't know its dimensions, so
+                #   we can't allocate an array for it. Leave output as None. I
+                #   will allocate it as soon I get the first slice; this will let
+                #   me know how large the whole thing should be
 
                 # reshaped output. I write to this array
                 if output is not None:
@@ -1189,26 +1195,37 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
 
                     sliced_args = x + args_passthru
                     result = func( *sliced_args, **kwargs )
-                    if isinstance(result, tuple):
-                        raise NumpysaneError("Only a single output expected, but a tuple was returned!")
 
-                    if not isinstance(result, np.ndarray):
-                        result = np.array(result)
+                    if output is None or out_kwarg is None:
+                        # We weren't writing directly into the output, so check
+                        # the output for validity
+                        if isinstance(result, tuple):
+                            raise NumpysaneError("Only a single output expected, but a tuple was returned!")
+                        if not isinstance(result, np.ndarray):
+                            result = np.array(result)
+
+                        if prototype_output_expanded is None:
+                            prototype_output_expanded = result.shape
+                        else:
+                            if result.shape != tuple(prototype_output_expanded):
+                                raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded, result.shape))
 
                     if output is None:
+                        # I didn't already have an output array because I didn't
+                        # know how large it should be. But I now have the first
+                        # slice, and I know how big the whole output should be.
+                        # I create it
                         output = np.empty( dims_extra + list(result.shape),
                                            dtype = result.dtype)
                         output_flattened = output.reshape( (_product(dims_extra),) + result.shape)
                         output_flattened[i_slice, ...] = result
 
-                    elif not out_kwarg:
+                    elif out_kwarg is None:
                         output_flattened[i_slice, ...] = result
+                    # else:
+                    #   I was writing directly to the output, so I don't need to
+                    #   manually populate the slice
 
-                    if prototype_output_expanded is None:
-                        prototype_output_expanded = result.shape
-                    else:
-                        if result.shape != tuple(prototype_output_expanded):
-                            raise NumpysaneError("Inconsistent slice output shape: expected {}, but got {}".format(prototype_output_expanded, result.shape))
                     i_slice = i_slice+1
 
             else:
@@ -1218,25 +1235,26 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                 if not dims_extra:
                     sliced_args = args + args_passthru
                     result = func( *sliced_args, **kwargs )
-
-                    if not isinstance(result, tuple):
-                        raise NumpysaneError("A tuple of {} outputs is expected, but an object of type {} was returned". \
-                                             format(Noutputs, type(result)))
-                    if len(result) != Noutputs:
-                        raise NumpysaneError("A tuple of {} outputs is expected, but a length-{} tuple was returned". \
-                                             format(Noutputs, len(result)))
-                    if prototype_output_expanded is not None:
-                        for i in range(Noutputs):
-                            if np.array(result[i]).shape != tuple(prototype_output_expanded[i]):
-                                raise NumpysaneError("Inconsistent output {} shape: expected {}, but got {}". \
-                                                     format(i,
-                                                            prototype_output_expanded[i],
-                                                            np.array(result[i]).shape))
+                    if not (out_kwarg             is not None and
+                            kwargs.get(out_kwarg) is not None):
+                        if not isinstance(result, tuple):
+                            raise NumpysaneError("A tuple of {} outputs is expected, but an object of type {} was returned". \
+                                                 format(Noutputs, type(result)))
+                        if len(result) != Noutputs:
+                            raise NumpysaneError("A tuple of {} outputs is expected, but a length-{} tuple was returned". \
+                                                 format(Noutputs, len(result)))
+                        if prototype_output_expanded is not None:
+                            for i in range(Noutputs):
+                                if np.array(result[i]).shape != tuple(prototype_output_expanded[i]):
+                                    raise NumpysaneError("Inconsistent output {} shape: expected {}, but got {}". \
+                                                         format(i,
+                                                                prototype_output_expanded[i],
+                                                                np.array(result[i]).shape))
                     return result
 
 
                 # if the output was supposed to go to a particular place, set that
-                if out_kwarg and out_kwarg in kwargs:
+                if out_kwarg is not None and out_kwarg in kwargs:
                     output = kwargs[out_kwarg]
                     if prototype_output_expanded is not None:
                         for i in range(Noutputs):
@@ -1251,6 +1269,11 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
                         kwargs_dtype['dtype'] = kwargs['dtype']
                     output = [np.empty(dims_extra + prototype_output_expanded[i],
                                        **kwargs_dtype) for i in range(Noutputs)]
+                # else:
+                #   We don't have an output and we don't know its dimensions, so
+                #   we can't allocate an array for it. Leave output as None. I
+                #   will allocate it as soon I get the first slice; this will let
+                #   me know how large the whole thing should be
 
                 # reshaped output. I write to this array
                 if output is not None:
@@ -1265,33 +1288,45 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
 
                     sliced_args = x + args_passthru
                     result = func( *sliced_args, **kwargs )
-                    if not isinstance(result, tuple):
-                        raise NumpysaneError("A tuple of {} outputs is expected, but an object of type {} was returned". \
-                                             format(Noutputs, type(result)))
-                    if len(result) != Noutputs:
-                        raise NumpysaneError("A tuple of {} outputs is expected, but a length-{} tuple was returned". \
-                                             format(Noutputs, len(result)))
 
-                    result = [x if isinstance(x, np.ndarray) else np.array(x) for x in result]
+                    if output is None or out_kwarg is None:
+                        # We weren't writing directly into the output, so check
+                        # the output for validity
+                        if not isinstance(result, tuple):
+                            raise NumpysaneError("A tuple of {} outputs is expected, but an object of type {} was returned". \
+                                                 format(Noutputs, type(result)))
+                        if len(result) != Noutputs:
+                            raise NumpysaneError("A tuple of {} outputs is expected, but a length-{} tuple was returned". \
+                                                 format(Noutputs, len(result)))
+
+                        result = [x if isinstance(x, np.ndarray) else np.array(x) for x in result]
+
+                        if prototype_output_expanded is None:
+                            prototype_output_expanded = [result[i].shape for i in range(Noutputs)]
+                        else:
+                            for i in range(Noutputs):
+                                if result[i].shape != tuple(prototype_output_expanded[i]):
+                                    raise NumpysaneError("Inconsistent slice output {} shape: expected {}, but got {}". \
+                                                         format(i, prototype_output_expanded[i], result[i].shape))
 
                     if output is None:
+                        # I didn't already have an output array because I didn't
+                        # know how large it should be. But I now have the first
+                        # slice, and I know how big the whole output should be.
+                        # I create it
                         output = [np.empty( dims_extra + list(result[i].shape),
                                             dtype = result[i].dtype) for i in range(Noutputs)]
                         output_flattened = [output[i].reshape( (_product(dims_extra),) + result[i].shape) for i in range(Noutputs)]
                         for i in range(Noutputs):
                             output_flattened[i][i_slice, ...] = result[i]
 
-                    elif not out_kwarg:
+                    elif out_kwarg is None:
                         for i in range(Noutputs):
                             output_flattened[i][i_slice, ...] = result[i]
+                    # else:
+                    #   I was writing directly to the output, so I don't need to
+                    #   manually populate the slice
 
-                    if prototype_output_expanded is None:
-                        prototype_output_expanded = [result[i].shape for i in range(Noutputs)]
-                    else:
-                        for i in range(Noutputs):
-                            if result[i].shape != tuple(prototype_output_expanded[i]):
-                                raise NumpysaneError("Inconsistent slice output {} shape: expected {}, but got {}". \
-                                                     format(i, prototype_output_expanded[i], result[i].shape))
                     i_slice = i_slice+1
 
             return output
