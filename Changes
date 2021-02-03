@@ -1,3 +1,12 @@
+numpysane (0.31) unstable; urgency=medium
+
+  * broadcast_define(): better out_kwarg logic. If the output is written
+    in-place, the inner function doesn't need to return anything. And the
+    broadcast_define()-wrapped function automatically returns the right
+    thing
+
+ -- Dima Kogan <dkogan@debian.org>  Wed, 03 Feb 2021 12:51:54 -0800
+
 numpysane (0.30) unstable; urgency=medium
 
   * numpysane_pywrap can find its C templates even if installed via pip
