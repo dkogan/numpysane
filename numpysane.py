@@ -1635,7 +1635,7 @@ def glue(*args, **kwargs):
     # Without special logic, this would throw an error since accum.shape starts
     # at (0,), which is almost certainly not compatible with x.shape
     if len(args) == 2 and args[0].shape == (0,) and args[1].size != 0:
-        return args[1]
+        return atleast_dims(args[1], axis)
 
     # Legacy behavior: if no axis is given, add a new axis at the front, and
     # glue along it
@@ -1652,7 +1652,8 @@ def glue(*args, **kwargs):
     # arrays to the same dimensionality. After this is done, ndims for all the
     # matrices will be the same, and np.concatenate() should know what to do.
     args = [ x[(np.newaxis,)*(max_ndim - x.ndim) + (Ellipsis,)] for x in args ]
-    return np.concatenate( args, axis=axis )
+    return atleast_dims(np.concatenate( args, axis=axis ),
+                        axis)
 
 
 def cat(*args):
