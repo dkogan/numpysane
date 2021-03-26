@@ -1,3 +1,21 @@
+numpysane (0.32) unstable; urgency=medium
+
+  * glue(): minor bug fix
+
+    Prior to this fix this would happen:
+
+      print(  nps.glue(np.array(()),np.arange(5,),
+                       axis=-2). shape )
+
+      ---> (5,)
+
+    This is unintuitive because I glued something along dimension -2, but
+    the result doesn't even have such a dimension. This patch calls
+    atleast_dims() right before glue() returns, so that we get a shape
+    (1,5) instead in this case
+
+ -- Dima Kogan <dkogan@debian.org>  Thu, 25 Mar 2021 18:52:19 -0700
+
 numpysane (0.31) unstable; urgency=medium
 
   * broadcast_define(): better out_kwarg logic. If the output is written
