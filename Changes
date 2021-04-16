@@ -1,4 +1,10 @@
-numpysane (0.32) unstable; urgency=medium
+numpysane (0.33)
+
+  * matmult() supports in-place output via the "out" keyword argument
+
+ -- Dima Kogan <dkogan@debian.org>  Thu, 15 Apr 2021 18:15:46 -0700
+
+numpysane (0.32)
 
   * glue(): minor bug fix
 
@@ -16,7 +22,7 @@ numpysane (0.32) unstable; urgency=medium
 
  -- Dima Kogan <dkogan@debian.org>  Thu, 25 Mar 2021 18:52:19 -0700
 
-numpysane (0.31) unstable; urgency=medium
+numpysane (0.31)
 
   * broadcast_define(): better out_kwarg logic. If the output is written
     in-place, the inner function doesn't need to return anything. And the
@@ -25,7 +31,7 @@ numpysane (0.31) unstable; urgency=medium
 
  -- Dima Kogan <dkogan@debian.org>  Wed, 03 Feb 2021 12:51:54 -0800
 
-numpysane (0.30) unstable; urgency=medium
+numpysane (0.30)
 
   * numpysane_pywrap can find its C templates even if installed via pip
   * numpysane.mag() can take a dtype keyword argument
