@@ -2342,11 +2342,8 @@ def matmult2(a, b, out=None):
         array([[20, 23, 26, 29],
                [56, 68, 80, 92]])
 
-    This multiplies exactly 2 matrices, and the output object can be given in
-    the 'out' argument. If the usual case where the you let numpysane create and
-    return the result, you can use numpysane.matmult() instead. An advantage of
-    that function is that it can multiply an arbitrary N matrices together, not
-    just 2.
+    This function is exposed publically mostly for legacy compatibility. Use
+    numpysane.matmult() instead
 
     '''
 
@@ -2381,7 +2378,7 @@ def matmult2(a, b, out=None):
     o = np.matmul(a,b, out)
     return o
 
-def matmult( *args ):
+def matmult( a, *rest, **kwargs ):
     r'''Multiplication of N matrices
 
     SYNOPSIS
@@ -2412,14 +2409,33 @@ def matmult( *args ):
         array([[162],
                [504]])
 
+        >>> abc = np.zeros((2,1), dtype=float)
+        >>> nps.matmult(a,b,c, out=abc)
+        >>> abc
+        array([[162],
+               [504]])
+
     This multiplies N matrices together by repeatedly calling matmult2() for
-    each adjacent pair. Unlike matmult2(), the 'out' kwarg for the output is not
-    supported here.
+    each adjacent pair. In-place output is supported with the 'out' keyword
+    argument
 
     This function supports broadcasting fully, in C internally
 
     '''
-    return reduce( matmult2, args )
+
+    if len(rest) == 0:
+        raise Exception("Need at least two terms to multiply")
+
+    out = None
+    if len(kwargs.keys()) > 1:
+        raise Exception("Only ONE kwarg is supported: 'out'")
+    if kwargs:
+        # have exactly one kwarg
+        if 'out' not in kwargs:
+            raise Exception("The only supported kwarg is 'out'")
+        out = kwargs['out']
+
+    return matmult2(a,reduce(matmult2, rest), out=out)
 
 
 

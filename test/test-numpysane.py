@@ -1169,25 +1169,24 @@ def test_matmult():
     assertResult_inoutplace(ref2,
                              nps.matmult2, arr(2,1,2,4), nps.matmult2(arr(2,4,3), arr(3,1)))
 
-    # not doing assertResult_inoutplace() because matmult() doesn't take an
-    # 'out' kwarg
-    confirm_equal(ref2,
-                  nps.matmult(arr(2,1,2,4), arr(2,4,3), arr(3,1)))
+    assertResult_inoutplace(ref2,
+                            nps.matmult,
+                            arr(2,1,2,4), arr(2,4,3), arr(3,1))
 
     # checking the null-dimensionality logic
     A = arr(2,3)
     assertResult_inoutplace( nps.inner(nps.transpose(A), np.arange(2)),
-                             nps.matmult2,
+                             nps.matmult,
                              np.arange(2), A )
 
     A = arr(3)
     assertResult_inoutplace( A*2,
-                             nps.matmult2,
+                             nps.matmult,
                              np.array([2]), A )
 
     A = arr(3)
     assertResult_inoutplace( A*2,
-                             nps.matmult2,
+                             nps.matmult,
                              np.array(2), A )
 
 
