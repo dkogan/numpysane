@@ -1633,9 +1633,13 @@ def glue(*args, **kwargs):
     #      accum = nps.glue(accum, x,  axis = -2)
     #
     # Without special logic, this would throw an error since accum.shape starts
-    # at (0,), which is almost certainly not compatible with x.shape
-    if len(args) == 2 and args[0].shape == (0,) and args[1].size != 0:
-        return atleast_dims(args[1], axis)
+    # at (0,), which is almost certainly not compatible with x.shape. I support
+    # both glue(empty,x) and glue(x,empty)
+    if len(args) == 2:
+        if args[0].shape == (0,) and args[1].size != 0:
+            return atleast_dims(args[1], axis)
+        if args[1].shape == (0,) and args[0].size != 0:
+            return atleast_dims(args[0], axis)
 
     # Legacy behavior: if no axis is given, add a new axis at the front, and
     # glue along it
