@@ -1,3 +1,9 @@
+numpysane (0.34)
+
+  *   glue(np.array(()), x) and glue(x, np.array(())) both work
+
+ -- Dima Kogan <dkogan@debian.org>  Thu, 27 May 2021 17:03:33 -0700
+
 numpysane (0.33)
 
   * matmult() supports in-place output via the "out" keyword argument
