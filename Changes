@@ -1,3 +1,9 @@
+numpysane (0.35)
+
+  * added broadcast_extra_dims()
+
+ -- Dima Kogan <dkogan@debian.org>  Wed, 14 Jul 2021 02:41:25 -0700
+
 numpysane (0.34)
 
   *   glue(np.array(()), x) and glue(x, np.array(())) both work
