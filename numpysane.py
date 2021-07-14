@@ -155,7 +155,8 @@ incompatible dimensions will trigger an exception. Example:
 Another related function in this module broadcast_generate(). It's similar to
 broadcast_define(), but instead of adding broadcasting-awareness to an existing
 function, it returns a generator that produces tuples from a set of arguments
-according to a given prototype.
+according to a given prototype. Similarly, broadcast_extra_dims() is available
+to report the outer shape of a potential broadcasting operation.
 
 Stock numpy has some rudimentary support for all this with its vectorize()
 function, but it assumes only scalar inputs and outputs, which severely limits
@@ -1450,6 +1451,17 @@ def broadcast_generate(prototype, args):
         ...     print "slice: {}".format(s)
         slice: (array([0, 1, 2]), array([100, 101, 102]))
         slice: (array([3, 4, 5]), array([103, 104, 105]))
+
+    The broadcasting operation of numpysane is described in detail in the
+    numpysane.broadcast_define() docstring and in the main README of numpysane.
+    This function can be used as a Python generator to produce each broadcasted
+    slice one by one
+
+    Since Python generators are inherently 1-dimensional, this function
+    effectively flattens the broadcasted results. If the correct output shape
+    needs to be reconstituted, the leading shape is available by calling
+    numpysane.broadcast_extra_dims() with the same arguments as this function.
+
     '''
 
     if len(args) != len(prototype):
@@ -1469,6 +1481,45 @@ def broadcast_generate(prototype, args):
     # output, and gather the results
     for x in _broadcast_iter_dim( args, prototype, dims_extra ):
         yield x
+
+
+def broadcast_extra_dims(prototype, args):
+    r'''Report the extra leading dimensions a broadcasted call would produce
+
+    SYNOPSIS
+
+        >>> import numpy as np
+        >>> import numpysane as nps
+
+        >>> a = np.arange(6). reshape(  2,3)
+        >>> b = np.arange(15).reshape(5,1,3)
+
+        >>> print(nps.broadcast_extra_dims((('n',), ('n',)),
+                                           (a,b)))
+        [5,2]
+
+    The broadcasting operation of numpysane is described in detail in the
+    numpysane.broadcast_define() docstring and in the main README of numpysane.
+    This function applies the broadcasting rules to report the leading
+    dimensions of a broadcasted result if a broadcasted function was called with
+    the given arguments. This is most useful to reconstitute the desired shape
+    from flattened output produced by numpysane.broadcast_generate()
+
+    '''
+
+    if len(args) != len(prototype):
+        raise NumpysaneError("Mismatched number of input arguments. Wanted {} but got {}". \
+                              format(len(prototype), len(args)))
+
+    # make sure all the arguments are numpy arrays
+    args = tuple(np.asarray(arg) for arg in args)
+
+    # dims_extra: extra dimensions to broadcast through
+    # dims_named: values of the named dimensions
+    dims_extra,dims_named = \
+        _eval_broadcast_dims( args, prototype )
+
+    return dims_extra
 
 
 def glue(*args, **kwargs):

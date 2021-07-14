@@ -245,44 +245,52 @@ def test_broadcasting():
                            arr(5)) )
 
     # Test the generator
+    prototype = (('n',), ('n','m'), (2,), ())
     i=0
-    for s in nps.broadcast_generate( (('n',), ('n','m'), (2,), ()),
-                                     (arr(      3),
-                                      arr(1,  3,4),
-                                      arr(2,    2),
-                                      np.array(5)) ):
-        confirm_equal( arr(3),       s[0] )
-        confirm_equal( arr(3,4),     s[1] )
-        confirm_equal( arr(2) + 2*i, s[2] )
-        confirm_equal( np.array(5),  s[3] )
-        confirm_equal         ( s[3].shape, ())
-        i = i+1
-
-    i=0
-    for s in nps.broadcast_generate( (('n',), ('n','m'), (2,), ()),
-                                     (arr(      3),
-                                      arr(1,  3,4),
-                                      arr(2,    2),
-                                      5) ):
+    args = (arr(      3),
+            arr(1,  3,4),
+            arr(2,    2),
+            np.array(5))
+    for s in nps.broadcast_generate(prototype, args):
         confirm_equal( arr(3),       s[0] )
         confirm_equal( arr(3,4),     s[1] )
         confirm_equal( arr(2) + 2*i, s[2] )
         confirm_equal( np.array(5),  s[3] )
         confirm_equal( s[3].shape, ())
         i = i+1
+    confirm_equal( nps.broadcast_extra_dims(prototype,args), (2,))
 
     i=0
-    for s in nps.broadcast_generate( (('n',), ('n','m'), (2,), ()),
-                                     (arr(      3),
-                                      arr(1,  3,4),
-                                      arr(2,    2),
-                                      arr(2)) ):
+    args = (arr(      3),
+            arr(1,  3,4),
+            arr(2,    2),
+            5)
+    for s in nps.broadcast_generate(prototype, args):
+        confirm_equal( arr(3),       s[0] )
+        confirm_equal( arr(3,4),     s[1] )
+        confirm_equal( arr(2) + 2*i, s[2] )
+        confirm_equal( np.array(5),  s[3] )
+        confirm_equal( s[3].shape, ())
+        i = i+1
+    confirm_equal( nps.broadcast_extra_dims(prototype,args), (2,))
+
+    i=0
+    args = (arr(      3),
+            arr(1,  3,4),
+            arr(2,    2),
+            arr(2))
+    for s in nps.broadcast_generate(prototype, args):
         confirm_equal( arr(3),       s[0] )
         confirm_equal( arr(3,4),     s[1] )
         confirm_equal( arr(2) + 2*i, s[2] )
         confirm_equal( np.array(i),  s[3] )
         confirm_equal( s[3].shape, ())
         i = i+1
+    confirm_equal( nps.broadcast_extra_dims(prototype,args), (2,))
+
+    confirm_equal( nps.broadcast_extra_dims((('n',), ('n',)),
+                                            (arr(2,3), arr(5,1,3))),
+                   (5,2))
 
     # Make sure we add dummy length-1 dimensions
     assertValueShape( None, (3,),
