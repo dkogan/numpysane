@@ -445,14 +445,14 @@ def test_innerouter():
 def test_sorted_indices():
     x64  = np.array((1., 5., 3, 2.5, 3.5, 2.9), dtype=float)
     x32  = np.array((1., 5., 3, 2.5, 3.5, 2.9), dtype=np.float32)
-    iref = np.array((0, 3, 5, 2, 4, 1), dtype=int)
+    iref = np.array((0, 3, 5, 2, 4, 1), dtype=np.int64)
 
-    confirm_raises(lambda: testlib.sorted_indices(np.arange(5, dtype=int)))
+    confirm_raises(lambda: testlib.sorted_indices(np.arange(5, dtype=np.int64)))
     confirm_does_not_raise(lambda: testlib.sorted_indices(np.arange(5, dtype=np.float32)))
     confirm_does_not_raise(lambda: testlib.sorted_indices(np.arange(5, dtype=np.float32),
                                                              out=np.arange(5, dtype=np.int32)))
     confirm_raises(lambda: testlib.sorted_indices(np.arange(5, dtype=np.float32),
-                                                     out=np.arange(5, dtype=int)))
+                                                     out=np.arange(5, dtype=np.int64)))
     confirm_raises(lambda: testlib.sorted_indices(np.arange(5, dtype=np.float32),
                                                      out=np.arange(5, dtype=float)))
     assertResult_inoutplace( iref,
