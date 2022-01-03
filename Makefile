@@ -46,8 +46,8 @@ all: README README.org README-pywrap README-pywrap.org
 %EADME-pywrap %EADME-pywrap.org: numpysane_pywrap.py README.footer.org extract_README.py
 	python3 extract_README.py numpysane_pywrap README-pywrap.org README-pywrap README.footer.org
 
-test:  test2  test3
-check: check2 check3
+test:  test3
+check: check3
 check2: test2
 check3: test3
 test2 test3: test/test-numpysane.py test-c-broadcasting
