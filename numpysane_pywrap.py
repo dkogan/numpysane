@@ -808,6 +808,7 @@ class module:
                                              MODULE_DOCSTRING = _quote(docstring, convert_newlines=True))
         self.functions = []
 
+        self.module_name = name
 
     def function(self,
                  name,
@@ -1398,6 +1399,7 @@ typedef struct { {COOKIE_STRUCT_CONTENTS} } __{FUNCTION_NAME}__cookie_t;
             ' \\\n  '.join(OUTPUTS_LIST) + \
             '\n\n' + \
             _substitute(self.function_body,
+                        MODULE_NAME                = self.module_name,
                         FUNCTION_NAME              = name,
                         PROTOTYPE_DIM_DEFS         = PROTOTYPE_DIM_DEFS,
                         UNPACK_OUTPUTS             = UNPACK_OUTPUTS,

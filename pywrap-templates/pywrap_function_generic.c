@@ -48,7 +48,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #define PARSECODE(name) "O&"
 #define PARSEARG(name) PyArray_Converter, &__py__ ## name,
     if(!PyArg_ParseTupleAndKeywords( args, kwargs,
-                                     ARGUMENTS(PARSECODE) "|O" {EXTRA_ARGUMENTS_PARSECODES},
+                                     ARGUMENTS(PARSECODE) "|O" {EXTRA_ARGUMENTS_PARSECODES} ":{MODULE_NAME}.{FUNCTION_NAME}",
                                      keywords,
                                      ARGUMENTS(PARSEARG)
                                      &__py__output__arg,
