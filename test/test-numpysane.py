@@ -987,17 +987,17 @@ def test_inner():
                               nps.dot,
                               np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                               np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
-                              out_inplace_dtype=np.complex)
+                              out_inplace_dtype=complex)
 
     assertResult_inoutplace( np.array((136-60j)),
                               nps.vdot,
                               np.array(( 1 + 2j, 3 + 4j, 5 + 6j)),
                               np.array(( 1 + 2j, 3 + 4j, 5 + 6j)) + 5,
-                              out_inplace_dtype=np.complex)
+                              out_inplace_dtype=complex)
 
     # complex values AND non-trivial dimensions
-    a = arr(  2,3,5).astype(np.complex)
-    b = arr(4,1,3,5).astype(np.complex)
+    a = arr(  2,3,5).astype(complex)
+    b = arr(4,1,3,5).astype(complex)
     a += a*a * 1j
     b -= b * 1j
 
@@ -1021,12 +1021,12 @@ def test_inner():
     assertResult_inoutplace( dot_ref,
                               nps.dot,
                               a, b,
-                              out_inplace_dtype=np.complex)
+                              out_inplace_dtype=complex)
 
     assertResult_inoutplace( vdot_ref,
                               nps.vdot,
                               a, b,
-                              out_inplace_dtype=np.complex)
+                              out_inplace_dtype=complex)
 
 
 def test_mag():
