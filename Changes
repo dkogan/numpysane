@@ -1,3 +1,9 @@
+numpysane (0.36)
+
+  * Uninteresting housekeeping
+
+ -- Dima Kogan <dkogan@debian.org>  Sat, 14 Jan 2023 17:52:28 -0800
+
 numpysane (0.35)
 
   * added broadcast_extra_dims()
