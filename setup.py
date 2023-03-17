@@ -32,4 +32,5 @@ functionality in a more reasonable way""",
 
       license      = 'LGPL',
       py_modules   = ['numpysane', 'numpysane_pywrap'],
+      install_requires = ('numpy',),
       data_files = [ ('share/python-numpysane/pywrap-templates', pywrap_templates)])
