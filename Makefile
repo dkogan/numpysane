@@ -16,8 +16,8 @@ test/testlib_pywrap_GENERATED.o: CFLAGS += $(PY_MRBUILD_CFLAGS)
 
 CC ?= gcc
 CFLAGS += -g
-%.o:%.c
-	$(CC) -Wall -Wextra $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+test/testlib.o: test/testlib.c
+	$(CC) -Wall -Wextra $(CFLAGS) $(CPPFLAGS) -fPIC -c -o $@ $<
 
 test/testlib_pywrap_GENERATED.c: test/genpywrap.py numpysane_pywrap.py $(wildcard pywrap-templates/*.c)
 	./$< > $@
