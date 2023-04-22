@@ -68,6 +68,26 @@ m.function( "identity",
     return true;
 '''},)
 
+m.function( "sum_Nrows_Ncols",
+            '''Nrows + Ncols''',
+
+            args_input       = ('A',),
+            prototype_input  = (('N', 'M'),),
+            prototype_output = (),
+
+            Ccode_validate = r'''
+            return CHECK_CONTIGUOUS_AND_SETERROR_ALL();
+            ''',
+
+            Ccode_slice_eval = \
+                {np.float64:
+                 r'''
+    const int N = dims_slice__A[0];
+    const int M = dims_slice__A[1];
+    item__output() = (double)(N+M);
+    return true;
+'''},)
+
 m.function( "inner",
             "Inner-product pywrapped with npsp",
 

@@ -57,6 +57,32 @@ def check(matching_functions, A, B):
             confirm_equal( out0, out1,
                            msg = what + ' matches. Pre-allocated output' )
 
+from functools import reduce
+def arr(*shape, **kwargs):
+
+    dtype = kwargs.get('dtype',float)
+
+    r'''Return an arange() array of the given shape.'''
+    if len(shape) == 0:
+        return np.array(3, dtype=dtype)
+    product = reduce( lambda x,y: x*y, shape)
+    return np.arange(product, dtype=dtype).reshape(*shape)
+
+
+# Check dimensionality logic. A sanity check:
+assertValueShape( np.array((6,6,6),),
+                  (3,),
+                  testlib.sum_Nrows_Ncols,
+                  arr(3,2,4))
+# An extra implicity dimension should be added, so the array of shape (4,)
+# should be treated as an array of shape (1,4), and we should get 5 out
+assertValueShape( np.array(5),
+                  (),
+                  testlib.sum_Nrows_Ncols,
+                  arr(4,))
+
+
+
 
 # pairs of functions that should produce identical results
 matching_functions = ( ("inner", testlib.inner, nps.inner),
@@ -130,20 +156,6 @@ confirm_raises( lambda: testlib.outer(a0,b, out=np.zeros((), dtype=float)),
 confirm_raises( lambda: testlib.outer(a0,b, out=np.zeros((5,5,5), dtype=float)),
                 msg = "Wrong dimensions on out" )
 
-
-
-
-
-from functools import reduce
-def arr(*shape, **kwargs):
-
-    dtype = kwargs.get('dtype',float)
-
-    r'''Return an arange() array of the given shape.'''
-    if len(shape) == 0:
-        return np.array(3, dtype=dtype)
-    product = reduce( lambda x,y: x*y, shape)
-    return np.arange(product, dtype=dtype).reshape(*shape)
 
 
 def test_identity3():
