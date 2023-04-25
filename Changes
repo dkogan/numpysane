@@ -1,3 +1,11 @@
+numpysane (0.37)
+
+  * C broadcasting logic fix: implicit dimensions of length-1 are added
+    properly. Prior to this patch the dimension deficient arrays fail
+    CHECK_CONTIGUOUS()
+
+ -- Dima Kogan <dkogan@debian.org>  Tue, 25 Apr 2023 00:52:31 -0700
+
 numpysane (0.36)
 
   * Uninteresting housekeeping
