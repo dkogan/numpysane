@@ -199,6 +199,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         int             __ndim__       ## name = -1;                    \
         const npy_intp* __dims__       ## name = NULL;                  \
         const npy_intp* __strides__    ## name = NULL;                  \
+        npy_intp        __nbytes__     ## name = -1;                    \
         /* May be <0 */                                                 \
         int             Ndims_extra__  ## name = -1;
 
@@ -208,6 +209,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
             __ndim__    ## name = PyArray_NDIM   (__py__ ## name);      \
             __dims__    ## name = PyArray_DIMS   (__py__ ## name);      \
             __strides__ ## name = PyArray_STRIDES(__py__ ## name);      \
+            __nbytes__  ## name = PyArray_NBYTES (__py__ ## name);      \
             /* May be <0 */                                             \
             Ndims_extra__ ## name = __ndim__ ## name - PROTOTYPE_LEN_ ## name; \
             if(Ndims_extra < Ndims_extra__ ## name)                     \
@@ -341,7 +343,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 {                                                       \
                     /* extra dummy dimensions, as needed */             \
                     __dims__mounted__    ## name[i_dim + __ndim__mounted__ ## name] = 1; \
-                    __strides__mounted__ ## name[i_dim + __ndim__mounted__ ## name] = 0; \
+                    __strides__mounted__ ## name[i_dim + __ndim__mounted__ ## name] = __nbytes__ ## name; \
                 }                                                       \
         }                                                               \
         /* Now guaranteed >= 0 because of the padding */                \
