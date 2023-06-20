@@ -1,2 +1,12 @@
+# I exclude EVERYTHING, and whitelist all the stuff I want to include. See the
+# comment in setup.py
+global-exclude *
+
+include setup.py
+
+include numpysane.py
+include numpysane_pywrap.py
+
 include README
 include test/test-numpysane.py
+include pywrap-templates/*.c
