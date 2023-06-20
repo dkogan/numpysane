@@ -1,3 +1,9 @@
+numpysane (0.38) unstable; urgency=medium
+
+  * Reworked the python install (pip stuff only)
+
+ -- Dima Kogan <dkogan@debian.org>  Tue, 20 Jun 2023 12:40:49 -0700
+
 numpysane (0.37)
 
   * C broadcasting logic fix: implicit dimensions of length-1 are added
