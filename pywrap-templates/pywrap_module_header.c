@@ -128,9 +128,9 @@ bool parse_dim_for_one_arg(// input and output
          i_dim >= -Ndims_extra_var;
          i_dim--)
     {
-        int i_dim_var = i_dim - Ndims_want + Ndims_var;
+        const int i_dim_var = i_dim - Ndims_want + Ndims_var;
         // if we didn't get enough dimensions, use dim=1
-        int dim_var = i_dim_var >= 0 ? dims_var[i_dim_var] : 1;
+        const int dim_var = i_dim_var >= 0 ? dims_var[i_dim_var] : 1;
 
         if (dim_var != 1)
         {
