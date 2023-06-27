@@ -156,10 +156,13 @@ bool parse_dim_for_one_arg(// input and output
                 return false;
             }
 
+            // I have a new value for this dimension
             if( dims_extra[i_dim_extra] == 1)
+                // This dimension wasn't set yet; I set it
                 dims_extra[i_dim_extra] = dim_var;
             else if(dims_extra[i_dim_extra] != dim_var)
             {
+                // This dimension was set, but this array has a DIFFERENT value
                 PyErr_Format(PyExc_RuntimeError,
                              "Argument '%s' dimension %d (broadcasted dimension %d) mismatch. Previously saw length %d, but here have length %d",
                              arg_name,
