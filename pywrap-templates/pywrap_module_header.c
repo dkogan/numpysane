@@ -148,10 +148,11 @@ bool parse_dim_for_one_arg(// input and output
             if(is_output && dims_extra[i_dim_extra] != dim_var)
             {
                 PyErr_Format(PyExc_RuntimeError,
-                             "Outputs must match the broadcasted dimensions EXACTLY. '%s' dimension %d (broadcasted dimension %d) has length %d, while the inputs have %d",
+                             "Output '%s' dimension %d (broadcasted dimension %d) mismatch. Inputs have length %d but here have length %d",
                              arg_name,
                              i_dim-Ndims_want, i_dim,
-                             dim_var, dims_extra[i_dim_extra]);
+                             (int)dims_extra[i_dim_extra],
+                             dim_var);
                 return false;
             }
 
