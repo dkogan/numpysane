@@ -30,7 +30,18 @@ do {                                                                    \
 
 static
 bool parse_dim_for_one_arg(// input and output
+
+                           // so-far-seen named dimensions. Initially these are
+                           // <0 to indicate that they're unknown. As the
+                           // broadcasting rules determine the values of these,
+                           // the values are stored here (>= 0), and checked for
+                           // consistency
                            npy_intp* dims_named,
+
+                           // so-far-seen broadcasted dimensions. Initially
+                           // these are 1 to indicate that these are compatible
+                           // with anything. As non-1 values are seen, those are
+                           // stored here (> 1), and checked for consistency
                            npy_intp* dims_extra,
 
                            // input
