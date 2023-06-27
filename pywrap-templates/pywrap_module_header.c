@@ -45,12 +45,12 @@ bool parse_dim_for_one_arg(// input and output
                            npy_intp* dims_extra,
 
                            // input
-                           int Ndims_extra,
+                           const int Ndims_extra,
                            const char* arg_name,
-                           int Ndims_extra_var,
-                           const npy_intp* dims_want, int Ndims_want,
-                           const npy_intp* dims_var,  int Ndims_var,
-                           bool is_output)
+                           const int Ndims_extra_var,
+                           const npy_intp* dims_want, const int Ndims_want,
+                           const npy_intp* dims_var,  const int Ndims_var,
+                           const bool is_output)
 {
     // MAKE SURE THE PROTOTYPE DIMENSIONS MATCH (the trailing dimensions)
     //
