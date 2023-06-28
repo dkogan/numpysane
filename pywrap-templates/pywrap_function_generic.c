@@ -217,9 +217,11 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         }
 
 
-
         ARGUMENTS(DECLARE_DIM_VARS);
         ARGUMENTS(DEFINE_DIM_VARS);
+
+        const int Ndims_extra_inputs_only = Ndims_extra;
+
         OUTPUTS(  DECLARE_DIM_VARS);
         OUTPUTS(  DEFINE_DIM_VARS);
         // Any outputs that are given are processed here. Outputs that are NOT
@@ -237,9 +239,12 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #define PARSE_DIMS(name)                                                \
         if((PyObject*)__py__ ## name != Py_None && __py__ ## name != NULL) \
         {                                                               \
-            if(!parse_dim_for_one_arg(dims_named, dims_extra,           \
-                                      Ndims_extra,                      \
+            if(!parse_dim_for_one_arg(/* input and output */            \
+                                      dims_named, dims_extra,           \
                                                                         \
+                                      /* input */                       \
+                                      Ndims_extra,                      \
+                                      Ndims_extra_inputs_only,          \
                                       #name,                            \
                                       Ndims_extra__ ## name,            \
                                       PROTOTYPE_ ## name, PROTOTYPE_LEN_ ## name, \
@@ -248,7 +253,9 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 goto done;                                              \
         }
 
-        bool is_output = false;
+        bool is_output;
+
+        is_output = false;
         ARGUMENTS(PARSE_DIMS);
         is_output = true;
         OUTPUTS(  PARSE_DIMS);
