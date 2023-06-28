@@ -1,4 +1,10 @@
-numpysane (0.38) unstable; urgency=medium
+numpysane (0.39)
+
+  * numpysane_pywrap: extra broadcasted slices in the output are allowed
+
+ -- Dima Kogan <dkogan@debian.org>  Wed, 28 Jun 2023 00:03:56 -0700
+
+numpysane (0.38)
 
   * Reworked the python install (pip stuff only)
 
