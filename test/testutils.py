@@ -211,8 +211,8 @@ def confirm_does_not_raise(f, msg=''):
         f()
         print_green("OK{}".format((': ' + msg) if msg else ''))
         return True
-    except:
-        print_red("FAILED{}".format((': ' + msg) if msg else ''))
+    except Exception as e:
+        print_red("FAILED{}. Exception: {}".format((': ' + msg) if msg else '', e))
         NchecksFailed = NchecksFailed + 1
         return False
 
