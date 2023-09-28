@@ -583,18 +583,6 @@ def test_broadcasting_into_output():
                 multiple_outputs = True
         except:
             pass
-        def confirm_call_out_values(f, *args, **kwargs):
-            try:
-                out = f(*args, **kwargs)
-                if not isinstance(out_ref, tuple):
-                    confirm_equal(out,       out_ref,       "Output matches")
-                    confirm_equal(out.shape, out_ref.shape, "Output shape matches")
-                else:
-                    for i in range(len(out_ref)):
-                        confirm_equal(out[i],       out_ref[i],       "Output matches")
-                        confirm_equal(out[i].shape, out_ref[i].shape, "Output shape matches")
-            except:
-                confirm(False, msg='broadcasted function call')
 
         # First we look at the case where broadcast_define() has no out_kwarg.
         # Then the output cannot be specified at all. If prototype_output
