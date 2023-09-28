@@ -1010,7 +1010,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     kwarg can be given to broadcast_define() like so:
 
         @nps.broadcast_define( ....., out_kwarg = "out" )
-        def func( ....., out):
+        def func( ....., *, out):
             .....
             out[:] = result
 
@@ -1025,7 +1025,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     be made. This can be done like this:
 
         @nps.broadcast_define( (('n',), ('n',)), ....., out_kwarg = "out" )
-        def inner_product(a, b, out):
+        def inner_product(a, b, *, out):
             .....
             out.setfield(a.dot(b), out.dtype)
 
@@ -1049,7 +1049,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
         @nps.broadcast_define( (('n',), ('n',)),
                                (),
                                out_kwarg = "out" )
-        def inner_product(a, b, out):
+        def inner_product(a, b, *, out, dtype):
             .....
             out.setfield(a.dot(b), out.dtype)
 
@@ -1058,7 +1058,12 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
     Note that the caller didn't need to specify the prototype of the output or
     the extra broadcasting dimensions (output prototype is in the
     broadcast_define() call, but not the inner_product() call). Specifying the
-    dtype here is optional: it defaults to float if omitted. If we want the
+    dtype here is optional: it defaults to float if omitted. If the dtype IS
+    given, the inner function must take a "dtype" argument; to use in cases
+    where out_kwarg isn't given, and the output array must be created by the
+    inner function.
+
+    If we want the
     output array to be pre-allocated, the output prototype (it is () in this
     example) is required: we must know the shape of the output array in order to
     create it.
@@ -1072,7 +1077,7 @@ def broadcast_define(prototype, prototype_output=None, out_kwarg=None):
 
         @nps.broadcast_define( (('n',), ('n',)),
                                out_kwarg = "out" )
-        def inner_product(a, b, out=None):
+        def inner_product(a, b, *, out=None):
             .....
             if out is None:
                 return a.dot(b)
