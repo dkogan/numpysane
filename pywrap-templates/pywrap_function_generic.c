@@ -1,4 +1,16 @@
 static
+bool __pywrap__{FUNCTION_NAME}__next(int* idims, const npy_intp* Ndims, int N)
+{
+    for(int i = N-1; i>=0; i--)
+    {
+        if(++idims[i] < Ndims[i])
+            return true;
+        idims[i] = 0;
+    }
+    return false;
+}
+
+static
 PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                                     PyObject* args,
                                     PyObject* kwargs)
@@ -453,16 +465,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
         // Iterate through all the broadcasting output, and gather the results
         int idims_extra[Ndims_extra];
         for(int i=0; i<Ndims_extra; i++) idims_extra[i] = 0;
-        bool next(int* idims, const npy_intp* Ndims, int N)
-        {
-            for(int i = N-1; i>=0; i--)
-            {
-                if(++idims[i] < Ndims[i])
-                    return true;
-                idims[i] = 0;
-            }
-            return false;
-        }
         do
         {
             // This loop is awkward. I don't update the slice data pointer
@@ -496,7 +498,7 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
                 goto done;
             }
 
-        } while(next(idims_extra, dims_extra, Ndims_extra));
+        } while(__pywrap__{FUNCTION_NAME}__next(idims_extra, dims_extra, Ndims_extra));
 
         __py__result__ = (PyObject*)__py__output__arg;
     }
