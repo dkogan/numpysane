@@ -1,3 +1,10 @@
+numpysane (0.40)
+
+  * numpysane_pywrap: no more nested functions. So the generated code
+    builds with clang
+
+ -- Dima Kogan <dkogan@debian.org>  Sat, 23 Dec 2023 15:49:25 -0800
+
 numpysane (0.39)
 
   * numpysane_pywrap: extra broadcasted slices in the output are allowed
