@@ -1,20 +1,11 @@
-static
-bool __pywrap__{FUNCTION_NAME}__next(int* idims, const npy_intp* Ndims, int N)
-{
-    for(int i = N-1; i>=0; i--)
-    {
-        if(++idims[i] < Ndims[i])
-            return true;
-        idims[i] = 0;
-    }
-    return false;
-}
+#define ARG_DEFINE(     name) PyArrayObject* __py__ ## name = NULL;
+#define ARGLIST_DECLARE(name) PyArrayObject* __py__ ## name,
+#define ARGLIST_CALL(   name) __py__ ## name,
 
-static
-PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
-                                    PyObject* args,
-                                    PyObject* kwargs)
-{
+#define ARGLIST_SELECTED_TYPENUM_PTR_DECLARE(name) int* selected_typenum__ ## name,
+#define ARGLIST_SELECTED_TYPENUM_PTR_CALL(   name) &selected_typenum__ ## name,
+
+
 #define SLICE_ARG(name)                         \
                                                 \
     const int       Ndims_full__     ## name,   \
@@ -29,6 +20,52 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     void*           data_slice__     ## name,
 
 
+static
+bool __pywrap__{FUNCTION_NAME}__next(int* idims, const npy_intp* Ndims, int N)
+{
+    for(int i = N-1; i>=0; i--)
+    {
+        if(++idims[i] < Ndims[i])
+            return true;
+        idims[i] = 0;
+    }
+    return false;
+}
+
+#define TYPE_MATCHES_ARGLIST(name) int typenum__ ## name,
+bool __pywrap__{FUNCTION_NAME}__type_matches(
+                  ARGUMENTS(TYPE_MATCHES_ARGLIST)
+                  OUTPUTS(  TYPE_MATCHES_ARGLIST)
+                  ARGUMENTS(ARGLIST_DECLARE)
+                  OUTPUTS(  ARGLIST_DECLARE)
+                  OUTPUTS(  ARGLIST_SELECTED_TYPENUM_PTR_DECLARE)
+                  int dummy __attribute__((unused)) )
+{
+
+#define SET_SELECTED_TYPENUM_OUTPUT(name) *selected_typenum__ ## name = typenum__ ## name;
+#define TYPE_MATCHES(name)                                              \
+    && ( __py__ ## name == NULL ||                              \
+      (PyObject*)__py__ ## name == Py_None ||                   \
+      PyArray_DESCR(__py__ ## name)->type_num == typenum__ ## name )
+
+    if(true ARGUMENTS(TYPE_MATCHES) OUTPUTS(TYPE_MATCHES))
+    {
+        /* all arguments match this typeset! */
+        OUTPUTS(SET_SELECTED_TYPENUM_OUTPUT);
+        return true;
+    }
+    return false;
+}
+#undef SET_SELECTED_TYPENUM_OUTPUT
+#undef TYPE_MATCHES
+#undef TYPE_MATCHES_ARGLIST
+
+
+static
+PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
+                                    PyObject* args,
+                                    PyObject* kwargs)
+{
     // The cookie we compute BEFORE computing any slices. This is available to
     // the slice-computation function to do whatever they please. I initialize
     // the cookie to all-zeros. If any cleanup is needed, the COOKIE_CLEANUP
@@ -46,7 +83,6 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
     PyObject* __py__result__    = NULL;
     PyObject* __py__output__arg = NULL;
 
-#define ARG_DEFINE(name) PyArrayObject* __py__ ## name = NULL;
     ARGUMENTS(ARG_DEFINE);
     OUTPUTS(  ARG_DEFINE);
     {EXTRA_ARGUMENTS_ARG_DEFINE};
@@ -109,41 +145,23 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 #define DEFINE_OUTPUT_TYPENUM(name) int selected_typenum__ ## name;
         OUTPUTS(DEFINE_OUTPUT_TYPENUM);
 #undef DEFINE_OUTPUT_TYPENUM
-        slice_function_t* slice_function;
-
-#define TYPE_MATCHES_ARGLIST(name) int typenum__ ## name,
-        bool type_matches(ARGUMENTS(TYPE_MATCHES_ARGLIST)
-                          OUTPUTS(  TYPE_MATCHES_ARGLIST)
-                          slice_function_t* f)
-        {
-
-#define SET_SELECTED_TYPENUM_OUTPUT(name) selected_typenum__ ## name = typenum__ ## name;
-#define TYPE_MATCHES(name)                                              \
-            && ( __py__ ## name == NULL ||                              \
-              (PyObject*)__py__ ## name == Py_None ||                   \
-              PyArray_DESCR(__py__ ## name)->type_num == typenum__ ## name )
-
-            if(true ARGUMENTS(TYPE_MATCHES) OUTPUTS(TYPE_MATCHES))
-            {
-                /* all arguments match this typeset! */
-                slice_function = f;
-                OUTPUTS(SET_SELECTED_TYPENUM_OUTPUT);
-                return true;
-            }
-            return false;
-        }
-#undef SET_SELECTED_TYPENUM_OUTPUT
-#undef TYPE_MATCHES
-#undef TYPE_MATCHES_ARGLIST
-
+        slice_function_t* slice_function = NULL;
 
 #define TYPESETS(_) \
         {TYPESETS}
 #define TYPESET_MATCHES({TYPESET_MATCHES_ARGLIST}, i)                   \
-        else if( type_matches({TYPESET_MATCHES_ARGLIST},                \
-                              __{FUNCTION_NAME}__ ## i ## __slice) )    \
+        else if( __pywrap__{FUNCTION_NAME}__type_matches                \
+                 (                                                      \
+                             {TYPESET_MATCHES_ARGLIST},                 \
+                             ARGUMENTS(ARGLIST_CALL)                    \
+                             OUTPUTS(  ARGLIST_CALL)                    \
+                             OUTPUTS(  ARGLIST_SELECTED_TYPENUM_PTR_CALL) \
+                             0 /* dummy; unused */                      \
+                 )                                                      \
+               )                                                        \
         {                                                               \
-            /* matched. type_matches() did all the work. */             \
+            /* matched */                                               \
+            slice_function = __{FUNCTION_NAME}__ ## i ## __slice;       \
         }
 
         if(0) ;
@@ -525,6 +543,8 @@ PyObject* __pywrap__{FUNCTION_NAME}(PyObject* NPY_UNUSED(self),
 }
 
 #undef ARG_DEFINE
+#undef ARGLIST_DECLARE
+#undef ARGLIST_CALL
 #undef NAMELIST
 #undef PARSECODE
 #undef PARSEARG
