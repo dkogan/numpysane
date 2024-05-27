@@ -1,5 +1,10 @@
 # -*- Makefile -*-
 
+
+# This is a copy from mrbuild 1.10. I'm copying it here because declaring this
+# dependency in setup.py is more or less impossible
+
+
 # This is a part of the mrbuild project: https://github.com/dkogan/mrbuild
 #
 # Released under an MIT-style license. Modify and distribute as you like:
@@ -23,6 +28,37 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
+# osx
+COND_DARWIN := $(filter Darwin,$(shell uname -s))
+SO          := $(if $(COND_DARWIN),dylib,so)
+
+
+
+# Hacks to get spaces and newlines in places where Make would normally parse
+# them out
+SPACE :=
+SPACE := $(SPACE) $(SPACE)
+define NEWLINE
+
+
+endef
+
+dirs_to_dotdot = $(subst $(SPACE),/,$(patsubst %,..,$(subst /, ,$1)))
+get_parentdir_relative_to_childdir = /$(call dirs_to_dotdot,$(patsubst $1%,%,$2))
+
+RPATH_SUFFIX = $(call get_parentdir_relative_to_childdir,$(abspath .),$(dir $(abspath $1)))
+ifeq ($(COND_DARWIN),)
+  RPATH = '$$ORIGIN'$(RPATH_SUFFIX)
+else
+  RPATH = @executable_path$(RPATH_SUFFIX)
+endif
+
+RPATH_OPTION = -Wl,-rpath,$(call RPATH,$@)
+
+
+
+
 
 # This stuff defines variables (PY_EXT_SUFFIX) that could be used by the user
 # Makefile at parsing time. So this must be included BEFORE the rest of the user
@@ -82,9 +118,11 @@ ifneq ($(DEB_HOST_MULTIARCH),)
 import ast
 import sys
 
-for d in sys.path:
+prefixes = ("_sysconfigdata_", "_sysconfigdata_m_linux")
+sysconfig_paths = [d + "/" + prefix + "_$(DEB_HOST_MULTIARCH).py" for d in sys.path for prefix in prefixes]
+for filename in sysconfig_paths:
     try:
-        f = open(d + "/_sysconfigdata__$(DEB_HOST_MULTIARCH).py")
+        f = open(filename)
     except:
         continue
 
@@ -94,7 +132,7 @@ for d in sys.path:
     conf = ast.literal_eval(s)
     break
 else:
-    raise Exception("Could not find \"_sysconfigdata__$(DEB_HOST_MULTIARCH).py\" in any sys.path directories")
+    raise Exception("Could not find sysconfig file in any sys.path directories. Tried: {}".format(sysconfig_paths))
 endef
 
 else
@@ -122,16 +160,14 @@ define query_python_extension_building_flags
 _PYVARS = $(shell python$(PYTHON_VERSION_FOR_EXTENSIONS) -c '$(_PYVARS_SCRIPT)')
 # I then $(eval) these tokens one at a time, restoring the whitespace
 $(foreach setvarcmd,$(_PYVARS),$(eval $(subst __whitespace__, ,$(setvarcmd))))
+# Add the numpy include path. See https://bugs.debian.org/1067398
+_PY_INCLUDEPY += $(shell pkg-config --cflags-only-I numpy 2>/dev/null)
 # pull out flags from CC, throw out the compiler itself, since I know better
 _FLAGS_FROM_PYCC    = $(wordlist 2,$(words $(_PY_CC)),$(_PY_CC))
 _PY_MRBUILD_CFLAGS  = $(filter-out -O%,$(_FLAGS_FROM_PYCC) $(_PY_CFLAGS) $(_PY_CCSHARED) -I$(_PY_INCLUDEPY))
 
-SPACE :=
-SPACE := $(SPACE) $(SPACE)
-dirs_to_dotdot = $(subst $(SPACE),/,$(patsubst %,..,$(subst /, ,$1)))
-get_parentdir_relative_to_childdir = /$(call dirs_to_dotdot,$(patsubst $1%,%,$2))
+_PY_MRBUILD_LDFLAGS = $(RPATH_OPTION) $(_PY_LDFLAGS) -L$(abspath .)
 
-_PY_MRBUILD_LDFLAGS = $(_PY_LDFLAGS) -L$(abspath .) -Wl,-rpath='$$ORIGIN'$(call get_parentdir_relative_to_childdir,$(abspath .),$(dir $(abspath $@)))
 _PY_MRBUILD_LINKER  = $(_PY_BLDSHARED) $(_PY_BLDLIBRARY)
 endef
 
@@ -152,7 +188,7 @@ define _PY_DEFINE_API_VAR
 $1 = $$(or $$(_$1),$$(eval $$(value query_python_extension_building_flags))$$(_$1))
 endef
 define _PY_DEFINE_API_VAR_EXTSUFFIX
-$1 = $$(or $$(_$1),$$(eval $$(value query_python_extension_building_flags))$$(or $$(_$1),$$(if $$(PY_MULTIARCH),.$$(PY_MULTIARCH)).so))
+$1 = $$(or $$(_$1),$$(eval $$(value query_python_extension_building_flags))$$(or $$(_$1),$$(if $$(PY_MULTIARCH),.$$(PY_MULTIARCH)).$$(SO)))
 endef
 
 $(foreach v,$(filter-out PY_EXT_SUFFIX,$(_PYVARS_API)),$(eval $(call _PY_DEFINE_API_VAR,$v)))
@@ -166,7 +202,8 @@ $(eval $(call _PY_DEFINE_API_VAR_EXTSUFFIX,PY_EXT_SUFFIX))
 define add_local_library_path
 CFLAGS   += -I$1
 CXXFLAGS += -I$1
-LDFLAGS += -L$1 -Wl,-rpath=$1
+LDFLAGS  += -L$1
+LDFLAGS += -Wl,-rpath,$1
 endef
 
 
@@ -181,7 +218,7 @@ endef
 #### is useful in mature-ish projects that are actually being distributed to
 #### others
 # "git describe --tags" says things like "v2.0-17-gcef328f". This converts it to "v2.0"
-_VERSION_STRIP_POST_TAG_ANNOTATIONS := s/-\d+-g[0-9a-f]{7}$$//
+_VERSION_STRIP_POST_TAG_ANNOTATIONS := s/-\d+-g[0-9a-f]+$$//
 # I might have a tag such as "debian/2.0-1". This converts it to "2.0-1"
 _VERSION_STRIP_LEADING_PATH         := s/^.*\///
 # I might have a tag such as "v2.0". This converts it to "2.0"
@@ -191,12 +228,21 @@ _VERSION_STRIP_LEADING_V            := s/^v//g
 
 # If user says "VERSION_USE_LATEST_TAG=1 make" I'll use the latest tag for the
 # version, without annotations about the subsequent commits
-_VERSION = $(shell test -d .git && \
-  git describe --tags | \
-    perl -pe '$(if $(VERSION_USE_LATEST_TAG),$(_VERSION_STRIP_POST_TAG_ANNOTATIONS)); \
-              $(_VERSION_STRIP_LEADING_PATH);         \
-              $(_VERSION_STRIP_LEADING_V);' || \
-  < debian/changelog sed -n 's/.*(\([0-9\.]*[0-9]\).*).*/\1/; p; q;')
+PAREN0 := (
+PAREN1 := )
+_VERSION = $(shell															\
+  if test -e debian/changelog; then													\
+      < debian/changelog perl -ane 'if($$F[1] =~ /^\$(PAREN0)(.+)\$(PAREN1)$$/) { print $$1 } else { print "VERSION_UNKNOWN"}; exit 0';	\
+  elif test -d .git && git describe --tags >/dev/null 2>/dev/null; then									\
+      git describe --tags |														\
+      perl -pe '$(if $(VERSION_USE_LATEST_TAG),$(_VERSION_STRIP_POST_TAG_ANNOTATIONS));							\
+		$(_VERSION_STRIP_LEADING_PATH);												\
+		$(_VERSION_STRIP_LEADING_V);';												\
+  else																	\
+    echo "VERSION_UNKNOWN";														\
+  fi																	\
+)
+
 # Memoize. $(VERSION) will evaluate the result the first time, and use the
 # cached result during subsequent calls
 VERSION_FROM_PROJECT = $(if $(_VERSION_EXPANDED),,$(eval _VERSION_EXPANDED:=$$(_VERSION)))$(_VERSION_EXPANDED)
