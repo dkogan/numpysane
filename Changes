@@ -1,3 +1,9 @@
+numpysane (0.41)
+
+  * Updated build to mrbuild 1.10
+
+ -- Dima Kogan <dkogan@debian.org>  Sun, 26 May 2024 17:04:32 -0700
+
 numpysane (0.40)
 
   * numpysane_pywrap: no more nested functions. So the generated code
