@@ -727,7 +727,7 @@ _pywrap_path = [ # in-place: running from the source tree
                  sys.prefix + '/share/python-numpysane/pywrap-templates' ]
 
                  # pip: /home/whoever/.local/share/...
-_m = re.match("(/home/[^/]+/\.local)/lib/", __file__)
+_m = re.match(r"(/home/[^/]+/\.local)/lib/", __file__)
 if _m is not None:
     _local_prefix = _m.group(1)
     _pywrap_path.append( _local_prefix + '/share/python-numpysane/pywrap-templates')
@@ -1221,12 +1221,12 @@ bool {FUNCTION_NAME}({ARGUMENTS})
             # The intent is that I can take "const char*" strings, and pass them
             # onto the inner functions using the same pointer, without
             # dereferencing it a second time
-            m = re.match("\s*const\s+(.*?)$", c_type)
+            m = re.match(r"\s*const\s+(.*?)$", c_type)
             if m is not None:
                 c_type_no_leading_const = m.group(1)
             else:
                 c_type_no_leading_const = c_type
-            m = re.search("(.*)\*\s*$", c_type_no_leading_const)
+            m = re.search(r"(.*)\*\s*$", c_type_no_leading_const)
             if m is not None:
                 c_type_did_strip_pointer = True
                 c_type_no_leading_const_no_pointer = m.group(1)
