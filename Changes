@@ -1,3 +1,9 @@
+numpysane (0.42)
+
+  * regex use raw strings to resolve warnings in newer Pythons
+
+ -- Dima Kogan <dkogan@debian.org>  Thu, 20 Mar 2025 19:37:55 -0700
+
 numpysane (0.41)
 
   * Updated build to mrbuild 1.10
