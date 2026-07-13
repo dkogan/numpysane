@@ -683,7 +683,11 @@ from functools import reduce
 import itertools
 import types
 import inspect
-from distutils.version import StrictVersion
+
+# distutils got removed at some point, or something
+try:    from distutils.version import StrictVersion
+except: from packaging.version import Version as StrictVersion
+
 
 # setup.py assumes the version is a simple string in '' quotes
 __version__ = '0.42'
