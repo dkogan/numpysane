@@ -1,3 +1,9 @@
+numpysane (0.43)
+
+  * Don't need distutils
+
+ -- Dima Kogan <dkogan@debian.org>  Sun, 12 Jul 2026 18:20:37 -0700
+
 numpysane (0.42)
 
   * regex use raw strings to resolve warnings in newer Pythons
