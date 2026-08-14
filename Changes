@@ -1,3 +1,9 @@
+numpysane (0.45)
+
+  * Fixed pip requirements syntax
+
+ -- Dima Kogan <dkogan@debian.org>  Thu, 13 Aug 2026 21:01:56 -0700
+
 numpysane (0.44)
 
   * Added forgotten package to requirements.txt: packaging

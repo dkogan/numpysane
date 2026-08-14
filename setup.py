@@ -29,7 +29,7 @@ functionality in a more reasonable way""",
 
       license      = 'LGPL',
       py_modules   = ['numpysane', 'numpysane_pywrap'],
-      install_requires = ('numpy',),
+      install_requires = ('numpy', 'packaging', ),
 
       # This is REALLY stupid. The simple act of shipping some non-source data
       # with the module is really difficult for Python people. There are
