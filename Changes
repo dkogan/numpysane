@@ -1,3 +1,9 @@
+numpysane (0.44)
+
+  * Added forgotten package to requirements.txt: packaging
+
+ -- Dima Kogan <dkogan@debian.org>  Thu, 13 Aug 2026 20:50:44 -0700
+
 numpysane (0.43)
 
   * Don't need distutils

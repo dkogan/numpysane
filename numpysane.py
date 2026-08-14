@@ -690,7 +690,7 @@ except: from packaging.version import Version as StrictVersion
 
 
 # setup.py assumes the version is a simple string in '' quotes
-__version__ = '0.43'
+__version__ = '0.44'
 
 def _product(l):
     r'''Returns product of all values in the given list'''
